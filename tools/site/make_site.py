@@ -32,41 +32,35 @@ BUG_URL = f"{GH}/issues/new?labels=bug&title={quote('Bug : ')}&body={quote(BUG_B
 IDEA_URL = f"{GH}/issues/new?labels=enhancement&title={quote('Idée : ')}&body={quote(IDEA_BODY)}"
 
 
+# ---------------------------------------------------------------- Tauntek shortcut keys
+# Hold TUNE/TRANSPOSE, press a key (key 0 = lowest C). From Tauntek's control-key chart, as on the
+# plugin's "Raccourcis Tauntek" page. Kind: n = normal, r = replaces the 36 voices, s = overwrites a save area.
+GROUPS = ["Sons en mémoire", "Patch CC dump", "Jeu", "PWM", "LFO"]
+SHORTCUTS = [
+    (0,  "Charger la zone de sauvegarde 1", "r", "Sons en mémoire"),
+    (1,  "Sauver dans la zone 1",           "s", "Sons en mémoire"),
+    (2,  "Charger la zone de sauvegarde 2", "r", "Sons en mémoire"),
+    (3,  "Sauver dans la zone 2",           "s", "Sons en mémoire"),
+    (23, "Charger les sons d'usine",        "r", "Sons en mémoire"),
+    (24, "Charger les sons B",              "r", "Sons en mémoire"),
+    (25, "Charger les sons C",              "r", "Sons en mémoire"),
+    (22, "Activer le patch CC dump",        "n", "Patch CC dump"),
+    (21, "Désactiver le patch CC dump",     "n", "Patch CC dump"),
+    (20, "Arpège aléatoire",                "n", "Jeu"),
+    (26, "Vélocité vers l'enveloppe du VCF", "n", "Jeu"),
+    (27, "Vélocité ignorée",                "n", "Jeu"),
+    (29, "PWM la plus lente",               "n", "PWM"),
+    (30, "PWM plus lente",                  "n", "PWM"),
+    (31, "PWM normale",                     "n", "PWM"),
+    (32, "PWM la plus rapide",              "n", "PWM"),
+    (34, "Activer la synchro LFO",          "n", "LFO"),
+    (33, "Couper la synchro LFO",           "n", "LFO"),
+    (35, "Activer LFO vers oscillateur 1",  "n", "LFO"),
+    (36, "Couper LFO vers oscillateur 1",   "n", "LFO"),
+]
+
+
 # ---------------------------------------------------------------- drawings
-def keyboard_svg(highlight, callout, labels):
-    """37 keys, C to C. Key 0 is the lowest C (the OSCar's key -12)."""
-    black = lambda k: k % 12 in (1, 3, 6, 8, 10)
-    whites = [k for k in range(37) if not black(k)]
-    x0, y0, ww, wh = 10, 46, 30, 120
-    pos, out = {}, []
-    for i, k in enumerate(whites):
-        x = x0 + i * ww
-        pos[k] = x + ww / 2
-        cls = "kw on" if k == highlight else "kw"
-        out.append(f'<rect class="{cls}" x="{x}" y="{y0}" width="{ww}" height="{wh}" rx="2"/>')
-    bw, bh = ww * 0.62, wh * 0.62
-    for k in range(37):
-        if black(k):
-            x = x0 + (whites.index(k - 1) + 1) * ww - bw / 2
-            pos[k] = x + bw / 2
-            cls = "kb on" if k == highlight else "kb"
-            out.append(f'<rect class="{cls}" x="{x:.1f}" y="{y0}" width="{bw:.1f}" height="{bh:.1f}" rx="2"/>')
-    for k, t in labels:
-        on = " on" if k == highlight else ""
-        out.append(f'<text class="kl{on}" x="{pos[k]:.1f}" y="{y0 - 10}" text-anchor="middle">{t}</text>')
-    # callout under the keyboard
-    cx = pos[highlight]
-    ky = y0 + (bh if black(highlight) else wh) - 14
-    out.append(f'<circle class="dot" cx="{cx:.1f}" cy="{ky:.1f}" r="5"/>')
-    out.append(f'<path class="lead" d="M{cx:.1f},{ky:.1f} L{cx:.1f},{y0 + wh + 26}"/>')
-    anchor = "start" if cx < 340 else "end"
-    tx = cx - 8 if anchor == "end" else cx + 8
-    out.append(f'<text class="co" x="{tx:.1f}" y="{y0 + wh + 30}" text-anchor="{anchor}">{callout}</text>')
-    w = x0 * 2 + len(whites) * ww
-    return (f'<svg class="kbd" viewBox="0 0 {w} {y0 + wh + 44}" role="img" aria-label="Clavier de l\'OSCar, touche à presser en couleur">'
-            + "".join(out) + "</svg>")
-
-
 def din(cx, cy, r=15):
     pins = "".join(
         f'<circle class="pin" cx="{cx + math.cos(math.radians(a)) * r * 0.55:.1f}" cy="{cy - math.sin(math.radians(a)) * r * 0.55 + 2:.1f}" r="1.7"/>'
@@ -103,8 +97,135 @@ CABLING = f'''<svg class="cabling" viewBox="0 30 700 230" role="img" aria-label=
   <text class="tt2" x="495" y="234" text-anchor="middle">câble 2</text>
 </svg>'''
 
-KB_PC = keyboard_svg(3, "−9 : la 2e touche noire", [(0, "−12"), (3, "−9"), (36, "24")])
-KB_DUMP = keyboard_svg(22, "Enable patch CC dump", [(0, "−12"), (36, "24")])
+def panel_svg(mode):
+    """Simplified OSCar top panel: where the buttons and keys of a procedure are, numbered in order.
+    mode 'pc': SPACE + key -9; 'cc': TUNE/TRANSPOSE + 'Enable patch CC dump' (key 22);
+    'dump': INSERT + VOICE, then SPACE; 'keys': TUNE/TRANSPOSE + every Tauntek shortcut key,
+    coloured by kind and clickable (data-k), for the shortcuts section."""
+    hl = {"pc": {"space": 1, "key": 2}, "cc": {"tune": 1, "key": 2},
+          "dump": {"insert": 1, "voice": 2, "space": 3}, "keys": {"tune": 1}}[mode]
+    verbs = {"pc": {1: "maintiens", 2: "appuie"}, "cc": {1: "maintiens", 2: "appuie"},
+             "dump": {1: "maintiens", 2: "appuie", 3: "puis appuie"}, "keys": {1: "maintiens"}}[mode]
+    kinds = {k: kind for k, _, kind, _ in SHORTCUTS} if mode == "keys" else {}
+
+    def key_attrs(k, base):
+        if k in kinds:
+            return f'class="{base} sk {kinds[k]}" data-k="{k}"'
+        return f'class="{base}{" on" if k == key else ""}"'
+    key = {"pc": 3, "cc": 22}.get(mode)
+
+    def btn(cx, cy, label, name, show_label=True):
+        on = name in hl
+        ring = f'<circle class="ring" cx="{cx}" cy="{cy}" r="16"/>' if on else ""
+        text = (f'<text class="bl{" on" if on else ""}" x="{cx}" y="{cy + 27}" text-anchor="middle">{label}</text>'
+                if show_label or on else "")
+        return f'{ring}<circle class="bt{" on" if on else ""}" cx="{cx}" cy="{cy}" r="10"/>{text}'
+
+    def section(x, w, title, active):
+        c = "" if active else " dim"
+        return (f'<rect class="sec{c}" x="{x}" y="26" width="{w}" height="82" rx="6"/>'
+                f'<rect class="secl{c}" x="{x + 10}" y="100" width="{w - 20}" height="15" rx="3"/>'
+                f'<text class="sect" x="{x + w / 2}" y="111" text-anchor="middle">{title}</text>')
+
+    lines, key_lines = [], []   # under the buttons and labels / over the keys; the numbered badges on top
+
+    def mark(n, cx, cy, dx, dy, over_keys=False):
+        bx, by = cx + dx, cy + dy
+        verb = verbs[n]
+        tw = 10 + len(verb) * 6.6
+        (key_lines if over_keys else lines).append(f'<line class="ml" x1="{cx:.1f}" y1="{cy}" x2="{bx:.1f}" y2="{by}"/>')
+        return (f'<circle class="mb" cx="{bx:.1f}" cy="{by}" r="12"/>'
+                f'<text class="mn" x="{bx:.1f}" y="{by + 4.5}" text-anchor="middle">{n}</text>'
+                f'<rect class="mp" x="{bx + 16:.1f}" y="{by - 10}" width="{tw:.0f}" height="20" rx="10"/>'
+                f'<text class="mv" x="{bx + 16 + tw / 2:.1f}" y="{by + 4}" text-anchor="middle">{verb}</text>')
+
+    # 37-key keyboard, key 0 = the OSCar's key -12
+    black = lambda k: k % 12 in (1, 3, 6, 8, 10)
+    whites = [k for k in range(37) if not black(k)]
+    x0, y0, width, height = 176, 176, 500, 104
+    ww = width / len(whites)
+    keys, pos = [], {}
+    for i, k in enumerate(whites):
+        x = x0 + i * ww
+        pos[k] = x + ww / 2
+        keys.append(f'<rect {key_attrs(k, "kw")} x="{x:.1f}" y="{y0}" width="{ww:.1f}" height="{height}"/>')
+    bw, bh = ww * 0.62, height * 0.6
+    for k in range(37):
+        if black(k):
+            x = x0 + (whites.index(k - 1) + 1) * ww - bw / 2
+            pos[k] = x + bw / 2
+            keys.append(f'<rect {key_attrs(k, "kb")} x="{x:.1f}" y="{y0}" width="{bw:.1f}" height="{bh:.1f}" rx="1.5"/>')
+    labels = [(0, "−12"), (36, "24")] + ([(3, "−9")] if mode == "pc" else [])
+    keylabels = "".join(
+        f'<text class="kl{" on" if k == key else ""}" x="{pos[k]:.1f}" y="168" text-anchor="middle">{t}</text>' for k, t in labels)
+
+    space, voice, insert, tune = (128, 230), (288, 58), (468, 58), (58, 58)
+    marks = ""
+    if "tune" in hl:
+        marks += mark(hl["tune"], *tune, 62, 70)
+    if "space" in hl:
+        marks += mark(hl["space"], *space, -70, 48)
+    if "voice" in hl:
+        marks += mark(hl["voice"], *voice, -36, 98)
+    if "insert" in hl:
+        marks += mark(hl["insert"], *insert, 52, 96)
+    if key is not None:
+        marks += mark(hl["key"], pos[key], 236, 70 if pos[key] < 560 else -150, 34, over_keys=True)
+    callout = ""
+    if mode == "cc":
+        callout = f'<text class="kc" x="{pos[key]:.1f}" y="294" text-anchor="middle">Enable patch CC dump</text>'
+
+    tune_on = "tune" in hl
+    return f'''<svg class="panel" viewBox="0 0 700 304" role="img" aria-label="Schéma simplifié du dessus de l'OSCar, boutons à utiliser numérotés dans l'ordre">
+  <rect class="body" x="8" y="10" width="684" height="290" rx="12"/>
+  {section(26, 104, "TUNE · OSC 2", tune_on)}
+  {section(140, 96, "WAVEFORMS", False)}
+  {section(246, 130, "STORE AND RECALL", mode == "dump")}
+  {section(386, 190, "SEQUENCE EDITING", mode == "dump")}
+  {"".join(lines)}
+  {btn(*tune, "TUNE/TRANSP.", "tune", show_label=False)}{btn(100, 58, "", "-", show_label=False)}
+  {btn(170, 58, "", "-", show_label=False)}{btn(208, 58, "", "-", show_label=False)}
+  {btn(*voice, "VOICE", "voice")}{btn(336, 58, "STORE", "-")}
+  {btn(420, 58, "REPEAT", "-")}{btn(*insert, "INSERT", "insert")}{btn(516, 58, "DELETE", "-")}{btn(552, 58, "STEP", "-")}
+  <rect class="wheel" x="34" y="150" width="20" height="112" rx="6"/>
+  <rect class="wheel" x="64" y="150" width="20" height="112" rx="6"/>
+  <text class="bl" x="44" y="144" text-anchor="middle">BEND</text>
+  <text class="bl" x="74" y="144" text-anchor="middle">MOD</text>
+  <circle class="wheel" cx="114" cy="170" r="7"/><circle class="wheel" cx="142" cy="170" r="7"/>
+  <text class="bl" x="128" y="156" text-anchor="middle">OCTAVE</text>
+  {btn(*space, "SPACE", "space")}
+  {keylabels}
+  {"".join(keys)}
+  {callout}
+  {"".join(key_lines)}
+  {marks}
+</svg>'''
+
+
+NOTES = ["Do", "Do#", "Ré", "Ré#", "Mi", "Fa", "Fa#", "Sol", "Sol#", "La", "La#", "Si"]
+
+
+def key_name(k):
+    """Where a key is on the 37-key keyboard: note and octave (1 = lowest; key 36 is the top C)."""
+    return "Do aigu" if k == 36 else f"{NOTES[k % 12]} · octave {k // 12 + 1}"
+
+
+def shortcuts_html():
+    out = []
+    for group in GROUPS:
+        items = [x for x in SHORTCUTS if x[3] == group]
+        lis = "".join(
+            f'<li><button type="button" class="sc {kind}" data-k="{k}"><span class="sk-sw" aria-hidden="true"></span>'
+            f'<span class="sc-label">{label}</span><span class="sc-key">{key_name(k)}</span></button></li>'
+            for k, label, kind, _ in items)
+        out.append(f'<div class="sc-group"><h3>{group}</h3><ul>{lis}</ul></div>')
+    return "\n".join(out)
+
+
+PANEL_PC = panel_svg("pc")
+PANEL_KEYS = panel_svg("keys")
+PANEL_CC = panel_svg("cc")
+PANEL_DUMP = panel_svg("dump")
 
 PAGES = [
     ("voix", "Voix", "Tous les réglages de la voix choisie. Chaque potard part en CC vers l'OSCar, et tout s'automatise depuis le DAW."),
@@ -125,7 +246,9 @@ html = (HERE / "template.html").read_text(encoding="utf-8")
 for k, v in {
     "{{GH}}": GH, "{{DOWNLOAD}}": DOWNLOAD, "{{KOFI}}": KOFI, "{{TAUNTEK}}": TAUNTEK,
     "{{BUG_URL}}": BUG_URL, "{{IDEA_URL}}": IDEA_URL, "{{REPO}}": REPO,
-    "{{CABLING}}": CABLING, "{{KB_PC}}": KB_PC, "{{KB_DUMP}}": KB_DUMP,
+    "{{CABLING}}": CABLING, "{{PANEL_PC}}": PANEL_PC, "{{PANEL_CC}}": PANEL_CC, "{{PANEL_DUMP}}": PANEL_DUMP,
+    "{{PANEL_KEYS}}": PANEL_KEYS, "{{SHORTCUTS}}": shortcuts_html(),
+    "{{SHORTCUTS_JS}}": ",".join(f'"{k}":["{label}","{key_name(k)}","{kind}"]' for k, label, kind, _ in SHORTCUTS),
     "{{PAGE_BUTTONS}}": page_buttons, "{{PAGES_JS}}": pages_js,
     "{{FIRST_CAPTION}}": PAGES[0][2],
 }.items():

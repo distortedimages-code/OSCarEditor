@@ -104,7 +104,7 @@ img { max-width: 100%; height: auto; display: block; }
 
 /* LED buttons (tabs) */
 .tabs-bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; background: linear-gradient(180deg, var(--panel) 80%, rgba(34,36,40,0)); padding-block: 10px 14px; }
-.tabs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.tabs { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
 .btn {
   position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 38px;
   padding: 0 12px; border-radius: 4px; border: 0; cursor: pointer; text-decoration: none;
@@ -174,18 +174,22 @@ p { margin: 0 0 12px; }
 .viewer figcaption { font-size: 15.5px; color: var(--muted); min-height: 3.2em; }
 
 /* releases */
-.release { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px 28px; padding-block: 18px; border-top: 1px solid rgba(255,255,255,.06); }
+.release { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 6px 24px; padding-block: 14px; border-top: 1px solid rgba(255,255,255,.06); }
 .release:first-of-type { border-top: 0; padding-top: 4px; }
 .vchip {
-  justify-self: start; padding: 6px 12px; border-radius: 3px; background: var(--vfd-bg); color: var(--vfd);
-  font: 20px/1 var(--mono); text-shadow: 0 0 8px rgba(255,140,50,.4); box-shadow: inset 0 2px 6px rgba(0,0,0,.9), 0 0 0 1px #000;
+  justify-self: start; padding: 5px 10px; border-radius: 3px; background: var(--vfd-bg); color: var(--vfd);
+  font: 17px/1 var(--mono); text-shadow: 0 0 8px rgba(255,140,50,.4); box-shadow: inset 0 2px 6px rgba(0,0,0,.9), 0 0 0 1px #000;
 }
-.release .when { margin-top: 8px; }
-.notes { max-width: 70ch; min-width: 0; }
-.notes p { color: #d7d3ca; }
+.release .when { margin-top: 7px; font-size: 11px; }
+.notes { min-width: 0; columns: 2 300px; column-gap: 34px; font-size: 14.5px; line-height: 1.5; }
+.notes p { color: #cfcbc2; margin: 0 0 9px; break-inside: avoid; }
+.notes ul { break-inside: avoid; }
+.older { margin-top: 4px; }
+.older summary { cursor: pointer; font: 600 12.5px/1.2 var(--label); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding-block: 8px; }
+.older summary:hover { color: var(--text); }
 .notes strong { color: #f3efe6; font-weight: 600; }
 .notes ul { margin: 0 0 12px; padding-left: 20px; }
-.update-hint { display: flex; gap: 12px; align-items: center; margin-top: 8px; padding: 12px 16px; border-radius: 6px; background: rgba(0,0,0,.18); font-size: 15.5px; color: var(--muted); }
+.update-hint { display: flex; gap: 12px; align-items: center; margin: 6px 0 0; padding: 10px 14px; border-radius: 6px; background: rgba(0,0,0,.18); font-size: 14px; color: var(--muted); }
 
 /* install */
 .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; counter-reset: step; }
@@ -257,6 +261,64 @@ code, .path { font-family: var(--mono); font-size: .92em; color: var(--vfd); ove
 figure { margin: 0; }
 figure figcaption { margin-top: 6px; font-size: 14px; color: var(--faint); }
 
+/* OSCar panel diagrams */
+.panels { display: grid; gap: 18px; }
+.panels figure { max-width: 700px; display: grid; gap: 8px; }
+.panels figcaption.combo { margin: 0; }
+.panel { width: 100%; height: auto; display: block; font-family: var(--label); }
+.panel .body { fill: #2a2c30; stroke: #5d6168; stroke-width: 1.5; }
+.panel .sec { fill: none; stroke: #b0aba1; stroke-width: 1.2; }
+.panel .sec.dim { stroke: #4f5258; }
+.panel .secl { fill: #b0aba1; } .panel .secl.dim { fill: #4f5258; }
+.panel .sect { fill: #1d1e21; font-size: 8.5px; font-weight: 700; letter-spacing: .6px; }
+.panel .bt { fill: #3c3f45; stroke: #0e0f10; stroke-width: 1.5; }
+.panel .bt.on { fill: var(--vfd); }
+.panel .ring { fill: none; stroke: var(--vfd); stroke-width: 2.5; opacity: .45; }
+.panel .bl, .panel .kl { paint-order: stroke; stroke: #2a2c30; stroke-width: 3px; stroke-linejoin: round; }
+.panel .bl { fill: #8e9198; font-size: 9.5px; font-weight: 600; }
+.panel .bl.on { fill: #f3efe6; font-weight: 700; }
+.panel .wheel { fill: #3c3f45; }
+.panel .kw { fill: var(--ivory); stroke: #0c0d0e; stroke-width: 1; }
+.panel .kb { fill: #111214; stroke: #0c0d0e; stroke-width: 1; }
+.panel .kw.on, .panel .kb.on { fill: var(--vfd); }
+.panel .kl { fill: #8e9198; font-size: 9px; font-weight: 600; }
+.panel .kl.on { fill: var(--vfd); font-size: 12px; font-weight: 700; }
+.panel .kc { fill: var(--vfd); font-size: 11px; font-weight: 700; }
+.panel .ml { stroke: var(--vfd); stroke-width: 1.6; }
+.panel .mb { fill: var(--vfd); stroke: #2a2c30; stroke-width: 2.5; }
+.panel .mn { fill: #1a1006; font-size: 13px; font-weight: 800; }
+.panel .mp { fill: #111214; stroke: rgba(255,157,79,.55); stroke-width: 1; }
+.panel .mv { fill: #f3efe6; font-size: 11px; font-weight: 600; }
+.panel .sk { cursor: pointer; }
+.panel .kw.sk.n { fill: #f4cfab; } .panel .kw.sk.r { fill: #f0a79c; } .panel .kw.sk.s { fill: #f1d891; }
+.panel .kb.sk.n { fill: #a65e28; } .panel .kb.sk.r { fill: #a13a2e; } .panel .kb.sk.s { fill: #9a7a20; }
+.panel .kw.sk.sel, .panel .kb.sk.sel { fill: var(--vfd); stroke: #fff; stroke-width: 2; }
+.panel .sk:hover { stroke: var(--vfd); stroke-width: 2; }
+
+/* shortcuts */
+.keys-art { display: grid; gap: 10px; max-width: 760px; margin-bottom: 26px; }
+.readout { flex: none; justify-content: space-between; flex-wrap: wrap; gap: 4px 18px; white-space: normal; padding: 10px 16px; }
+.readout .ro-label { font-size: 19px; letter-spacing: .04em; }
+.readout .ro-key { font-size: 14px; color: var(--vfd-dim); text-shadow: none; }
+.sk-legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 14px; color: var(--muted); }
+.sk-legend span { display: inline-flex; align-items: center; gap: 8px; }
+.sw, .sk-sw { display: inline-block; flex: none; width: 11px; height: 11px; border-radius: 2px; background: #f4cfab; }
+.sw.r, .sc.r .sk-sw { background: #f0a79c; } .sw.s, .sc.s .sk-sw { background: #f1d891; }
+.sc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 20px 28px; }
+.sc-group h3 { margin: 0 0 6px; font: 600 12.5px/1.2 var(--label); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+.sc-group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.sc {
+  width: 100%; display: grid; grid-template-columns: 11px minmax(0, 1fr); column-gap: 10px; align-items: start; text-align: left;
+  padding: 6px 8px; border: 0; border-radius: 4px; background: transparent; cursor: pointer; color: #dcd8cf; font: 500 15.5px/1.3 var(--body);
+}
+.sc .sk-sw { margin-top: 4px; }
+.sc .sc-key { grid-column: 2; font: 12.5px/1.5 var(--mono); color: var(--faint); }
+.sc:hover, .sc.sel { background: rgba(255,157,79,.09); color: #fff; }
+.sc.sel .sc-key { color: var(--vfd); }
+.other { margin-top: 28px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.06); }
+.other ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.other li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 20px; max-width: 760px; color: #d6d2c9; }
+
 /* tips */
 .tips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 40px; }
 .tip { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 4px 14px; align-items: start; }
@@ -283,7 +345,7 @@ footer a { color: var(--muted); }
   .hero, .duo { grid-template-columns: minmax(0, 1fr); }
   .step { grid-template-columns: 54px minmax(0, 1fr); }
   .step-art { grid-column: 2; }
-  .tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {
   :root { --cheek: 10px; }
@@ -293,12 +355,15 @@ footer a { color: var(--muted); }
   .display { gap: 12px; padding: 8px 14px; }
   .display .num { font-size: 22px; } .display .name { font-size: 17px; } .display .state { display: none; }
   .arrow { width: 32px; }
-  .tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-  .tabs .btn { padding: 0 8px; font-size: 11.5px; letter-spacing: .06em; min-height: 34px; }
+  .tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs .btn { flex: none; padding: 0 10px; font-size: 11.5px; letter-spacing: .06em; min-height: 34px; }
   .release { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .step { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .step-art, .step.wide .step-text, .step.wide .step-art { grid-column: auto; }
   .cabling { min-width: 520px; }
+  .panel { min-width: 560px; }
+  .keys-art .panel { min-width: 0; }
   .tips { grid-template-columns: minmax(0, 1fr); }
   .minis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mini span { white-space: normal; text-align: center; }
@@ -333,6 +398,7 @@ footer a { color: var(--muted); }
     <a class="btn" href="#telecharger"><span>Télécharger</span><i class="led"></i></a>
     <a class="btn" href="#nouveautes"><span>Nouveautés</span><i class="led"></i></a>
     <a class="btn" href="#installation"><span>Installation</span><i class="led"></i></a>
+    <a class="btn" href="#raccourcis"><span>Raccourcis</span><i class="led"></i></a>
     <a class="btn" href="#astuces"><span>Astuces</span><i class="led"></i></a>
     <a class="btn" href="#retours"><span>Retours</span><i class="led"></i></a>
     <a class="btn" href="#soutenir"><span>Soutenir</span><i class="led"></i></a>
@@ -487,7 +553,7 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
       </div>
     </li>
 
-    <li class="step">
+    <li class="step wide">
       <span class="step-n" aria-hidden="true">6</span>
       <div class="step-text">
         <h3>Deux réglages sur l'OSCar</h3>
@@ -496,14 +562,14 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
         <p class="note">Si l'OSCar ne suit plus après avoir été éteint, refais ces deux réglages.</p>
       </div>
       <div class="step-art">
-        <div class="combo"><kbd>SPACE</kbd><span>maintenir</span><span class="plus">+</span><span>touche −9</span></div>
-        <div class="inset diagram">{{KB_PC}}</div>
-        <div class="combo"><kbd>TUNE/TRANSPOSE</kbd><span>maintenir</span><span class="plus">+</span><span>Enable patch CC dump</span></div>
-        <div class="inset diagram">{{KB_DUMP}}</div>
+        <div class="panels">
+          <figure><figcaption class="combo"><kbd>SPACE</kbd><span>maintenir</span><span class="plus">+</span><span>touche −9</span></figcaption><div class="inset diagram">{{PANEL_PC}}</div></figure>
+          <figure><figcaption class="combo"><kbd>TUNE/TRANSPOSE</kbd><span>maintenir</span><span class="plus">+</span><span>Enable patch CC dump</span></figcaption><div class="inset diagram">{{PANEL_CC}}</div></figure>
+        </div>
       </div>
     </li>
 
-    <li class="step">
+    <li class="step wide">
       <span class="step-n" aria-hidden="true">7</span>
       <div class="step-text">
         <h3>Récupérer tes voix, avant tout le reste</h3>
@@ -512,14 +578,37 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
         <p class="note">Rien ne s'affiche ? L'entrée MIDI choisie à l'étape 5 n'est pas la bonne, ou le câble 2 est mal branché.</p>
       </div>
       <div class="step-art">
-        <div class="combo"><kbd>INSERT</kbd><span>maintenir</span><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></div>
-        <figure>
-          <img class="shot-crop" src="img/voix-recues.webp" width="900" height="698" alt="Page Banques : la liste des 36 voix reçues" loading="lazy">
-          <figcaption>Page Banques : les 36 voix reçues, avec leurs noms.</figcaption>
-        </figure>
+        <div class="panels">
+          <figure><figcaption class="combo"><kbd>INSERT</kbd><span>maintenir</span><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></figcaption><div class="inset diagram">{{PANEL_DUMP}}</div></figure>
+        </div>
       </div>
     </li>
   </ol>
+</section>
+
+<!-- shortcuts -->
+<section class="group" id="raccourcis" aria-labelledby="t-keys">
+  <p class="legend">raccourcis</p>
+  <h2 id="t-keys">Les raccourcis Tauntek</h2>
+  <p class="lead-text">Maintiens <kbd>TUNE/TRANSPOSE</kbd>, appuie sur une touche du clavier, puis relâche. Clique une touche ou une ligne de la liste pour la retrouver.</p>
+  <div class="keys-art">
+    <div class="display readout" aria-live="polite"><span class="ro-label" id="ro-label">ACTIVER LE PATCH CC DUMP</span><span class="ro-key" id="ro-key">La# · octave 2</span></div>
+    <div class="inset diagram">{{PANEL_KEYS}}</div>
+    <div class="sk-legend"><span><i class="sw n"></i>Réglage</span><span><i class="sw r"></i>Remplace les 36 voix de l'OSCar : enregistre d'abord une banque dans le plugin</span><span><i class="sw s"></i>Écrase une zone de sauvegarde</span></div>
+  </div>
+  <div class="sc-list">
+{{SHORTCUTS}}
+  </div>
+  <div class="other">
+    <h3>Les autres manips</h3>
+    <ul>
+      <li><span>Program change (allumer ou éteindre)</span><span class="combo"><kbd>SPACE</kbd><span>maintenir</span><span class="plus">+</span><span>touche −9</span></span></li>
+      <li><span>Envoyer les voix au plugin</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></span></li>
+      <li><span>Envoyer les séquences</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>SEQ</kbd><span class="plus">puis</span><kbd>SPACE</kbd></span></li>
+      <li><span>Envoyer les formes d'onde</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>WAVEFORM</kbd><span class="plus">puis</span><kbd>SPACE</kbd></span></li>
+      <li><span>Tout envoyer</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>STORE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></span></li>
+    </ul>
+  </div>
 </section>
 
 <!-- tips -->
@@ -604,6 +693,27 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
   // warm the cache so switching pages is instant
   window.addEventListener("load", function () { PAGES.forEach(function (p) { var im = new Image(); im.src = "img/" + p[0] + ".webp"; }); });
 
+  // --- shortcuts: a key on the drawing and its line in the list light up together
+  var SC = { {{SHORTCUTS_JS}} };
+  var roLabel = document.getElementById("ro-label"), roKey = document.getElementById("ro-key");
+  var keyEls = Array.prototype.slice.call(document.querySelectorAll(".panel [data-k]"));
+  var rows = Array.prototype.slice.call(document.querySelectorAll(".sc[data-k]"));
+  function pick(k) {
+    var d = SC[k];
+    if (!d) return;
+    roLabel.textContent = d[0].toUpperCase();
+    roKey.textContent = d[1];
+    keyEls.forEach(function (el) { el.classList.toggle("sel", el.getAttribute("data-k") === k); });
+    rows.forEach(function (el) { var on = el.getAttribute("data-k") === k; el.classList.toggle("sel", on); el.setAttribute("aria-pressed", on ? "true" : "false"); });
+  }
+  keyEls.concat(rows).forEach(function (el) {
+    var k = el.getAttribute("data-k");
+    el.addEventListener("click", function () { pick(k); });
+    el.addEventListener("mouseenter", function () { pick(k); });
+    el.addEventListener("focus", function () { pick(k); });
+  });
+  pick("22");
+
   // --- copy the Terminal lines
   var copyBtn = document.getElementById("copy-cmd"), cmd = document.getElementById("cmd");
   copyBtn.addEventListener("click", function () {
@@ -673,11 +783,15 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
         var pub = list.filter(function (r) { return !r.draft && !r.prerelease; });
         if (!pub.length) return;
         var box = document.getElementById("releases");
-        box.innerHTML = pub.map(function (r) {
+        var card = function (r) {
           var v = esc((r.tag_name || "").replace(/^v/, ""));
           return '<article class="release"><div><span class="vchip">' + v + '</span><div class="cap when">' + esc(frDate(r.published_at)) +
                  '</div></div><div class="notes">' + markdown(r.body || "") + "</div></article>";
-        }).join("");
+        };
+        // the latest version in full, the earlier ones folded
+        box.innerHTML = card(pub[0]) + (pub.length > 1
+          ? '<details class="older"><summary>Versions précédentes (' + (pub.length - 1) + ')</summary>' + pub.slice(1).map(card).join("") + "</details>"
+          : "");
         var latest = (pub[0].tag_name || "").replace(/^v/, "");
         if (latest) {
           document.getElementById("vfd-version").textContent = latest;
