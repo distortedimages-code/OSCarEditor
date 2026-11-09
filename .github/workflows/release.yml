@@ -1,13 +1,17 @@
-# Publishing a version: set VERSION in CMakeLists.txt, write RELEASE_NOTES.md, commit,
-# then push a tag with the same number:  git tag v0.3.0 && git push origin v0.3.0
-# This builds and tests on a Mac, and creates a DRAFT release with OSCar-Editor-mac.zip and
-# its SHA-256. Review the notes on GitHub and press "Publish release": installed plugins
-# then offer the update (they only see published, non-prerelease releases).
+# Publishing a version: set VERSION in CMakeLists.txt, write RELEASE_NOTES.md, commit, then
+# either
+#   - on GitHub: Actions > release > Run workflow (on main), or
+#   - push a tag with the same number:  git tag v0.3.0 && git push origin v0.3.0
+# This builds and tests on a Mac, and creates a DRAFT release v<VERSION> with
+# OSCar-Editor-mac.zip and its SHA-256. Review the notes on GitHub and press "Publish release"
+# (that also creates the tag when the workflow was run by hand): installed plugins then offer
+# the update (they only see published, non-prerelease releases).
 name: release
 
 on:
   push:
     tags: [ "v*" ]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -18,13 +22,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check that the tag matches the version
+      - name: Check the version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
           VER=$(sed -n 's/^project(OSCarEditor VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)
-          if [ "$TAG" != "$VER" ]; then
-            echo "The tag v$TAG doesn't match VERSION $VER in CMakeLists.txt"; exit 1
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            if [ "${GITHUB_REF_NAME#v}" != "$VER" ]; then
+              echo "The tag $GITHUB_REF_NAME doesn't match VERSION $VER in CMakeLists.txt"; exit 1
+            fi
+          elif gh release view "v$VER" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "A release v$VER already exists: raise VERSION in CMakeLists.txt first"; exit 1
           fi
+          echo "VERSION=$VER" >> "$GITHUB_ENV"
 
       - name: Configure
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -52,6 +62,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           NOTES=RELEASE_NOTES.md
-          [ -f "$NOTES" ] || { echo "OSCar Editor ${GITHUB_REF_NAME#v}" > /tmp/notes.md; NOTES=/tmp/notes.md; }
-          gh release create "$GITHUB_REF_NAME" out/OSCar-Editor-mac.zip out/OSCar-Editor-mac.zip.sha256 \
-            --draft --title "OSCar Editor ${GITHUB_REF_NAME#v}" --notes-file "$NOTES"
+          [ -f "$NOTES" ] || { echo "OSCar Editor $VERSION" > /tmp/notes.md; NOTES=/tmp/notes.md; }
+          # run by hand: the tag v$VERSION is created on this commit when the draft is published
+          gh release create "v$VERSION" out/OSCar-Editor-mac.zip out/OSCar-Editor-mac.zip.sha256 \
+            --target "$GITHUB_SHA" --draft --title "OSCar Editor $VERSION" --notes-file "$NOTES"

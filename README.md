@@ -43,10 +43,10 @@ Tout ce qui est reçu et envoyé est sauvegardé dans `Documents/OSCar Editor/Ba
 Le plugin vérifie au plus une fois par jour les releases publiques de `distortedimages-code/OSCarEditor` (réglable avec `-DOSCAR_UPDATE_REPO=propriétaire/dépôt`). Quand une version plus récente existe, un bouton **Mise à jour** apparaît. Il télécharge la release, vérifie sa somme SHA-256, puis remplace l'AU, le VST3 et l'appli installés sur ce Mac. Il faut ensuite quitter et relancer le DAW. Comme c'est le plugin qui télécharge, macOS ne met pas le fichier en quarantaine. Seuls `api.github.com` et le serveur de téléchargement de GitHub sont contactés. Sous Windows, le bouton ouvre la page de téléchargement.
 
 **Publier une version** :
-1. Changer `VERSION` dans `CMakeLists.txt` (par ex. `0.3.0`) et écrire les nouveautés dans `RELEASE_NOTES.md`.
-2. Committer, puis pousser un tag du même numéro : `git tag v0.3.0 && git push origin v0.3.0`.
-3. GitHub compile, teste et crée un **brouillon** de release avec `OSCar-Editor-mac.zip` et sa somme `.sha256` (onglet *Actions*, une dizaine de minutes).
-4. Sur la page *Releases*, relire les notes puis **Publish release**. Les plugins installés la proposent au plus tard le lendemain (ou tout de suite avec *Vérifier*, page **Réglages**).
+1. Changer `VERSION` dans `CMakeLists.txt` (par ex. `0.3.0`) et écrire les nouveautés dans `RELEASE_NOTES.md`, puis committer sur `main`.
+2. Sur GitHub : onglet *Actions* → **release** → **Run workflow** (branche `main`). Autre possibilité, en ligne de commande : `git tag v0.3.0 && git push origin v0.3.0`.
+3. GitHub compile, teste et crée un **brouillon** de release `v0.3.0` avec `OSCar-Editor-mac.zip` et sa somme `.sha256` (une dizaine de minutes).
+4. Sur la page *Releases*, relire les notes puis **Publish release** (le tag est créé à ce moment-là). Les plugins installés la proposent au plus tard le lendemain (ou tout de suite avec *Vérifier*, page **Réglages**).
 
 ## Vérifié sur le firmware Tauntek
 
