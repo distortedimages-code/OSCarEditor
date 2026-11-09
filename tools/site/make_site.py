@@ -156,16 +156,23 @@ KB_DUMP = keyboard_svg(22, "Enable patch CC dump", [(0, "−12"), (36, "24")])
 KB_KEYS = keyboard_svg(kinds={k: kind for k, _, kind, _ in SHORTCUTS})
 
 
+# the themes, laid out in three balanced columns
+COLUMNS = [["Sons en mémoire"], ["Patch CC dump", "PWM"], ["Jeu", "LFO"]]
+
+
 def shortcuts_html():
-    out = []
-    for group in GROUPS:
-        items = [x for x in SHORTCUTS if x[3] == group]
-        lis = "".join(
-            f'<li><button type="button" class="sc {kind}" data-k="{k}"><span class="sk-sw" aria-hidden="true"></span>'
-            f'<span class="sc-label">{label}</span><span class="sc-key">{key_name(k, short=True)}</span></button></li>'
-            for k, label, kind, _ in items)
-        out.append(f'<div class="sc-group"><h3>{group}</h3><ul>{lis}</ul></div>')
-    return "\n".join(out)
+    cols = []
+    for column in COLUMNS:
+        groups = []
+        for group in column:
+            items = [x for x in SHORTCUTS if x[3] == group]
+            lis = "".join(
+                f'<li><button type="button" class="sc {kind}" data-k="{k}"><span class="sk-sw" aria-hidden="true"></span>'
+                f'<span class="sc-label">{label}</span><span class="sc-key">{key_name(k, short=True)}</span></button></li>'
+                for k, label, kind, _ in items)
+            groups.append(f'<div class="sc-group"><h3 class="mini-legend">{group.lower()}</h3><ul>{lis}</ul></div>')
+        cols.append('<div class="sc-col">' + "".join(groups) + "</div>")
+    return "\n".join(cols)
 
 
 

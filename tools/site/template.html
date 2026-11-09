@@ -277,8 +277,16 @@ figure figcaption { margin-top: 6px; font-size: 14px; color: var(--faint); }
 .sk-legend span { display: inline-flex; align-items: center; gap: 7px; }
 .sw, .sk-sw { display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 2px; background: #f4cfab; }
 .sw.r, .sc.r .sk-sw { background: #f0a79c; } .sw.s, .sc.s .sk-sw { background: #f1d891; }
-.sc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 14px 26px; }
-.sc-group h3 { margin: 0 0 4px; font: 600 11.5px/1.2 var(--label); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+.sc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 14px; align-items: start; }
+.sc-col { display: grid; gap: 14px; min-width: 0; }
+.sc-group { border: 1px dashed var(--line); border-radius: 8px; padding: 6px 10px 10px; background: rgba(0,0,0,.08); }
+.mini-legend {
+  display: flex; align-items: center; gap: 10px; margin: 0 0 6px;
+  font: 600 12.5px/1 var(--label); letter-spacing: .05em; text-transform: lowercase; color: #d2cec5;
+}
+.mini-legend::before, .mini-legend::after { content: ""; flex: 1; height: 6px; margin-top: 6px; border-top: 1px solid #5d6066; }
+.mini-legend::before { flex: 0 0 14px; border-left: 1px solid #5d6066; border-top-left-radius: 6px; }
+.mini-legend::after { border-right: 1px solid #5d6066; border-top-right-radius: 6px; }
 .sc-group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
 .sc {
   width: 100%; display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; column-gap: 9px; align-items: center; text-align: left;
@@ -287,7 +295,7 @@ figure figcaption { margin-top: 6px; font-size: 14px; color: var(--faint); }
 .sc .sc-key { font: 12px/1.35 var(--mono); color: var(--faint); white-space: nowrap; }
 .sc:hover, .sc.sel { background: rgba(255,157,79,.09); color: #fff; }
 .sc.sel .sc-key { color: var(--vfd); }
-.other h3 { margin: 0 0 6px; font: 600 11.5px/1.2 var(--label); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+
 .other ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
 .other li { display: grid; gap: 3px; font-size: 14px; color: #d6d2c9; }
 .other .combo { font-size: 12px; gap: 5px; }
@@ -572,8 +580,8 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
       <div class="inset diagram">{{KB_KEYS}}</div>
       <div class="sk-legend"><span><i class="sw n"></i>Réglage</span><span><i class="sw r"></i>Remplace les 36 voix (enregistre une banque avant)</span><span><i class="sw s"></i>Écrase une zone de sauvegarde</span></div>
     </div>
-    <div class="other">
-      <h3>Les autres manips</h3>
+    <div class="other sc-group">
+      <h3 class="mini-legend">les autres manips</h3>
       <ul>
         <li><span>Program change (allumer ou éteindre)</span><span class="combo"><kbd>SPACE</kbd><span>maintenir</span><span class="plus">+</span><span>touche −9</span></span></li>
         <li><span>Envoyer les voix au plugin</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></span></li>
