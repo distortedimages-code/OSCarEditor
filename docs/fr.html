@@ -876,7 +876,7 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
   function inline(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/`(.+?)`/g, "<code>$1</code>"); }
   // notes written in both languages: keep this page's language
   function section(md) {
-    var parts = md.replace(/\r/g, "").split(/^##\s+(English|Fran(?:ç|c)ais)\s*$/m);
+    var parts = md.split(/^##\s+(English|Fran(?:ç|c)ais)\s*$/m);
     if (parts.length < 5) return md;
     for (var i = 1; i < parts.length; i += 2)
       if ((LANG === "fr") === /^Fran/.test(parts[i])) return parts[i + 1];
@@ -884,7 +884,8 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
   }
   function markdown(md) {
     var out = [];
-    section(md).split(/\n{2,}/).forEach(function (block) {
+    // GitHub keeps the line endings as typed (often \r\n): blank lines must still separate paragraphs
+    section(md.replace(/\r\n?/g, "\n")).split(/\n{2,}/).forEach(function (block) {
       var lines = block.split("\n").filter(function (l) { return l.trim(); });
       if (!lines.length) return;
       if (/^#{1,6}\s/.test(lines[0]) && lines.length === 1) {
