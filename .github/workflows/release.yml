@@ -3,7 +3,7 @@
 #   - on GitHub: Actions > release > Run workflow (on main), or
 #   - push a tag with the same number:  git tag v0.3.0 && git push origin v0.3.0
 # This builds and tests on a Mac, and creates a DRAFT release v<VERSION> with
-# OSCar-Editor-mac.zip and its SHA-256. Review the notes on GitHub and press "Publish release"
+# OSCar-Editor-mac.dmg (for people), OSCar-Editor-mac.zip and its SHA-256 (for the in-plugin updater). Review the notes on GitHub and press "Publish release"
 # (that also creates the tag when the workflow was run by hand): installed plugins then offer
 # the update (they only see published, non-prerelease releases).
 name: release
@@ -65,6 +65,9 @@ jobs:
           # the three bundles at the top of the zip, as the in-plugin updater expects
           ditto -c -k pkg out/OSCar-Editor-mac.zip
           (cd out && shasum -a 256 OSCar-Editor-mac.zip > OSCar-Editor-mac.zip.sha256)
+          # the disk image people download from the web page
+          python3 -m pip install --quiet --break-system-packages dmgbuild==1.6.7 || python3 -m pip install --quiet dmgbuild==1.6.7
+          tools/dmg/make_dmg.sh pkg out/OSCar-Editor-mac.dmg
 
       - name: Create the draft release
         if: env.SKIP != '1'
@@ -74,5 +77,5 @@ jobs:
           NOTES=RELEASE_NOTES.md
           [ -f "$NOTES" ] || { echo "OSCar Editor $VERSION" > /tmp/notes.md; NOTES=/tmp/notes.md; }
           # run by hand: the tag v$VERSION is created on this commit when the draft is published
-          gh release create "v$VERSION" out/OSCar-Editor-mac.zip out/OSCar-Editor-mac.zip.sha256 \
+          gh release create "v$VERSION" out/OSCar-Editor-mac.dmg out/OSCar-Editor-mac.zip out/OSCar-Editor-mac.zip.sha256 \
             --target "$GITHUB_SHA" --draft --title "OSCar Editor $VERSION" --notes-file "$NOTES"

@@ -32,10 +32,19 @@ jobs:
           ditto -c -k --keepParent "AU/OSCar Editor.component" ../../../out/OSCar-Editor-AU-mac.zip
           ditto -c -k --keepParent "VST3/OSCar Editor.vst3" ../../../out/OSCar-Editor-VST3-mac.zip
           ditto -c -k --keepParent "Standalone/OSCar Editor.app" ../../../out/OSCar-Editor-App-mac.zip
+      - name: Disk image
+        run: |
+          mkdir -p pkg
+          ART=build/OSCarEditor_artefacts/Release
+          cp -R "$ART/AU/OSCar Editor.component" "$ART/VST3/OSCar Editor.vst3" "$ART/Standalone/OSCar Editor.app" pkg/
+          python3 -m pip install --quiet --break-system-packages dmgbuild==1.6.7 || python3 -m pip install --quiet dmgbuild==1.6.7
+          tools/dmg/make_dmg.sh pkg out/OSCar-Editor-mac.dmg
       - uses: actions/upload-artifact@v4
         with:
           name: OSCar-Editor-mac
-          path: out/*.zip
+          path: |
+            out/*.zip
+            out/*.dmg
 
   windows:
     runs-on: windows-2022

@@ -89,7 +89,7 @@ Sans outils de dev : pousser ce dossier sur GitHub, l'onglet *Actions* compile M
 ## Branchements
 
 - OSCar MIDI OUT → entrée MIDI de l'interface ; sortie MIDI de l'interface → OSCar MIDI IN. Choisir les deux ports dans la page **Réglages**.
-- Le plugin ouvre les ports lui-même, parce que Live ne laisse pas sortir de SysEx d'un plugin. Pour jouer l'OSCar depuis le DAW : soit *MIDI Thru* dans le plugin, soit un External Instrument sur une autre piste (pas les deux à la fois).
+- Le plugin ouvre les ports lui-même, parce que dans Logic Pro (comme dans la plupart des DAW) un instrument AU ne peut pas envoyer de MIDI vers une interface. Pour jouer l'OSCar depuis le DAW : soit *MIDI Thru* dans le plugin, soit un External Instrument sur une autre piste (pas les deux à la fois).
 - Sous Windows, un port MIDI ne s'ouvre que dans une seule appli à la fois.
 
 ## Ce que garantissent les tests (lancés à chaque compilation)

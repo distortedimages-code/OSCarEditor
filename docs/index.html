@@ -394,14 +394,14 @@ footer a { color: var(--muted); }
   <div class="hero">
     <div>
       <h2 id="t-dl">L'éditeur et librarian de l'OSCar</h2>
-      <p class="pitch">Sauvegarde, nomme, édite et invente les sons de ton OSCar depuis ton DAW. Avec la carte MIDI Tauntek, chaque potard agit en direct et le plugin affiche exactement ce que joue l'OSCar.</p>
+      <p class="pitch">Sauvegarde, nomme, édite et invente les sons de ton OSCar depuis Logic Pro. Avec la carte MIDI Tauntek, chaque potard agit en direct et le plugin affiche exactement ce que joue l'OSCar.</p>
       <a class="copper" id="download" href="https://github.com/distortedimages-code/OSCarEditor/releases/latest/download/OSCar-Editor-mac.zip">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1v9m0 0L4.5 6.5M8 10l3.5-3.5M2 12.5v1.5h12v-1.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Télécharger pour Mac
       </a>
       <dl class="specs">
         <dt>Version</dt><dd id="spec-version">0.2.0</dd>
-        <dt>Formats</dt><dd>AU, VST3 et application autonome</dd>
+        <dt>Formats</dt><dd>AU pour Logic Pro, VST3 et application autonome</dd>
         <dt>Système</dt><dd>macOS 11 ou plus récent, Apple Silicon et Intel</dd>
         <dt>Synthé</dt><dd>OSCar avec la carte MIDI Tauntek. Avec le MIDI d'origine, tout marche sauf l'édition en direct.</dd>
         <dt>Prix</dt><dd>Gratuit</dd>
@@ -448,7 +448,7 @@ footer a { color: var(--muted); }
       </div>
     </article>
   </div>
-  <p class="update-hint"><i class="led on" aria-hidden="true"></i>Une fois installé, le plugin te prévient lui-même quand une version sort : un bouton Mise à jour apparaît en haut de sa fenêtre. Un clic, puis tu relances le DAW.</p>
+  <p class="update-hint"><i class="led on" aria-hidden="true"></i>Une fois installé, le plugin te prévient lui-même quand une version sort : un bouton Mise à jour apparaît en haut de sa fenêtre. Un clic, puis tu relances Logic.</p>
 </section>
 
 <!-- install -->
@@ -463,7 +463,7 @@ footer a { color: var(--muted); }
       <div class="step-text">
         <h3>Télécharger</h3>
         <p>Le bouton <a href="#telecharger">Télécharger pour Mac</a> donne le fichier <code>OSCar-Editor-mac.zip</code>. Double-clique dessus s'il n'est pas déjà décompressé : tu obtiens trois fichiers.</p>
-        <p class="note">Tu peux n'installer que le format qu'utilise ton DAW. Live, Bitwig et Reaper lisent le VST3 ; Logic n'utilise que l'AU.</p>
+        <p class="note">Logic Pro n'utilise que l'AU (OSCar Editor.component). Le VST3 sert aux autres logiciels, et l'application fonctionne sans DAW.</p>
       </div>
       <div class="step-art">
         <div class="inset files" aria-label="Contenu du fichier zip">
@@ -495,7 +495,7 @@ footer a { color: var(--muted); }
       <span class="step-n" aria-hidden="true">3</span>
       <div class="step-text">
         <h3>Débloquer le plugin, une seule fois</h3>
-        <p>Le plugin n'est pas notarisé par Apple : tant qu'il n'est pas débloqué, macOS empêche le DAW de le charger. Ouvre Terminal (Applications › Utilitaires), colle ces lignes et appuie sur Entrée.</p>
+        <p>Le plugin n'est pas notarisé par Apple : tant qu'il n'est pas débloqué, macOS empêche Logic de le charger. Ouvre Terminal (Applications › Utilitaires), colle ces lignes et appuie sur Entrée.</p>
         <p class="note">Si rien ne s'affiche, c'est bon. « no matches found » veut dire qu'un fichier n'est pas dans son dossier : refais l'étape 2 (ou ignore la ligne de l'application si tu ne l'as pas installée). Les mises à jour faites depuis le plugin n'ont pas besoin de ce déblocage.</p>
       </div>
       <div class="step-art">
@@ -511,9 +511,9 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
     <li class="step">
       <span class="step-n" aria-hidden="true">4</span>
       <div class="step-text">
-        <h3>L'ouvrir dans le DAW</h3>
-        <p>Relance le DAW et fais-lui rescanner les plugins. Dans Live : Réglages › Plug-ins, active les Audio Units ou les dossiers VST3 système, puis relance le scan. Glisse ensuite OSCar Editor sur une piste MIDI vide et ouvre sa fenêtre.</p>
-        <p class="note">Le plugin ne produit aucun son : il parle directement à l'OSCar par ton interface MIDI. Dans Logic, il est rangé dans les instruments AU, rubrique OSCarTools.</p>
+        <h3>L'ouvrir dans Logic Pro</h3>
+        <p>Relance Logic Pro : il vérifie les nouveaux plugins au démarrage. Crée une piste d'instrument logiciel, clique sur le slot d'instrument et choisis OSCar Editor dans les instruments AU, rubrique OSCarTools.</p>
+        <p class="note">Il n'apparaît pas ? Logic Pro › Réglages › Gestionnaire de modules : sélectionne OSCar Editor, puis « Réinitialiser et réanalyser la sélection ». S'il est refusé, refais l'étape 3. Le plugin ne produit aucun son : il parle directement à l'OSCar par ton interface MIDI.</p>
       </div>
       <div class="step-art">
         <figure>
@@ -648,11 +648,11 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Le son change en direct</h3><p>Avec Live CC allumé, chaque potard part tout de suite vers l'OSCar. Ce n'est enregistré dans sa mémoire qu'avec « Envoyer au synthé », qui écrit les 36 voix d'un coup.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Le plugin suit l'OSCar</h3><p>Choisis une voix sur l'OSCar : le plugin l'affiche telle qu'elle joue, mode Duo ou Arp compris. Il faut le patch CC dump (étape 6).</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Essayer sans risque</h3><p>Le Générateur joue chaque essai sur l'OSCar sans toucher à sa mémoire. « Retour à l'original » annule, « Garder » met le son dans la voix.</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Arpège calé sur le DAW</h3><p>Page Voix, bloc horloge midi : Sync sur Horloge MIDI et une Division (1/16, 1/8T…). Dans Réglages, active « Envoyer l'horloge MIDI du DAW à l'OSCar ».</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Jouer avec un autre clavier</h3><p>MIDI Thru (en bas de la fenêtre) fait passer les notes et le pitch bend de la piste vers l'OSCar. Laisse-le éteint si une autre piste envoie déjà des notes à l'OSCar.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Arpège calé sur Logic</h3><p>Page Voix, bloc horloge midi : Sync sur Horloge MIDI et une Division (1/16, 1/8T…). Puis, au choix, « Envoyer l'horloge MIDI du DAW à l'OSCar » dans Réglages, ou l'horloge de Logic (Fichier › Réglages du projet › Synchronisation › MIDI, Destination = le port de l'OSCar, case Horloge). Pas les deux.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Jouer l'OSCar depuis Logic</h3><p>Sélectionne la piste OSCar Editor et allume MIDI Thru (en bas de la fenêtre) : ton clavier maître et les régions MIDI de la piste jouent l'OSCar. Laisse-le éteint si tu joues déjà l'OSCar avec le module External Instrument de Logic.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Rien ne se perd</h3><p>Chaque réception et chaque envoi est sauvegardé. « Sauver voix… » range une voix dans Voices, « Enregistrer la banque… » une banque dans Banks. Un double-clic les recharge.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Gare aux touches rouges</h3><p>Sur la page Raccourcis Tauntek, les touches en rouge (sons d'usine, B, C, zones de sauvegarde) remplacent les 36 voix de l'OSCar. Enregistre une banque avant.</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Pourquoi le plugin ouvre ses ports</h3><p>Live ne laisse pas sortir le SysEx d'un plugin. OSCar Editor parle donc à l'OSCar par ses propres ports MIDI, choisis dans Réglages.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Rien à router dans Logic</h3><p>Dans Logic, un instrument AU ne peut pas envoyer de MIDI vers une interface. OSCar Editor parle donc à l'OSCar par ses propres ports MIDI, choisis dans Réglages.</p></div></div>
   </div>
 </section>
 
