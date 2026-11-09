@@ -261,63 +261,37 @@ code, .path { font-family: var(--mono); font-size: .92em; color: var(--vfd); ove
 figure { margin: 0; }
 figure figcaption { margin-top: 6px; font-size: 14px; color: var(--faint); }
 
-/* OSCar panel diagrams */
-.panels { display: grid; gap: 18px; }
-.panels figure { max-width: 700px; display: grid; gap: 8px; }
-.panels figcaption.combo { margin: 0; }
-.panel { width: 100%; height: auto; display: block; font-family: var(--label); }
-.panel .body { fill: #2a2c30; stroke: #5d6168; stroke-width: 1.5; }
-.panel .sec { fill: none; stroke: #b0aba1; stroke-width: 1.2; }
-.panel .sec.dim { stroke: #4f5258; }
-.panel .secl { fill: #b0aba1; } .panel .secl.dim { fill: #4f5258; }
-.panel .sect { fill: #1d1e21; font-size: 8.5px; font-weight: 700; letter-spacing: .6px; }
-.panel .bt { fill: #3c3f45; stroke: #0e0f10; stroke-width: 1.5; }
-.panel .bt.on { fill: var(--vfd); }
-.panel .ring { fill: none; stroke: var(--vfd); stroke-width: 2.5; opacity: .45; }
-.panel .bl, .panel .kl { paint-order: stroke; stroke: #2a2c30; stroke-width: 3px; stroke-linejoin: round; }
-.panel .bl { fill: #8e9198; font-size: 9.5px; font-weight: 600; }
-.panel .bl.on { fill: #f3efe6; font-weight: 700; }
-.panel .wheel { fill: #3c3f45; }
-.panel .kw { fill: var(--ivory); stroke: #0c0d0e; stroke-width: 1; }
-.panel .kb { fill: #111214; stroke: #0c0d0e; stroke-width: 1; }
-.panel .kw.on, .panel .kb.on { fill: var(--vfd); }
-.panel .kl { fill: #8e9198; font-size: 9px; font-weight: 600; }
-.panel .kl.on { fill: var(--vfd); font-size: 12px; font-weight: 700; }
-.panel .kc { fill: var(--vfd); font-size: 11px; font-weight: 700; }
-.panel .ml { stroke: var(--vfd); stroke-width: 1.6; }
-.panel .mb { fill: var(--vfd); stroke: #2a2c30; stroke-width: 2.5; }
-.panel .mn { fill: #1a1006; font-size: 13px; font-weight: 800; }
-.panel .mp { fill: #111214; stroke: rgba(255,157,79,.55); stroke-width: 1; }
-.panel .mv { fill: #f3efe6; font-size: 11px; font-weight: 600; }
-.panel .sk { cursor: pointer; }
-.panel .kw.sk.n { fill: #f4cfab; } .panel .kw.sk.r { fill: #f0a79c; } .panel .kw.sk.s { fill: #f1d891; }
-.panel .kb.sk.n { fill: #a65e28; } .panel .kb.sk.r { fill: #a13a2e; } .panel .kb.sk.s { fill: #9a7a20; }
-.panel .kw.sk.sel, .panel .kb.sk.sel { fill: var(--vfd); stroke: #fff; stroke-width: 2; }
-.panel .sk:hover { stroke: var(--vfd); stroke-width: 2; }
-
 /* shortcuts */
-.keys-art { display: grid; gap: 10px; max-width: 760px; margin-bottom: 26px; }
-.readout { flex: none; justify-content: space-between; flex-wrap: wrap; gap: 4px 18px; white-space: normal; padding: 10px 16px; }
-.readout .ro-label { font-size: 19px; letter-spacing: .04em; }
-.readout .ro-key { font-size: 14px; color: var(--vfd-dim); text-shadow: none; }
-.sk-legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 14px; color: var(--muted); }
-.sk-legend span { display: inline-flex; align-items: center; gap: 8px; }
-.sw, .sk-sw { display: inline-block; flex: none; width: 11px; height: 11px; border-radius: 2px; background: #f4cfab; }
+.kbd .sk { cursor: pointer; }
+.kbd .kw.sk.n { fill: #f4cfab; } .kbd .kw.sk.r { fill: #f0a79c; } .kbd .kw.sk.s { fill: #f1d891; }
+.kbd .kb.sk.n { fill: #a65e28; } .kbd .kb.sk.r { fill: #a13a2e; } .kbd .kb.sk.s { fill: #9a7a20; }
+.kbd .kw.sk.sel, .kbd .kb.sk.sel { fill: var(--vfd); stroke: #fff; stroke-width: 2; }
+.kbd .sk:hover { stroke: var(--vfd); stroke-width: 2; }
+.keys-top { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px 28px; align-items: start; margin-bottom: 20px; }
+.keys-art { display: grid; gap: 8px; min-width: 0; }
+.readout { flex: none; justify-content: space-between; flex-wrap: wrap; gap: 2px 14px; white-space: normal; padding: 7px 12px; }
+.readout .ro-label { font-size: 15px; letter-spacing: .04em; }
+.readout .ro-key { font-size: 12.5px; color: var(--vfd-dim); text-shadow: none; }
+.keys-art .diagram { padding: 8px; }
+.sk-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); }
+.sk-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.sw, .sk-sw { display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 2px; background: #f4cfab; }
 .sw.r, .sc.r .sk-sw { background: #f0a79c; } .sw.s, .sc.s .sk-sw { background: #f1d891; }
-.sc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 20px 28px; }
-.sc-group h3 { margin: 0 0 6px; font: 600 12.5px/1.2 var(--label); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
-.sc-group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.sc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 14px 26px; }
+.sc-group h3 { margin: 0 0 4px; font: 600 11.5px/1.2 var(--label); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+.sc-group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
 .sc {
-  width: 100%; display: grid; grid-template-columns: 11px minmax(0, 1fr); column-gap: 10px; align-items: start; text-align: left;
-  padding: 6px 8px; border: 0; border-radius: 4px; background: transparent; cursor: pointer; color: #dcd8cf; font: 500 15.5px/1.3 var(--body);
+  width: 100%; display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; column-gap: 9px; align-items: center; text-align: left;
+  padding: 3px 6px; border: 0; border-radius: 3px; background: transparent; cursor: pointer; color: #dcd8cf; font: 500 14px/1.35 var(--body);
 }
-.sc .sk-sw { margin-top: 4px; }
-.sc .sc-key { grid-column: 2; font: 12.5px/1.5 var(--mono); color: var(--faint); }
+.sc .sc-key { font: 12px/1.35 var(--mono); color: var(--faint); white-space: nowrap; }
 .sc:hover, .sc.sel { background: rgba(255,157,79,.09); color: #fff; }
 .sc.sel .sc-key { color: var(--vfd); }
-.other { margin-top: 28px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.06); }
-.other ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
-.other li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 20px; max-width: 760px; color: #d6d2c9; }
+.other h3 { margin: 0 0 6px; font: 600 11.5px/1.2 var(--label); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+.other ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.other li { display: grid; gap: 3px; font-size: 14px; color: #d6d2c9; }
+.other .combo { font-size: 12px; gap: 5px; }
+.other kbd { font-size: 11px; padding: 1px 6px 0; }
 
 /* tips */
 .tips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 40px; }
@@ -342,7 +316,7 @@ footer a { color: var(--muted); }
 
 /* narrow screens */
 @media (max-width: 900px) {
-  .hero, .duo { grid-template-columns: minmax(0, 1fr); }
+  .hero, .duo, .keys-top { grid-template-columns: minmax(0, 1fr); }
   .step { grid-template-columns: 54px minmax(0, 1fr); }
   .step-art { grid-column: 2; }
   .tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -362,9 +336,8 @@ footer a { color: var(--muted); }
   .step { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .step-art, .step.wide .step-text, .step.wide .step-art { grid-column: auto; }
   .cabling { min-width: 520px; }
-  .panel { min-width: 560px; }
-  .keys-art .panel { min-width: 0; }
   .tips { grid-template-columns: minmax(0, 1fr); }
+  .keys-top { grid-template-columns: minmax(0, 1fr); }
   .minis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mini span { white-space: normal; text-align: center; }
   .specs { grid-template-columns: minmax(0, 1fr); gap: 0; }
@@ -585,7 +558,7 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
       </div>
     </li>
 
-    <li class="step wide">
+    <li class="step">
       <span class="step-n" aria-hidden="true">6</span>
       <div class="step-text">
         <h3>Deux réglages sur l'OSCar</h3>
@@ -594,60 +567,14 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
         <p class="note">Si l'OSCar ne suit plus après avoir été éteint, refais ces deux réglages.</p>
       </div>
       <div class="step-art">
-        <div class="panels">
-          <figure><figcaption class="combo"><kbd>SPACE</kbd><span>maintenir</span><span class="plus">+</span><span>touche −9</span></figcaption><div class="inset diagram"><svg class="panel" viewBox="0 0 700 304" role="img" aria-label="Schéma simplifié du dessus de l'OSCar, boutons à utiliser numérotés dans l'ordre">
-  <rect class="body" x="8" y="10" width="684" height="290" rx="12"/>
-  <rect class="sec dim" x="26" y="26" width="104" height="82" rx="6"/><rect class="secl dim" x="36" y="100" width="84" height="15" rx="3"/><text class="sect" x="78.0" y="111" text-anchor="middle">TUNE · OSC 2</text>
-  <rect class="sec dim" x="140" y="26" width="96" height="82" rx="6"/><rect class="secl dim" x="150" y="100" width="76" height="15" rx="3"/><text class="sect" x="188.0" y="111" text-anchor="middle">WAVEFORMS</text>
-  <rect class="sec dim" x="246" y="26" width="130" height="82" rx="6"/><rect class="secl dim" x="256" y="100" width="110" height="15" rx="3"/><text class="sect" x="311.0" y="111" text-anchor="middle">STORE AND RECALL</text>
-  <rect class="sec dim" x="386" y="26" width="190" height="82" rx="6"/><rect class="secl dim" x="396" y="100" width="170" height="15" rx="3"/><text class="sect" x="481.0" y="111" text-anchor="middle">SEQUENCE EDITING</text>
-  <line class="ml" x1="128.0" y1="230" x2="58.0" y2="278"/>
-  <circle class="bt" cx="58" cy="58" r="10"/><circle class="bt" cx="100" cy="58" r="10"/>
-  <circle class="bt" cx="170" cy="58" r="10"/><circle class="bt" cx="208" cy="58" r="10"/>
-  <circle class="bt" cx="288" cy="58" r="10"/><text class="bl" x="288" y="85" text-anchor="middle">VOICE</text><circle class="bt" cx="336" cy="58" r="10"/><text class="bl" x="336" y="85" text-anchor="middle">STORE</text>
-  <circle class="bt" cx="420" cy="58" r="10"/><text class="bl" x="420" y="85" text-anchor="middle">REPEAT</text><circle class="bt" cx="468" cy="58" r="10"/><text class="bl" x="468" y="85" text-anchor="middle">INSERT</text><circle class="bt" cx="516" cy="58" r="10"/><text class="bl" x="516" y="85" text-anchor="middle">DELETE</text><circle class="bt" cx="552" cy="58" r="10"/><text class="bl" x="552" y="85" text-anchor="middle">STEP</text>
-  <rect class="wheel" x="34" y="150" width="20" height="112" rx="6"/>
-  <rect class="wheel" x="64" y="150" width="20" height="112" rx="6"/>
-  <text class="bl" x="44" y="144" text-anchor="middle">BEND</text>
-  <text class="bl" x="74" y="144" text-anchor="middle">MOD</text>
-  <circle class="wheel" cx="114" cy="170" r="7"/><circle class="wheel" cx="142" cy="170" r="7"/>
-  <text class="bl" x="128" y="156" text-anchor="middle">OCTAVE</text>
-  <circle class="ring" cx="128" cy="230" r="16"/><circle class="bt on" cx="128" cy="230" r="10"/><text class="bl on" x="128" y="257" text-anchor="middle">SPACE</text>
-  <text class="kl" x="187.4" y="168" text-anchor="middle">−12</text><text class="kl" x="664.6" y="168" text-anchor="middle">24</text><text class="kl on" x="221.5" y="168" text-anchor="middle">−9</text>
-  <rect class="kw" x="176.0" y="176" width="22.7" height="104"/><rect class="kw" x="198.7" y="176" width="22.7" height="104"/><rect class="kw" x="221.5" y="176" width="22.7" height="104"/><rect class="kw" x="244.2" y="176" width="22.7" height="104"/><rect class="kw" x="266.9" y="176" width="22.7" height="104"/><rect class="kw" x="289.6" y="176" width="22.7" height="104"/><rect class="kw" x="312.4" y="176" width="22.7" height="104"/><rect class="kw" x="335.1" y="176" width="22.7" height="104"/><rect class="kw" x="357.8" y="176" width="22.7" height="104"/><rect class="kw" x="380.5" y="176" width="22.7" height="104"/><rect class="kw" x="403.3" y="176" width="22.7" height="104"/><rect class="kw" x="426.0" y="176" width="22.7" height="104"/><rect class="kw" x="448.7" y="176" width="22.7" height="104"/><rect class="kw" x="471.5" y="176" width="22.7" height="104"/><rect class="kw" x="494.2" y="176" width="22.7" height="104"/><rect class="kw" x="516.9" y="176" width="22.7" height="104"/><rect class="kw" x="539.6" y="176" width="22.7" height="104"/><rect class="kw" x="562.4" y="176" width="22.7" height="104"/><rect class="kw" x="585.1" y="176" width="22.7" height="104"/><rect class="kw" x="607.8" y="176" width="22.7" height="104"/><rect class="kw" x="630.5" y="176" width="22.7" height="104"/><rect class="kw" x="653.3" y="176" width="22.7" height="104"/><rect class="kb" x="191.7" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb on" x="214.4" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="259.9" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="282.6" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="305.3" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="350.8" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="373.5" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="419.0" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="441.7" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="464.4" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="509.9" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="532.6" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="578.0" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="600.8" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="623.5" y="176" width="14.1" height="62.4" rx="1.5"/>
-  
-  <line class="ml" x1="221.5" y1="236" x2="291.5" y2="270"/>
-  <circle class="mb" cx="58.0" cy="278" r="12"/><text class="mn" x="58.0" y="282.5" text-anchor="middle">1</text><rect class="mp" x="74.0" y="268" width="69" height="20" rx="10"/><text class="mv" x="108.7" y="282" text-anchor="middle">maintiens</text><circle class="mb" cx="291.5" cy="270" r="12"/><text class="mn" x="291.5" y="274.5" text-anchor="middle">2</text><rect class="mp" x="307.5" y="260" width="50" height="20" rx="10"/><text class="mv" x="332.3" y="274" text-anchor="middle">appuie</text>
-</svg></div></figure>
-          <figure><figcaption class="combo"><kbd>TUNE/TRANSPOSE</kbd><span>maintenir</span><span class="plus">+</span><span>Enable patch CC dump</span></figcaption><div class="inset diagram"><svg class="panel" viewBox="0 0 700 304" role="img" aria-label="Schéma simplifié du dessus de l'OSCar, boutons à utiliser numérotés dans l'ordre">
-  <rect class="body" x="8" y="10" width="684" height="290" rx="12"/>
-  <rect class="sec" x="26" y="26" width="104" height="82" rx="6"/><rect class="secl" x="36" y="100" width="84" height="15" rx="3"/><text class="sect" x="78.0" y="111" text-anchor="middle">TUNE · OSC 2</text>
-  <rect class="sec dim" x="140" y="26" width="96" height="82" rx="6"/><rect class="secl dim" x="150" y="100" width="76" height="15" rx="3"/><text class="sect" x="188.0" y="111" text-anchor="middle">WAVEFORMS</text>
-  <rect class="sec dim" x="246" y="26" width="130" height="82" rx="6"/><rect class="secl dim" x="256" y="100" width="110" height="15" rx="3"/><text class="sect" x="311.0" y="111" text-anchor="middle">STORE AND RECALL</text>
-  <rect class="sec dim" x="386" y="26" width="190" height="82" rx="6"/><rect class="secl dim" x="396" y="100" width="170" height="15" rx="3"/><text class="sect" x="481.0" y="111" text-anchor="middle">SEQUENCE EDITING</text>
-  <line class="ml" x1="58.0" y1="58" x2="120.0" y2="128"/>
-  <circle class="ring" cx="58" cy="58" r="16"/><circle class="bt on" cx="58" cy="58" r="10"/><text class="bl on" x="58" y="85" text-anchor="middle">TUNE/TRANSP.</text><circle class="bt" cx="100" cy="58" r="10"/>
-  <circle class="bt" cx="170" cy="58" r="10"/><circle class="bt" cx="208" cy="58" r="10"/>
-  <circle class="bt" cx="288" cy="58" r="10"/><text class="bl" x="288" y="85" text-anchor="middle">VOICE</text><circle class="bt" cx="336" cy="58" r="10"/><text class="bl" x="336" y="85" text-anchor="middle">STORE</text>
-  <circle class="bt" cx="420" cy="58" r="10"/><text class="bl" x="420" y="85" text-anchor="middle">REPEAT</text><circle class="bt" cx="468" cy="58" r="10"/><text class="bl" x="468" y="85" text-anchor="middle">INSERT</text><circle class="bt" cx="516" cy="58" r="10"/><text class="bl" x="516" y="85" text-anchor="middle">DELETE</text><circle class="bt" cx="552" cy="58" r="10"/><text class="bl" x="552" y="85" text-anchor="middle">STEP</text>
-  <rect class="wheel" x="34" y="150" width="20" height="112" rx="6"/>
-  <rect class="wheel" x="64" y="150" width="20" height="112" rx="6"/>
-  <text class="bl" x="44" y="144" text-anchor="middle">BEND</text>
-  <text class="bl" x="74" y="144" text-anchor="middle">MOD</text>
-  <circle class="wheel" cx="114" cy="170" r="7"/><circle class="wheel" cx="142" cy="170" r="7"/>
-  <text class="bl" x="128" y="156" text-anchor="middle">OCTAVE</text>
-  <circle class="bt" cx="128" cy="230" r="10"/><text class="bl" x="128" y="257" text-anchor="middle">SPACE</text>
-  <text class="kl" x="187.4" y="168" text-anchor="middle">−12</text><text class="kl" x="664.6" y="168" text-anchor="middle">24</text>
-  <rect class="kw" x="176.0" y="176" width="22.7" height="104"/><rect class="kw" x="198.7" y="176" width="22.7" height="104"/><rect class="kw" x="221.5" y="176" width="22.7" height="104"/><rect class="kw" x="244.2" y="176" width="22.7" height="104"/><rect class="kw" x="266.9" y="176" width="22.7" height="104"/><rect class="kw" x="289.6" y="176" width="22.7" height="104"/><rect class="kw" x="312.4" y="176" width="22.7" height="104"/><rect class="kw" x="335.1" y="176" width="22.7" height="104"/><rect class="kw" x="357.8" y="176" width="22.7" height="104"/><rect class="kw" x="380.5" y="176" width="22.7" height="104"/><rect class="kw" x="403.3" y="176" width="22.7" height="104"/><rect class="kw" x="426.0" y="176" width="22.7" height="104"/><rect class="kw" x="448.7" y="176" width="22.7" height="104"/><rect class="kw" x="471.5" y="176" width="22.7" height="104"/><rect class="kw" x="494.2" y="176" width="22.7" height="104"/><rect class="kw" x="516.9" y="176" width="22.7" height="104"/><rect class="kw" x="539.6" y="176" width="22.7" height="104"/><rect class="kw" x="562.4" y="176" width="22.7" height="104"/><rect class="kw" x="585.1" y="176" width="22.7" height="104"/><rect class="kw" x="607.8" y="176" width="22.7" height="104"/><rect class="kw" x="630.5" y="176" width="22.7" height="104"/><rect class="kw" x="653.3" y="176" width="22.7" height="104"/><rect class="kb" x="191.7" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="214.4" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="259.9" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="282.6" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="305.3" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="350.8" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="373.5" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="419.0" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="441.7" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb on" x="464.4" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="509.9" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="532.6" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="578.0" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="600.8" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="623.5" y="176" width="14.1" height="62.4" rx="1.5"/>
-  <text class="kc" x="471.5" y="294" text-anchor="middle">Enable patch CC dump</text>
-  <line class="ml" x1="471.5" y1="236" x2="541.5" y2="270"/>
-  <circle class="mb" cx="120.0" cy="128" r="12"/><text class="mn" x="120.0" y="132.5" text-anchor="middle">1</text><rect class="mp" x="136.0" y="118" width="69" height="20" rx="10"/><text class="mv" x="170.7" y="132" text-anchor="middle">maintiens</text><circle class="mb" cx="541.5" cy="270" r="12"/><text class="mn" x="541.5" y="274.5" text-anchor="middle">2</text><rect class="mp" x="557.5" y="260" width="50" height="20" rx="10"/><text class="mv" x="582.3" y="274" text-anchor="middle">appuie</text>
-</svg></div></figure>
-        </div>
+        <div class="combo"><kbd>SPACE</kbd><span>maintenir</span><span class="plus">+</span><span>touche −9</span></div>
+        <div class="inset diagram"><svg class="kbd" viewBox="0 0 680 210" role="img" aria-label="Clavier de l'OSCar, touche à presser en couleur"><rect class="kw" x="10" y="46" width="30" height="120" rx="2"/><rect class="kw" x="40" y="46" width="30" height="120" rx="2"/><rect class="kw" x="70" y="46" width="30" height="120" rx="2"/><rect class="kw" x="100" y="46" width="30" height="120" rx="2"/><rect class="kw" x="130" y="46" width="30" height="120" rx="2"/><rect class="kw" x="160" y="46" width="30" height="120" rx="2"/><rect class="kw" x="190" y="46" width="30" height="120" rx="2"/><rect class="kw" x="220" y="46" width="30" height="120" rx="2"/><rect class="kw" x="250" y="46" width="30" height="120" rx="2"/><rect class="kw" x="280" y="46" width="30" height="120" rx="2"/><rect class="kw" x="310" y="46" width="30" height="120" rx="2"/><rect class="kw" x="340" y="46" width="30" height="120" rx="2"/><rect class="kw" x="370" y="46" width="30" height="120" rx="2"/><rect class="kw" x="400" y="46" width="30" height="120" rx="2"/><rect class="kw" x="430" y="46" width="30" height="120" rx="2"/><rect class="kw" x="460" y="46" width="30" height="120" rx="2"/><rect class="kw" x="490" y="46" width="30" height="120" rx="2"/><rect class="kw" x="520" y="46" width="30" height="120" rx="2"/><rect class="kw" x="550" y="46" width="30" height="120" rx="2"/><rect class="kw" x="580" y="46" width="30" height="120" rx="2"/><rect class="kw" x="610" y="46" width="30" height="120" rx="2"/><rect class="kw" x="640" y="46" width="30" height="120" rx="2"/><rect class="kb" x="30.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb on" x="60.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="120.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="150.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="180.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="240.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="270.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="330.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="360.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="390.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="450.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="480.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="540.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="570.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="600.7" y="46" width="18.6" height="74.4" rx="2"/><text class="kl" x="25.0" y="36" text-anchor="middle">−12</text><text class="kl on" x="70.0" y="36" text-anchor="middle">−9</text><text class="kl" x="655.0" y="36" text-anchor="middle">24</text><circle class="dot" cx="70.0" cy="106.4" r="5"/><path class="lead" d="M70.0,106.4 L70.0,192"/><text class="co" x="78.0" y="196" text-anchor="start">−9 : la 2e touche noire</text></svg></div>
+        <div class="combo"><kbd>TUNE/TRANSPOSE</kbd><span>maintenir</span><span class="plus">+</span><span>Enable patch CC dump</span></div>
+        <div class="inset diagram"><svg class="kbd" viewBox="0 0 680 210" role="img" aria-label="Clavier de l'OSCar, touche à presser en couleur"><rect class="kw" x="10" y="46" width="30" height="120" rx="2"/><rect class="kw" x="40" y="46" width="30" height="120" rx="2"/><rect class="kw" x="70" y="46" width="30" height="120" rx="2"/><rect class="kw" x="100" y="46" width="30" height="120" rx="2"/><rect class="kw" x="130" y="46" width="30" height="120" rx="2"/><rect class="kw" x="160" y="46" width="30" height="120" rx="2"/><rect class="kw" x="190" y="46" width="30" height="120" rx="2"/><rect class="kw" x="220" y="46" width="30" height="120" rx="2"/><rect class="kw" x="250" y="46" width="30" height="120" rx="2"/><rect class="kw" x="280" y="46" width="30" height="120" rx="2"/><rect class="kw" x="310" y="46" width="30" height="120" rx="2"/><rect class="kw" x="340" y="46" width="30" height="120" rx="2"/><rect class="kw" x="370" y="46" width="30" height="120" rx="2"/><rect class="kw" x="400" y="46" width="30" height="120" rx="2"/><rect class="kw" x="430" y="46" width="30" height="120" rx="2"/><rect class="kw" x="460" y="46" width="30" height="120" rx="2"/><rect class="kw" x="490" y="46" width="30" height="120" rx="2"/><rect class="kw" x="520" y="46" width="30" height="120" rx="2"/><rect class="kw" x="550" y="46" width="30" height="120" rx="2"/><rect class="kw" x="580" y="46" width="30" height="120" rx="2"/><rect class="kw" x="610" y="46" width="30" height="120" rx="2"/><rect class="kw" x="640" y="46" width="30" height="120" rx="2"/><rect class="kb" x="30.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="60.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="120.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="150.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="180.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="240.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="270.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="330.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="360.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb on" x="390.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="450.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="480.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="540.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="570.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="600.7" y="46" width="18.6" height="74.4" rx="2"/><text class="kl" x="25.0" y="36" text-anchor="middle">−12</text><text class="kl" x="655.0" y="36" text-anchor="middle">24</text><circle class="dot" cx="400.0" cy="106.4" r="5"/><path class="lead" d="M400.0,106.4 L400.0,192"/><text class="co" x="392.0" y="196" text-anchor="end">Enable patch CC dump</text></svg></div>
       </div>
     </li>
 
-    <li class="step wide">
+    <li class="step">
       <span class="step-n" aria-hidden="true">7</span>
       <div class="step-text">
         <h3>Récupérer tes voix, avant tout le reste</h3>
@@ -656,32 +583,11 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
         <p class="note">Rien ne s'affiche ? L'entrée MIDI choisie à l'étape 5 n'est pas la bonne, ou le câble 2 est mal branché.</p>
       </div>
       <div class="step-art">
-        <div class="panels">
-          <figure><figcaption class="combo"><kbd>INSERT</kbd><span>maintenir</span><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></figcaption><div class="inset diagram"><svg class="panel" viewBox="0 0 700 304" role="img" aria-label="Schéma simplifié du dessus de l'OSCar, boutons à utiliser numérotés dans l'ordre">
-  <rect class="body" x="8" y="10" width="684" height="290" rx="12"/>
-  <rect class="sec dim" x="26" y="26" width="104" height="82" rx="6"/><rect class="secl dim" x="36" y="100" width="84" height="15" rx="3"/><text class="sect" x="78.0" y="111" text-anchor="middle">TUNE · OSC 2</text>
-  <rect class="sec dim" x="140" y="26" width="96" height="82" rx="6"/><rect class="secl dim" x="150" y="100" width="76" height="15" rx="3"/><text class="sect" x="188.0" y="111" text-anchor="middle">WAVEFORMS</text>
-  <rect class="sec" x="246" y="26" width="130" height="82" rx="6"/><rect class="secl" x="256" y="100" width="110" height="15" rx="3"/><text class="sect" x="311.0" y="111" text-anchor="middle">STORE AND RECALL</text>
-  <rect class="sec" x="386" y="26" width="190" height="82" rx="6"/><rect class="secl" x="396" y="100" width="170" height="15" rx="3"/><text class="sect" x="481.0" y="111" text-anchor="middle">SEQUENCE EDITING</text>
-  <line class="ml" x1="128.0" y1="230" x2="58.0" y2="278"/><line class="ml" x1="288.0" y1="58" x2="252.0" y2="156"/><line class="ml" x1="468.0" y1="58" x2="520.0" y2="154"/>
-  <circle class="bt" cx="58" cy="58" r="10"/><circle class="bt" cx="100" cy="58" r="10"/>
-  <circle class="bt" cx="170" cy="58" r="10"/><circle class="bt" cx="208" cy="58" r="10"/>
-  <circle class="ring" cx="288" cy="58" r="16"/><circle class="bt on" cx="288" cy="58" r="10"/><text class="bl on" x="288" y="85" text-anchor="middle">VOICE</text><circle class="bt" cx="336" cy="58" r="10"/><text class="bl" x="336" y="85" text-anchor="middle">STORE</text>
-  <circle class="bt" cx="420" cy="58" r="10"/><text class="bl" x="420" y="85" text-anchor="middle">REPEAT</text><circle class="ring" cx="468" cy="58" r="16"/><circle class="bt on" cx="468" cy="58" r="10"/><text class="bl on" x="468" y="85" text-anchor="middle">INSERT</text><circle class="bt" cx="516" cy="58" r="10"/><text class="bl" x="516" y="85" text-anchor="middle">DELETE</text><circle class="bt" cx="552" cy="58" r="10"/><text class="bl" x="552" y="85" text-anchor="middle">STEP</text>
-  <rect class="wheel" x="34" y="150" width="20" height="112" rx="6"/>
-  <rect class="wheel" x="64" y="150" width="20" height="112" rx="6"/>
-  <text class="bl" x="44" y="144" text-anchor="middle">BEND</text>
-  <text class="bl" x="74" y="144" text-anchor="middle">MOD</text>
-  <circle class="wheel" cx="114" cy="170" r="7"/><circle class="wheel" cx="142" cy="170" r="7"/>
-  <text class="bl" x="128" y="156" text-anchor="middle">OCTAVE</text>
-  <circle class="ring" cx="128" cy="230" r="16"/><circle class="bt on" cx="128" cy="230" r="10"/><text class="bl on" x="128" y="257" text-anchor="middle">SPACE</text>
-  <text class="kl" x="187.4" y="168" text-anchor="middle">−12</text><text class="kl" x="664.6" y="168" text-anchor="middle">24</text>
-  <rect class="kw" x="176.0" y="176" width="22.7" height="104"/><rect class="kw" x="198.7" y="176" width="22.7" height="104"/><rect class="kw" x="221.5" y="176" width="22.7" height="104"/><rect class="kw" x="244.2" y="176" width="22.7" height="104"/><rect class="kw" x="266.9" y="176" width="22.7" height="104"/><rect class="kw" x="289.6" y="176" width="22.7" height="104"/><rect class="kw" x="312.4" y="176" width="22.7" height="104"/><rect class="kw" x="335.1" y="176" width="22.7" height="104"/><rect class="kw" x="357.8" y="176" width="22.7" height="104"/><rect class="kw" x="380.5" y="176" width="22.7" height="104"/><rect class="kw" x="403.3" y="176" width="22.7" height="104"/><rect class="kw" x="426.0" y="176" width="22.7" height="104"/><rect class="kw" x="448.7" y="176" width="22.7" height="104"/><rect class="kw" x="471.5" y="176" width="22.7" height="104"/><rect class="kw" x="494.2" y="176" width="22.7" height="104"/><rect class="kw" x="516.9" y="176" width="22.7" height="104"/><rect class="kw" x="539.6" y="176" width="22.7" height="104"/><rect class="kw" x="562.4" y="176" width="22.7" height="104"/><rect class="kw" x="585.1" y="176" width="22.7" height="104"/><rect class="kw" x="607.8" y="176" width="22.7" height="104"/><rect class="kw" x="630.5" y="176" width="22.7" height="104"/><rect class="kw" x="653.3" y="176" width="22.7" height="104"/><rect class="kb" x="191.7" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="214.4" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="259.9" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="282.6" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="305.3" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="350.8" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="373.5" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="419.0" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="441.7" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="464.4" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="509.9" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="532.6" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="578.0" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="600.8" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="623.5" y="176" width="14.1" height="62.4" rx="1.5"/>
-  
-  
-  <circle class="mb" cx="58.0" cy="278" r="12"/><text class="mn" x="58.0" y="282.5" text-anchor="middle">3</text><rect class="mp" x="74.0" y="268" width="83" height="20" rx="10"/><text class="mv" x="115.3" y="282" text-anchor="middle">puis appuie</text><circle class="mb" cx="252.0" cy="156" r="12"/><text class="mn" x="252.0" y="160.5" text-anchor="middle">2</text><rect class="mp" x="268.0" y="146" width="50" height="20" rx="10"/><text class="mv" x="292.8" y="160" text-anchor="middle">appuie</text><circle class="mb" cx="520.0" cy="154" r="12"/><text class="mn" x="520.0" y="158.5" text-anchor="middle">1</text><rect class="mp" x="536.0" y="144" width="69" height="20" rx="10"/><text class="mv" x="570.7" y="158" text-anchor="middle">maintiens</text>
-</svg></div></figure>
-        </div>
+        <div class="combo"><kbd>INSERT</kbd><span>maintenir</span><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></div>
+        <figure>
+          <img class="shot-crop" src="img/voix-recues.webp" width="900" height="698" alt="Page Banques : la liste des 36 voix reçues" loading="lazy">
+          <figcaption>Page Banques : les 36 voix reçues, avec leurs noms.</figcaption>
+        </figure>
       </div>
     </li>
   </ol>
@@ -692,50 +598,28 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
   <p class="legend">raccourcis</p>
   <h2 id="t-keys">Les raccourcis Tauntek</h2>
   <p class="lead-text">Maintiens <kbd>TUNE/TRANSPOSE</kbd>, appuie sur une touche du clavier, puis relâche. Clique une touche ou une ligne de la liste pour la retrouver.</p>
-  <div class="keys-art">
-    <div class="display readout" aria-live="polite"><span class="ro-label" id="ro-label">ACTIVER LE PATCH CC DUMP</span><span class="ro-key" id="ro-key">La# · octave 2</span></div>
-    <div class="inset diagram"><svg class="panel" viewBox="0 0 700 304" role="img" aria-label="Schéma simplifié du dessus de l'OSCar, boutons à utiliser numérotés dans l'ordre">
-  <rect class="body" x="8" y="10" width="684" height="290" rx="12"/>
-  <rect class="sec" x="26" y="26" width="104" height="82" rx="6"/><rect class="secl" x="36" y="100" width="84" height="15" rx="3"/><text class="sect" x="78.0" y="111" text-anchor="middle">TUNE · OSC 2</text>
-  <rect class="sec dim" x="140" y="26" width="96" height="82" rx="6"/><rect class="secl dim" x="150" y="100" width="76" height="15" rx="3"/><text class="sect" x="188.0" y="111" text-anchor="middle">WAVEFORMS</text>
-  <rect class="sec dim" x="246" y="26" width="130" height="82" rx="6"/><rect class="secl dim" x="256" y="100" width="110" height="15" rx="3"/><text class="sect" x="311.0" y="111" text-anchor="middle">STORE AND RECALL</text>
-  <rect class="sec dim" x="386" y="26" width="190" height="82" rx="6"/><rect class="secl dim" x="396" y="100" width="170" height="15" rx="3"/><text class="sect" x="481.0" y="111" text-anchor="middle">SEQUENCE EDITING</text>
-  <line class="ml" x1="58.0" y1="58" x2="120.0" y2="128"/>
-  <circle class="ring" cx="58" cy="58" r="16"/><circle class="bt on" cx="58" cy="58" r="10"/><text class="bl on" x="58" y="85" text-anchor="middle">TUNE/TRANSP.</text><circle class="bt" cx="100" cy="58" r="10"/>
-  <circle class="bt" cx="170" cy="58" r="10"/><circle class="bt" cx="208" cy="58" r="10"/>
-  <circle class="bt" cx="288" cy="58" r="10"/><text class="bl" x="288" y="85" text-anchor="middle">VOICE</text><circle class="bt" cx="336" cy="58" r="10"/><text class="bl" x="336" y="85" text-anchor="middle">STORE</text>
-  <circle class="bt" cx="420" cy="58" r="10"/><text class="bl" x="420" y="85" text-anchor="middle">REPEAT</text><circle class="bt" cx="468" cy="58" r="10"/><text class="bl" x="468" y="85" text-anchor="middle">INSERT</text><circle class="bt" cx="516" cy="58" r="10"/><text class="bl" x="516" y="85" text-anchor="middle">DELETE</text><circle class="bt" cx="552" cy="58" r="10"/><text class="bl" x="552" y="85" text-anchor="middle">STEP</text>
-  <rect class="wheel" x="34" y="150" width="20" height="112" rx="6"/>
-  <rect class="wheel" x="64" y="150" width="20" height="112" rx="6"/>
-  <text class="bl" x="44" y="144" text-anchor="middle">BEND</text>
-  <text class="bl" x="74" y="144" text-anchor="middle">MOD</text>
-  <circle class="wheel" cx="114" cy="170" r="7"/><circle class="wheel" cx="142" cy="170" r="7"/>
-  <text class="bl" x="128" y="156" text-anchor="middle">OCTAVE</text>
-  <circle class="bt" cx="128" cy="230" r="10"/><text class="bl" x="128" y="257" text-anchor="middle">SPACE</text>
-  <text class="kl" x="187.4" y="168" text-anchor="middle">−12</text><text class="kl" x="664.6" y="168" text-anchor="middle">24</text>
-  <rect class="kw sk r" data-k="0" x="176.0" y="176" width="22.7" height="104"/><rect class="kw sk r" data-k="2" x="198.7" y="176" width="22.7" height="104"/><rect class="kw" x="221.5" y="176" width="22.7" height="104"/><rect class="kw" x="244.2" y="176" width="22.7" height="104"/><rect class="kw" x="266.9" y="176" width="22.7" height="104"/><rect class="kw" x="289.6" y="176" width="22.7" height="104"/><rect class="kw" x="312.4" y="176" width="22.7" height="104"/><rect class="kw" x="335.1" y="176" width="22.7" height="104"/><rect class="kw" x="357.8" y="176" width="22.7" height="104"/><rect class="kw" x="380.5" y="176" width="22.7" height="104"/><rect class="kw" x="403.3" y="176" width="22.7" height="104"/><rect class="kw" x="426.0" y="176" width="22.7" height="104"/><rect class="kw sk n" data-k="21" x="448.7" y="176" width="22.7" height="104"/><rect class="kw sk r" data-k="23" x="471.5" y="176" width="22.7" height="104"/><rect class="kw sk r" data-k="24" x="494.2" y="176" width="22.7" height="104"/><rect class="kw sk n" data-k="26" x="516.9" y="176" width="22.7" height="104"/><rect class="kw" x="539.6" y="176" width="22.7" height="104"/><rect class="kw sk n" data-k="29" x="562.4" y="176" width="22.7" height="104"/><rect class="kw sk n" data-k="31" x="585.1" y="176" width="22.7" height="104"/><rect class="kw sk n" data-k="33" x="607.8" y="176" width="22.7" height="104"/><rect class="kw sk n" data-k="35" x="630.5" y="176" width="22.7" height="104"/><rect class="kw sk n" data-k="36" x="653.3" y="176" width="22.7" height="104"/><rect class="kb sk s" data-k="1" x="191.7" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb sk s" data-k="3" x="214.4" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="259.9" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="282.6" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="305.3" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="350.8" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="373.5" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb" x="419.0" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb sk n" data-k="20" x="441.7" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb sk n" data-k="22" x="464.4" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb sk r" data-k="25" x="509.9" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb sk n" data-k="27" x="532.6" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb sk n" data-k="30" x="578.0" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb sk n" data-k="32" x="600.8" y="176" width="14.1" height="62.4" rx="1.5"/><rect class="kb sk n" data-k="34" x="623.5" y="176" width="14.1" height="62.4" rx="1.5"/>
-  
-  
-  <circle class="mb" cx="120.0" cy="128" r="12"/><text class="mn" x="120.0" y="132.5" text-anchor="middle">1</text><rect class="mp" x="136.0" y="118" width="69" height="20" rx="10"/><text class="mv" x="170.7" y="132" text-anchor="middle">maintiens</text>
-</svg></div>
-    <div class="sk-legend"><span><i class="sw n"></i>Réglage</span><span><i class="sw r"></i>Remplace les 36 voix de l'OSCar : enregistre d'abord une banque dans le plugin</span><span><i class="sw s"></i>Écrase une zone de sauvegarde</span></div>
+  <div class="keys-top">
+    <div class="keys-art">
+      <div class="display readout" aria-live="polite"><span class="ro-label" id="ro-label">ACTIVER LE PATCH CC DUMP</span><span class="ro-key" id="ro-key">La# · octave 2</span></div>
+      <div class="inset diagram"><svg class="kbd" viewBox="0 0 680 136" role="img" aria-label="Clavier de l'OSCar, touches raccourcis en couleur"><rect class="kw sk r" data-k="0" x="10" y="8" width="30" height="120" rx="2"/><rect class="kw sk r" data-k="2" x="40" y="8" width="30" height="120" rx="2"/><rect class="kw" x="70" y="8" width="30" height="120" rx="2"/><rect class="kw" x="100" y="8" width="30" height="120" rx="2"/><rect class="kw" x="130" y="8" width="30" height="120" rx="2"/><rect class="kw" x="160" y="8" width="30" height="120" rx="2"/><rect class="kw" x="190" y="8" width="30" height="120" rx="2"/><rect class="kw" x="220" y="8" width="30" height="120" rx="2"/><rect class="kw" x="250" y="8" width="30" height="120" rx="2"/><rect class="kw" x="280" y="8" width="30" height="120" rx="2"/><rect class="kw" x="310" y="8" width="30" height="120" rx="2"/><rect class="kw" x="340" y="8" width="30" height="120" rx="2"/><rect class="kw sk n" data-k="21" x="370" y="8" width="30" height="120" rx="2"/><rect class="kw sk r" data-k="23" x="400" y="8" width="30" height="120" rx="2"/><rect class="kw sk r" data-k="24" x="430" y="8" width="30" height="120" rx="2"/><rect class="kw sk n" data-k="26" x="460" y="8" width="30" height="120" rx="2"/><rect class="kw" x="490" y="8" width="30" height="120" rx="2"/><rect class="kw sk n" data-k="29" x="520" y="8" width="30" height="120" rx="2"/><rect class="kw sk n" data-k="31" x="550" y="8" width="30" height="120" rx="2"/><rect class="kw sk n" data-k="33" x="580" y="8" width="30" height="120" rx="2"/><rect class="kw sk n" data-k="35" x="610" y="8" width="30" height="120" rx="2"/><rect class="kw sk n" data-k="36" x="640" y="8" width="30" height="120" rx="2"/><rect class="kb sk s" data-k="1" x="30.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk s" data-k="3" x="60.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb" x="120.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb" x="150.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb" x="180.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb" x="240.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb" x="270.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb" x="330.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk n" data-k="20" x="360.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk n" data-k="22" x="390.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk r" data-k="25" x="450.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk n" data-k="27" x="480.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk n" data-k="30" x="540.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk n" data-k="32" x="570.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk n" data-k="34" x="600.7" y="8" width="18.6" height="74.4" rx="2"/></svg></div>
+      <div class="sk-legend"><span><i class="sw n"></i>Réglage</span><span><i class="sw r"></i>Remplace les 36 voix (enregistre une banque avant)</span><span><i class="sw s"></i>Écrase une zone de sauvegarde</span></div>
+    </div>
+    <div class="other">
+      <h3>Les autres manips</h3>
+      <ul>
+        <li><span>Program change (allumer ou éteindre)</span><span class="combo"><kbd>SPACE</kbd><span>maintenir</span><span class="plus">+</span><span>touche −9</span></span></li>
+        <li><span>Envoyer les voix au plugin</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></span></li>
+        <li><span>Envoyer les séquences ou les formes d'onde</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>SEQ</kbd><span class="plus">ou</span><kbd>WAVEFORM</kbd><span class="plus">puis</span><kbd>SPACE</kbd></span></li>
+        <li><span>Tout envoyer</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>STORE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></span></li>
+      </ul>
+    </div>
   </div>
   <div class="sc-list">
-<div class="sc-group"><h3>Sons en mémoire</h3><ul><li><button type="button" class="sc r" data-k="0"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Charger la zone de sauvegarde 1</span><span class="sc-key">Do · octave 1</span></button></li><li><button type="button" class="sc s" data-k="1"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Sauver dans la zone 1</span><span class="sc-key">Do# · octave 1</span></button></li><li><button type="button" class="sc r" data-k="2"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Charger la zone de sauvegarde 2</span><span class="sc-key">Ré · octave 1</span></button></li><li><button type="button" class="sc s" data-k="3"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Sauver dans la zone 2</span><span class="sc-key">Ré# · octave 1</span></button></li><li><button type="button" class="sc r" data-k="23"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Charger les sons d'usine</span><span class="sc-key">Si · octave 2</span></button></li><li><button type="button" class="sc r" data-k="24"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Charger les sons B</span><span class="sc-key">Do · octave 3</span></button></li><li><button type="button" class="sc r" data-k="25"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Charger les sons C</span><span class="sc-key">Do# · octave 3</span></button></li></ul></div>
-<div class="sc-group"><h3>Patch CC dump</h3><ul><li><button type="button" class="sc n" data-k="22"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Activer le patch CC dump</span><span class="sc-key">La# · octave 2</span></button></li><li><button type="button" class="sc n" data-k="21"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Désactiver le patch CC dump</span><span class="sc-key">La · octave 2</span></button></li></ul></div>
-<div class="sc-group"><h3>Jeu</h3><ul><li><button type="button" class="sc n" data-k="20"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Arpège aléatoire</span><span class="sc-key">Sol# · octave 2</span></button></li><li><button type="button" class="sc n" data-k="26"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Vélocité vers l'enveloppe du VCF</span><span class="sc-key">Ré · octave 3</span></button></li><li><button type="button" class="sc n" data-k="27"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Vélocité ignorée</span><span class="sc-key">Ré# · octave 3</span></button></li></ul></div>
-<div class="sc-group"><h3>PWM</h3><ul><li><button type="button" class="sc n" data-k="29"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM la plus lente</span><span class="sc-key">Fa · octave 3</span></button></li><li><button type="button" class="sc n" data-k="30"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM plus lente</span><span class="sc-key">Fa# · octave 3</span></button></li><li><button type="button" class="sc n" data-k="31"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM normale</span><span class="sc-key">Sol · octave 3</span></button></li><li><button type="button" class="sc n" data-k="32"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM la plus rapide</span><span class="sc-key">Sol# · octave 3</span></button></li></ul></div>
-<div class="sc-group"><h3>LFO</h3><ul><li><button type="button" class="sc n" data-k="34"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Activer la synchro LFO</span><span class="sc-key">La# · octave 3</span></button></li><li><button type="button" class="sc n" data-k="33"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Couper la synchro LFO</span><span class="sc-key">La · octave 3</span></button></li><li><button type="button" class="sc n" data-k="35"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Activer LFO vers oscillateur 1</span><span class="sc-key">Si · octave 3</span></button></li><li><button type="button" class="sc n" data-k="36"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Couper LFO vers oscillateur 1</span><span class="sc-key">Do aigu</span></button></li></ul></div>
-  </div>
-  <div class="other">
-    <h3>Les autres manips</h3>
-    <ul>
-      <li><span>Program change (allumer ou éteindre)</span><span class="combo"><kbd>SPACE</kbd><span>maintenir</span><span class="plus">+</span><span>touche −9</span></span></li>
-      <li><span>Envoyer les voix au plugin</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></span></li>
-      <li><span>Envoyer les séquences</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>SEQ</kbd><span class="plus">puis</span><kbd>SPACE</kbd></span></li>
-      <li><span>Envoyer les formes d'onde</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>WAVEFORM</kbd><span class="plus">puis</span><kbd>SPACE</kbd></span></li>
-      <li><span>Tout envoyer</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>STORE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></span></li>
-    </ul>
+<div class="sc-group"><h3>Sons en mémoire</h3><ul><li><button type="button" class="sc r" data-k="0"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Charger la zone de sauvegarde 1</span><span class="sc-key">Do 1</span></button></li><li><button type="button" class="sc s" data-k="1"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Sauver dans la zone 1</span><span class="sc-key">Do# 1</span></button></li><li><button type="button" class="sc r" data-k="2"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Charger la zone de sauvegarde 2</span><span class="sc-key">Ré 1</span></button></li><li><button type="button" class="sc s" data-k="3"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Sauver dans la zone 2</span><span class="sc-key">Ré# 1</span></button></li><li><button type="button" class="sc r" data-k="23"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Charger les sons d'usine</span><span class="sc-key">Si 2</span></button></li><li><button type="button" class="sc r" data-k="24"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Charger les sons B</span><span class="sc-key">Do 3</span></button></li><li><button type="button" class="sc r" data-k="25"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Charger les sons C</span><span class="sc-key">Do# 3</span></button></li></ul></div>
+<div class="sc-group"><h3>Patch CC dump</h3><ul><li><button type="button" class="sc n" data-k="22"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Activer le patch CC dump</span><span class="sc-key">La# 2</span></button></li><li><button type="button" class="sc n" data-k="21"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Désactiver le patch CC dump</span><span class="sc-key">La 2</span></button></li></ul></div>
+<div class="sc-group"><h3>Jeu</h3><ul><li><button type="button" class="sc n" data-k="20"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Arpège aléatoire</span><span class="sc-key">Sol# 2</span></button></li><li><button type="button" class="sc n" data-k="26"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Vélocité vers l'enveloppe du VCF</span><span class="sc-key">Ré 3</span></button></li><li><button type="button" class="sc n" data-k="27"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Vélocité ignorée</span><span class="sc-key">Ré# 3</span></button></li></ul></div>
+<div class="sc-group"><h3>PWM</h3><ul><li><button type="button" class="sc n" data-k="29"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM la plus lente</span><span class="sc-key">Fa 3</span></button></li><li><button type="button" class="sc n" data-k="30"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM plus lente</span><span class="sc-key">Fa# 3</span></button></li><li><button type="button" class="sc n" data-k="31"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM normale</span><span class="sc-key">Sol 3</span></button></li><li><button type="button" class="sc n" data-k="32"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM la plus rapide</span><span class="sc-key">Sol# 3</span></button></li></ul></div>
+<div class="sc-group"><h3>LFO</h3><ul><li><button type="button" class="sc n" data-k="34"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Activer la synchro LFO</span><span class="sc-key">La# 3</span></button></li><li><button type="button" class="sc n" data-k="33"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Couper la synchro LFO</span><span class="sc-key">La 3</span></button></li><li><button type="button" class="sc n" data-k="35"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Activer LFO vers oscillateur 1</span><span class="sc-key">Si 3</span></button></li><li><button type="button" class="sc n" data-k="36"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Couper LFO vers oscillateur 1</span><span class="sc-key">Do aigu</span></button></li></ul></div>
   </div>
 </section>
 
@@ -829,7 +713,7 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
   // --- shortcuts: a key on the drawing and its line in the list light up together
   var SC = { "0":["Charger la zone de sauvegarde 1","Do · octave 1","r"],"1":["Sauver dans la zone 1","Do# · octave 1","s"],"2":["Charger la zone de sauvegarde 2","Ré · octave 1","r"],"3":["Sauver dans la zone 2","Ré# · octave 1","s"],"23":["Charger les sons d'usine","Si · octave 2","r"],"24":["Charger les sons B","Do · octave 3","r"],"25":["Charger les sons C","Do# · octave 3","r"],"22":["Activer le patch CC dump","La# · octave 2","n"],"21":["Désactiver le patch CC dump","La · octave 2","n"],"20":["Arpège aléatoire","Sol# · octave 2","n"],"26":["Vélocité vers l'enveloppe du VCF","Ré · octave 3","n"],"27":["Vélocité ignorée","Ré# · octave 3","n"],"29":["PWM la plus lente","Fa · octave 3","n"],"30":["PWM plus lente","Fa# · octave 3","n"],"31":["PWM normale","Sol · octave 3","n"],"32":["PWM la plus rapide","Sol# · octave 3","n"],"34":["Activer la synchro LFO","La# · octave 3","n"],"33":["Couper la synchro LFO","La · octave 3","n"],"35":["Activer LFO vers oscillateur 1","Si · octave 3","n"],"36":["Couper LFO vers oscillateur 1","Do aigu","n"] };
   var roLabel = document.getElementById("ro-label"), roKey = document.getElementById("ro-key");
-  var keyEls = Array.prototype.slice.call(document.querySelectorAll(".panel [data-k]"));
+  var keyEls = Array.prototype.slice.call(document.querySelectorAll(".kbd [data-k]"));
   var rows = Array.prototype.slice.call(document.querySelectorAll(".sc[data-k]"));
   function pick(k) {
     var d = SC[k];
