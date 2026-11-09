@@ -365,35 +365,30 @@ footer a { color: var(--muted); }
 .langbtn { min-height: 26px; padding: 0 8px; gap: 7px; font-size: 11.5px; }
 .langbtn .led { width: 7px; height: 7px; }
 
-/* disk image window, as it opens in the Finder */
-.dmg { max-width: 640px; margin: 0; }
-.dmg-bar {
-  display: flex; align-items: center; gap: 7px; height: 26px; padding: 0 10px; border-radius: 8px 8px 0 0;
-  background: linear-gradient(180deg, #3a3c41, #2c2e32); box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
-  font: 600 12px/1 var(--label); color: #b9b5ad;
+/* disk image window, small */
+.mini-dmg { max-width: 420px; margin: 0; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 1px #000, 0 8px 22px rgba(0,0,0,.45); }
+.md-bar {
+  display: flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px;
+  background: linear-gradient(180deg, #3a3c41, #2c2e32); font: 600 11px/1 var(--label); color: #b9b5ad;
 }
-.dmg-bar i { width: 11px; height: 11px; border-radius: 50%; background: #5a5d63; }
-.dmg-bar i:nth-child(1) { background: #e0675a; } .dmg-bar i:nth-child(2) { background: #e6c35c; } .dmg-bar i:nth-child(3) { background: #79b860; }
-.dmg-bar span { flex: 1; text-align: center; margin-right: 50px; }
-.dmg-win { position: relative; container-type: inline-size; border-radius: 0 0 8px 8px; overflow: hidden; box-shadow: 0 0 0 1px #000, 0 10px 26px rgba(0,0,0,.5); }
-.dmg-win img { width: 100%; aspect-ratio: 4 / 3; }
-.dmg-item {
-  position: absolute; transform: translate(-50%, -40%); display: grid; justify-items: center; gap: 0.6cqw;
-  font: 600 1.9cqw/1.15 var(--label); color: #f4f2ee; text-shadow: 0 1px 2px rgba(0,0,0,.6); white-space: nowrap;
+.md-bar i { width: 9px; height: 9px; border-radius: 50%; }
+.md-bar i:nth-child(1) { background: #e0675a; } .md-bar i:nth-child(2) { background: #e6c35c; } .md-bar i:nth-child(3) { background: #79b860; }
+.md-bar span { flex: 1; text-align: center; margin-right: 40px; }
+.md-body {
+  display: grid; gap: 4px; padding: 12px 14px 12px; border-left: 6px solid #6a3d1c; border-right: 6px solid #6a3d1c;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px), linear-gradient(180deg, #7c7f84, #6c6f74);
 }
-.ic { display: grid; place-items: center; width: 8.4cqw; height: 8.4cqw; border-radius: 1.6cqw; font: 700 1.9cqw/1 var(--label); font-style: normal; color: #2a1206; }
-.ic.bundle { background: linear-gradient(180deg, #f6c08c, #d9783a); box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 1px 2px rgba(0,0,0,.5); }
-.ic.bundle.app { background: linear-gradient(180deg, #e9e4d8, #b9b2a2); }
-.ic.folder { width: 9.4cqw; height: 7cqw; border-radius: 0.8cqw; background: linear-gradient(180deg, #7fb3e6, #4b86c4); box-shadow: inset 0 1.2cqw 0 #9cc6ef, 0 1px 2px rgba(0,0,0,.5); }
-.ic.script { background: #1b1c1f; color: #e6e1d7; font-family: var(--mono); box-shadow: inset 0 0 0 1px #4a4d53, 0 1px 2px rgba(0,0,0,.5); }
+.md-row { display: grid; grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr); align-items: center; gap: 6px; }
+.md-item { display: flex; align-items: center; gap: 8px; min-width: 0; font: 600 12px/1.2 var(--label); color: #fbf9f5; text-shadow: 0 1px 1px rgba(0,0,0,.45); }
+.md-row .md-item:last-child { justify-content: flex-start; padding-left: 4px; }
+.md-arrow { height: 2px; background: #a64a18; position: relative; }
+.md-arrow::after { content: ""; position: absolute; right: -1px; top: -4px; border: 5px solid transparent; border-left: 8px solid #a64a18; border-right: 0; }
+.ic { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 5px; font: 700 8.5px/1 var(--label); font-style: normal; color: #2a1206; text-shadow: none; }
+.ic.bundle { background: linear-gradient(180deg, #f6c08c, #d9783a); box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 1px 2px rgba(0,0,0,.4); }
+.ic.bundle.app { background: linear-gradient(180deg, #f2eee5, #c4bdad); }
+.ic.folder { width: 28px; height: 21px; border-radius: 3px; background: linear-gradient(180deg, #7fb3e6, #4b86c4); box-shadow: inset 0 4px 0 #9cc6ef, 0 1px 2px rgba(0,0,0,.4); }
 
-/* manual unblocking, folded */
-.manual { margin-top: 2px; }
-.manual summary { cursor: pointer; font: 600 12.5px/1.2 var(--label); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding-block: 6px; }
-.manual summary:hover { color: var(--text); }
-.manual .terminal { margin-top: 8px; }
-.terminal pre .ok { color: #79c25f; }
-.terminal pre .dim { color: var(--faint); }
+.step.wide .terminal { max-width: 680px; }
 
 /* Ko-fi in a small window */
 .kofi-dialog {
@@ -497,7 +492,7 @@ footer a { color: var(--muted); }
     <article class="release">
       <div><span class="vchip">0.2.1</span><div class="cap when">dernière version</div></div>
       <div class="notes">
-        <p><strong>Installation par image disque</strong> : télécharge OSCar-Editor-mac.dmg, glisse chaque fichier sur le dossier affiché en face, puis lance Installer.command dans Terminal. Il débloque le plugin et le vérifie pour Logic Pro, et peut aussi tout installer seul.</p>
+        <p><strong>Installation par image disque</strong> : télécharge OSCar-Editor-mac.dmg et glisse chaque fichier sur le dossier affiché en face. Débloque ensuite le plugin une fois avec le texte à coller dans Terminal, donné dans le guide d'installation du site : il vérifie aussi le plugin pour Logic Pro.</p>
         <p><strong>Notes de version dans ta langue</strong> : la fenêtre de mise à jour affiche ces notes dans la langue du plugin.</p>
       </div>
     </article>
@@ -512,25 +507,20 @@ footer a { color: var(--muted); }
   <p class="lead-text">Compte un quart d'heure la première fois. Les versions suivantes s'installent depuis le plugin, sans refaire ces étapes.</p>
 
   <ol class="steps">
-    <li class="step wide">
+    <li class="step">
       <span class="step-n" aria-hidden="true">1</span>
       <div class="step-text">
         <h3>Ouvrir l'image disque et glisser les fichiers</h3>
-        <p>Double-clique sur <code>OSCar-Editor-mac.dmg</code>. Dans la fenêtre qui s'ouvre, glisse chaque fichier sur le dossier en face : l'AU sur <b>Components (AU)</b>, le VST3 sur <b>VST3</b>, l'application sur <b>Applications</b>. macOS peut te demander ton mot de passe.</p>
-        <p class="note">Logic Pro n'utilise que l'AU. Le VST3 sert aux autres logiciels, et l'application fonctionne sans DAW. Tu peux aussi sauter cette étape : le script de l'étape 2 installe tout seul.</p>
+        <p>Double-clique sur <code>OSCar-Editor-mac.dmg</code>. Dans la fenêtre, glisse chaque fichier sur le dossier en face. macOS peut te demander ton mot de passe.</p>
+        <p class="note">Logic Pro n'utilise que l'AU ; le VST3 sert aux autres logiciels, l'application marche sans DAW. Déjà installé ? Pas besoin du DMG : le plugin se met à jour lui-même.</p>
       </div>
       <div class="step-art">
-        <figure class="dmg">
-          <div class="dmg-bar" aria-hidden="true"><i></i><i></i><i></i><span>OSCar Editor</span></div>
-          <div class="dmg-win">
-            <img src="img/dmg.webp" width="1080" height="810" alt="La fenêtre de l'image disque : chaque fichier à gauche, son dossier à droite, Installer.command en bas" loading="lazy">
-            <span class="dmg-item" style="left:27.2%;top:30.7%"><i class="ic bundle">AU</i>OSCar Editor.component</span>
-            <span class="dmg-item" style="left:72.8%;top:30.7%"><i class="ic folder"></i>Components (AU)</span>
-            <span class="dmg-item" style="left:27.2%;top:48.9%"><i class="ic bundle">VST3</i>OSCar Editor.vst3</span>
-            <span class="dmg-item" style="left:72.8%;top:48.9%"><i class="ic folder"></i>VST3</span>
-            <span class="dmg-item" style="left:27.2%;top:67%"><i class="ic bundle app">APP</i>OSCar Editor.app</span>
-            <span class="dmg-item" style="left:72.8%;top:67%"><i class="ic folder"></i>Applications</span>
-            <span class="dmg-item" style="left:16.4%;top:87%"><i class="ic script">&gt;_</i>Installer.command</span>
+        <figure class="mini-dmg" aria-label="La fenêtre de l'image disque : chaque fichier à gauche, son dossier à droite">
+          <div class="md-bar" aria-hidden="true"><i></i><i></i><i></i><span>OSCar Editor</span></div>
+          <div class="md-body">
+            <div class="md-row"><span class="md-item"><i class="ic bundle">AU</i>OSCar Editor.component</span><span class="md-arrow" aria-hidden="true"></span><span class="md-item"><i class="ic folder"></i>Components</span></div>
+            <div class="md-row"><span class="md-item"><i class="ic bundle">VST3</i>OSCar Editor.vst3</span><span class="md-arrow" aria-hidden="true"></span><span class="md-item"><i class="ic folder"></i>VST3</span></div>
+            <div class="md-row"><span class="md-item"><i class="ic bundle app">APP</i>OSCar Editor.app</span><span class="md-arrow" aria-hidden="true"></span><span class="md-item"><i class="ic folder"></i>Applications</span></div>
           </div>
         </figure>
       </div>
@@ -539,37 +529,20 @@ footer a { color: var(--muted); }
     <li class="step wide">
       <span class="step-n" aria-hidden="true">2</span>
       <div class="step-text">
-        <h3>Débloquer et vérifier avec le script</h3>
-        <p>Le plugin n'est pas notarisé par Apple : tant qu'il n'est pas débloqué, macOS empêche Logic de le charger. Ouvre Terminal (Applications › Utilitaires), tape <kbd>bash</kbd> et une espace, glisse <code>Installer.command</code> depuis la fenêtre de l'image disque, puis appuie sur Entrée.</p>
-        <p class="note">Le script installe ce qui manque, débloque le plugin et le fait valider par macOS comme le fait Logic. Si Terminal demande l'accès à un volume amovible, accepte. Les mises à jour faites depuis le plugin n'ont pas besoin de ce déblocage.</p>
+        <h3>Débloquer le plugin, une seule fois</h3>
+        <p>Le plugin n'est pas notarisé par Apple : tant qu'il n'est pas débloqué, macOS empêche Logic de le charger. Ouvre Terminal (<kbd>⌘</kbd> <kbd>Espace</kbd>, tape « Terminal », Entrée), colle ce texte et appuie sur Entrée. Terminal demande le mot de passe de ta session : rien ne s'affiche pendant la frappe, c'est normal.</p>
+        <p class="note">La dernière ligne doit dire « AU VALIDATION SUCCEEDED. » : Logic Pro peut alors charger le plugin. « No such file » pour un format que tu n'as pas installé est normal. Les mises à jour faites depuis le plugin n'ont pas besoin de ce déblocage.</p>
       </div>
       <div class="step-art">
         <div class="inset terminal">
-          <div class="term-bar"><span class="cap">Terminal</span></div>
-<pre><span class="dim">$ bash /Volumes/OSCar\ Editor/Installer.command</span>
-
-OSCar Editor 0.2.1
-Installation et déblocage
-<span class="ok">  ✓ OSCar Editor.component  →  /Library/Audio/Plug-Ins/Components  (0.2.1)</span>
-<span class="ok">  ✓ OSCar Editor.vst3  →  /Library/Audio/Plug-Ins/VST3  (0.2.1)</span>
-<span class="ok">  ✓ OSCar Editor.app  →  /Applications  (0.2.1)</span>
-
-Vérification de l'Audio Unit pour Logic Pro (quelques secondes)
-<span class="ok">  ✓ Audio Unit validée : Logic Pro peut la charger.</span>
-
-Terminé. Relance Logic Pro (ou ton DAW) : OSCar Editor est dans les
-instruments AU, rubrique OSCarTools.</pre>
+          <div class="term-bar"><span class="cap">Terminal</span><button type="button" class="btn copy" id="copy-cmd"><span>Copier</span><i class="led"></i></button></div>
+<pre id="cmd">sudo xattr -dr com.apple.quarantine \
+  "/Library/Audio/Plug-Ins/Components/OSCar Editor.component" \
+  "/Library/Audio/Plug-Ins/VST3/OSCar Editor.vst3" \
+  "/Applications/OSCar Editor.app"; \
+killall -9 AudioComponentRegistrar 2>/dev/null; \
+auval -v aumu Oscr Otls | tail -n 1</pre>
         </div>
-        <details class="manual">
-          <summary>Sans le script : les commandes à la main</summary>
-          <div class="inset terminal">
-            <div class="term-bar"><span class="cap">Terminal</span><button type="button" class="btn copy" id="copy-cmd"><span>Copier</span><i class="led"></i></button></div>
-<pre id="cmd">xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/Components/OSCar* ~/Library/Audio/Plug-Ins/Components/OSCar*
-xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/OSCar* ~/Library/Audio/Plug-Ins/VST3/OSCar*
-xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
-          </div>
-          <p class="note">« No such file » pour l'un des deux dossiers est normal : le plugin n'est installé que dans l'un d'eux.</p>
-        </details>
       </div>
     </li>
 

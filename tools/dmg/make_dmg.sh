@@ -1,6 +1,6 @@
 #!/bin/bash
 # Builds the installer disk image (macOS only): the three bundles, shortcuts to their folders,
-# Installer.command, and the window background.
+# and the window background.
 #   tools/dmg/make_dmg.sh <folder holding the three bundles> <output .dmg>
 # Needs dmgbuild:  python3 -m pip install dmgbuild==1.6.7
 set -euo pipefail
@@ -13,8 +13,6 @@ trap 'rm -rf "$WORK"' EXIT
 for b in "OSCar Editor.component" "OSCar Editor.vst3" "OSCar Editor.app"; do
     [ -d "$SRC/$b" ] || { echo "missing: $SRC/$b"; exit 1; }
 done
-cp "$HERE/Installer.command" "$WORK/"
-chmod 755 "$WORK/Installer.command"
 cp "$HERE/background.png" "$HERE/background@2x.png" "$WORK/"
 
 rm -f "$OUT"

@@ -120,27 +120,6 @@ TEXT = {
            "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]},
 }
 
-TERMINAL = {
-    "fr": [("dim", "$ bash /Volumes/OSCar\\ Editor/Installer.command"), ("", ""), ("", f"OSCar Editor {VERSION}"),
-           ("", "Installation et déblocage"),
-           ("ok", f"  ✓ OSCar Editor.component  →  /Library/Audio/Plug-Ins/Components  ({VERSION})"),
-           ("ok", f"  ✓ OSCar Editor.vst3  →  /Library/Audio/Plug-Ins/VST3  ({VERSION})"),
-           ("ok", f"  ✓ OSCar Editor.app  →  /Applications  ({VERSION})"), ("", ""),
-           ("", "Vérification de l'Audio Unit pour Logic Pro (quelques secondes)"),
-           ("ok", "  ✓ Audio Unit validée : Logic Pro peut la charger."), ("", ""),
-           ("", "Terminé. Relance Logic Pro (ou ton DAW) : OSCar Editor est dans les")],
-    "en": [("dim", "$ bash /Volumes/OSCar\\ Editor/Installer.command"), ("", ""), ("", f"OSCar Editor {VERSION}"),
-           ("", "Installing and unblocking"),
-           ("ok", f"  ✓ OSCar Editor.component  →  /Library/Audio/Plug-Ins/Components  ({VERSION})"),
-           ("ok", f"  ✓ OSCar Editor.vst3  →  /Library/Audio/Plug-Ins/VST3  ({VERSION})"),
-           ("ok", f"  ✓ OSCar Editor.app  →  /Applications  ({VERSION})"), ("", ""),
-           ("", "Checking the Audio Unit for Logic Pro (a few seconds)"),
-           ("ok", "  ✓ Audio Unit validated: Logic Pro can load it."), ("", ""),
-           ("", "Done. Restart Logic Pro (or your DAW): OSCar Editor is in the")],
-}
-TERMINAL["fr"].append(("", "instruments AU, rubrique OSCarTools."))
-TERMINAL["en"].append(("", "AU instruments, under OSCarTools."))
-
 CABLING_TEXT = {
     "fr": {"label": "Câble 1 : sortie MIDI de l'interface vers l'entrée MIDI de l'OSCar. Câble 2 : sortie MIDI de l'OSCar vers l'entrée MIDI de l'interface.",
            "iface": "Interface MIDI", "oscar": "OSCar, face arrière", "c1": "câble 1", "c2": "câble 2"},
@@ -280,14 +259,6 @@ def release_notes(lang):
             f'      <div class="notes">\n' + "\n".join(paras) + "\n      </div>\n    </article>")
 
 
-def terminal_sample(lang):
-    out = []
-    for cls, line in TERMINAL[lang]:
-        line = line.replace("&", "&amp;").replace("<", "&lt;")
-        out.append(f'<span class="{cls}">{line}</span>' if cls else line)
-    return "\n".join(out)
-
-
 def french_spacing(text):
     """Non-breaking spaces before : ; ? ! and inside guillemets, in text only (not in tags)."""
     parts = re.split(r"(<[^>]*>)", text)
@@ -327,7 +298,6 @@ def build(lang):
         "{{PAGES_JS}}": json.dumps([[slug, name, cap, PAGE_ALT[lang].format(name)] for slug, name, cap in pages], ensure_ascii=False),
         "{{FIRST_CAPTION}}": pages[0][2], "{{FIRST_ALT}}": PAGE_ALT[lang].format(pages[0][1]),
         "{{STATIC_RELEASES}}": release_notes(lang),
-        "{{TERMINAL_SAMPLE}}": terminal_sample(lang),
         "{{JS_TEXT}}": json.dumps(TEXT[lang], ensure_ascii=False),
     }
     for k, v in values.items():
