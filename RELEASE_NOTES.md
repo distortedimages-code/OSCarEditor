@@ -10,7 +10,7 @@
 
 **Générateur de sons** : Varier, Nouveau (basse, lead, pad, percussif, texture) et Croiser, avec verrous par section et historique. Les résultats jouent tout de suite sur l'OSCar, sans toucher à sa mémoire.
 
-**Page Banques** : tes banques et toutes les sauvegardes automatiques, rechargeables d'un double-clic. Le contenu de l'OSCar est aussi sauvegardé avant chaque envoi.
+**Page Banques** : tes banques, tes voix et toutes les sauvegardes automatiques, rechargeables d'un double-clic. Les voix s'enregistrent directement dans le dossier Voices, les banques dans Banks. Le contenu de l'OSCar est aussi sauvegardé avant chaque envoi.
 
 **Page Raccourcis Tauntek** : tous les raccourcis TUNE/TRANSPOSE sur un clavier, avec les touches dangereuses en rouge.
 

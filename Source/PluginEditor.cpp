@@ -465,24 +465,68 @@ void OscarEditor::swapSelected (juce::Component& anchor)
                      });
 }
 
+void OscarEditor::saveInto (const juce::File& folder, const juce::String& extension, const juce::String& titleText,
+                            const juce::String& messageText, const juce::String& initialName,
+                            std::function<juce::Result (const juce::File&)> save)
+{
+    askText (titleText, messageText, initialName, tr ("Save"),
+             [this, folder, extension, save = std::move (save)] (const juce::String& raw)
+             {
+                 saveNamed (folder, extension, raw, save);
+             });
+}
+
+juce::File OscarEditor::saveNamed (const juce::File& folder, const juce::String& extension, const juce::String& rawName,
+                                   const std::function<juce::Result (const juce::File&)>& save)
+{
+    const auto name = juce::File::createLegalFileName (rawName.trim());
+    if (name.isEmpty())
+        return {};
+    if (! folder.createDirectory())
+    {
+        showResult (juce::Result::fail (tr ("Could not create the folder %1.", { folder.getFullPathName() })));
+        return {};
+    }
+    auto file = folder.getChildFile (name + extension);
+    if (file.exists())
+        file = folder.getNonexistentChildFile (name, extension, false);
+    const auto r = save (file);
+    showResult (r, tr ("Saved %1 in %2.", { file.getFileName(), "Documents > OSCar Editor > " + folder.getFileName() }));
+    libraryChanged();
+    return r.wasOk() ? file : juce::File();
+}
+
+juce::Result OscarEditor::exportVoiceTo (const juce::File& f)
+{
+    return proc.getDocument().exportVoice (proc.getSelectedSlot(), f);
+}
+
+juce::Result OscarEditor::exportSyxTo (const juce::File& f)
+{
+    return proc.getDocument().exportSyx (f);
+}
+
+void OscarEditor::libraryChanged()
+{
+    if (banksPage != nullptr)
+        banksPage->rescanLibrary();
+}
+
 void OscarEditor::exportSelectedVoice()
 {
     const int slot = proc.getSelectedSlot();
     auto name = proc.getDocument().getName (slot);
     if (name.isEmpty()) name = tr ("Voice %1", { juce::String (slotLabel (slot)) });
-    runFileChooser (tr ("Export the selected voice"), "*.oscvoice", true, juce::File::createLegalFileName (name) + ".oscvoice",
-                    [this, slot] (const juce::File& f)
-    {
-        const auto file = f.hasFileExtension ("oscvoice") ? f : f.withFileExtension ("oscvoice");
-        showResult (proc.getDocument().exportVoice (slot, file), tr ("Exported %1.", { file.getFileName() }));
-    });
+    saveInto (OscarProcessor::getVoicesFolder(), ".oscvoice", tr ("Save the selected voice"),
+              tr ("Name of the voice (saved in Documents > OSCar Editor > Voices)."), name,
+              [this, slot] (const juce::File& f) { return proc.getDocument().exportVoice (slot, f); });   // the slot chosen when asked
 }
 
 void OscarEditor::importIntoSelectedVoice()
 {
     const int slot = proc.getSelectedSlot();
-    runFileChooser (tr ("Import a voice into voice %1", { juce::String (slotLabel (slot)) }), "*.oscvoice", false, {},
-                    [this, slot] (const juce::File& f)
+    runFileChooser (tr ("Import a voice into voice %1", { juce::String (slotLabel (slot)) }), "*.oscvoice",
+                    OscarProcessor::getVoicesFolder(), [this, slot] (const juce::File& f)
     {
         showResult (proc.getDocument().importVoice (slot, f),
                     tr ("Imported %1 into voice %2 (not yet sent to the OSCar).", { f.getFileName(), juce::String (slotLabel (slot)) }));
@@ -491,7 +535,7 @@ void OscarEditor::importIntoSelectedVoice()
 
 void OscarEditor::loadBankFromFile()
 {
-    runFileChooser (tr ("Load an OSCar bank"), "*.syx;*.oscbank", false, {}, [this] (const juce::File& f)
+    runFileChooser (tr ("Load an OSCar bank"), "*.syx;*.oscbank", OscarProcessor::getBanksFolder(), [this] (const juce::File& f)
     {
         juce::String report;
         const auto r = proc.getDocument().loadFile (f, report);
@@ -502,24 +546,19 @@ void OscarEditor::loadBankFromFile()
 
 void OscarEditor::exportBankSyx()
 {
-    runFileChooser (tr ("Export as .syx"), "*.syx", true, "OSCar bank.syx", [this] (const juce::File& f)
-    {
-        const auto file = f.hasFileExtension ("syx") ? f : f.withFileExtension ("syx");
-        showResult (proc.getDocument().exportSyx (file), tr ("Exported %1.", { file.getFileName() }));
-    });
+    saveInto (OscarProcessor::getBanksFolder(), ".syx", tr ("Export as .syx"),
+              tr ("Name of the .syx file (saved in Documents > OSCar Editor > Banks). A .syx file holds the voices without their names."),
+              tr ("My bank"), [this] (const juce::File& f) { return exportSyxTo (f); });
 }
 
-void OscarEditor::runFileChooser (const juce::String& titleText, const juce::String& patterns, bool save,
-                                  const juce::String& defaultName, std::function<void (const juce::File&)> onChosen)
+void OscarEditor::runFileChooser (const juce::String& titleText, const juce::String& patterns, const juce::File& folder,
+                                  std::function<void (const juce::File&)> onChosen)
 {
-    auto dir = defaultFolder();
+    auto dir = folder.isDirectory() ? folder : defaultFolder();
     dir.createDirectory();
-    fileChooser = std::make_unique<juce::FileChooser> (titleText, defaultName.isEmpty() ? dir : dir.getChildFile (defaultName), patterns);
+    fileChooser = std::make_unique<juce::FileChooser> (titleText, dir, patterns);
 
-    const int chooserFlags = save ? (juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
-                                     | juce::FileBrowserComponent::warnAboutOverwriting)
-                                  : (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles);
-
+    const int chooserFlags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
     fileChooser->launchAsync (chooserFlags, [safe = juce::Component::SafePointer<OscarEditor> (this), cb = std::move (onChosen)] (const juce::FileChooser& fc)
     {
         const auto f = fc.getResult();

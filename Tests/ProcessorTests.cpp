@@ -441,16 +441,21 @@ static void testMidiClock (OscarProcessor& proc, Capture& out)
     proc.setPlayHead (&head);
     proc.prepareToPlay (44100.0, 512);
     juce::AudioBuffer<float> audio (2, 512);
+    // Blocks are processed at the pace of real time, as a host does (a slow machine catches up).
     auto play = [&] (int blocks)
     {
+        const double blockMs = 512.0 * 1000.0 / 44100.0;
+        const double start = juce::Time::getMillisecondCounterHiRes();
         for (int i = 0; i < blocks; ++i)
         {
+            while (juce::Time::getMillisecondCounterHiRes() < start + i * blockMs)
+                pump (1);
             juce::MidiBuffer none;
             proc.processBlock (audio, none);
             if (head.playing)
                 head.ppq += 512.0 / 44100.0 * head.bpm / 60.0;
-            pump (11);   // about one block of real time
         }
+        pump (1);
     };
 
     // off by default
@@ -482,7 +487,7 @@ static void testMidiClock (OscarProcessor& proc, Capture& out)
     if (tickTimes.size() > 2)
     {
         const double average = (tickTimes.back() - tickTimes.front()) / (double) (tickTimes.size() - 1);
-        CHECK (average > 17.0 && average < 25.0);   // 20.8 ms at 120 BPM, loosely: the test loop is not real time
+        CHECK (average > 18.0 && average < 24.0);   // 20.8 ms at 120 BPM
     }
 
     // mid-song: Continue instead of Start
@@ -592,6 +597,26 @@ static void testEditor (OscarProcessor& proc, Capture& out)
     pump (200);
     proc.getDocument().undo();
     pump (200);
+
+    // saving a voice or a .syx bank goes straight into its folder (after the name dialog)
+    const auto voices = OscarProcessor::getVoicesFolder(), banks = OscarProcessor::getBanksFolder();
+    auto voice = [editor] (const juce::File& f) { return editor->exportVoiceTo (f); };
+    const auto v1 = editor->saveNamed (voices, ".oscvoice", "Test: voice", voice);   // ':' is not allowed in file names
+    const auto v2 = editor->saveNamed (voices, ".oscvoice", "Test: voice", voice);   // never overwrites
+    CHECK (v1 == voices.getChildFile ("Test voice.oscvoice") && v1.existsAsFile());
+    CHECK (v2 != v1 && v2.existsAsFile() && v2.getParentDirectory() == voices);
+    CHECK (editor->saveNamed (voices, ".oscvoice", "   ", voice) == juce::File());   // empty name: nothing
+    CHECK (voices.findChildFiles (juce::File::findFiles, false, "*.oscvoice").size() == 2);
+    CHECK (proc.getDocument().importVoice (3, v1).wasOk());
+    const auto bank = editor->saveNamed (banks, ".syx", "Test bank", [editor] (const juce::File& f) { return editor->exportSyxTo (f); });
+    CHECK (bank == banks.getChildFile ("Test bank.syx") && bank.existsAsFile());
+    juce::String report;
+    CHECK (proc.getDocument().loadFile (bank, report).wasOk());
+    editor->showPage (2);   // the library lists them
+    auto img = ed->createComponentSnapshot (ed->getLocalBounds(), true, 0.5f);
+    CHECK (img.isValid());
+    pump (100);
+
     ed.reset();
     pump (100);
     CHECK (countPrograms (out.take(), -1) == 0);

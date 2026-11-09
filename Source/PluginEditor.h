@@ -19,8 +19,17 @@ public:
     static constexpr int baseWidth = 1400, baseHeight = 800;   // everything is laid out on this size, then scaled
 
     // Shared by the pages
-    void runFileChooser (const juce::String& title, const juce::String& patterns, bool save,
-                         const juce::String& defaultName, std::function<void (const juce::File&)> onChosen);
+    void runFileChooser (const juce::String& title, const juce::String& patterns, const juce::File& folder,
+                         std::function<void (const juce::File&)> onChosen);
+    // Asks for a name, then saves straight into 'folder' (no file browser); never overwrites.
+    void saveInto (const juce::File& folder, const juce::String& extension, const juce::String& title,
+                   const juce::String& message, const juce::String& initialName,
+                   std::function<juce::Result (const juce::File&)> save);
+    // The part after the dialog: returns the file written, or File() if nothing was.
+    juce::File saveNamed (const juce::File& folder, const juce::String& extension, const juce::String& name,
+                          const std::function<juce::Result (const juce::File&)>& save);
+    juce::Result exportVoiceTo (const juce::File&);     // the selected voice
+    juce::Result exportSyxTo (const juce::File&);
     void showResult (const juce::Result& r, const juce::String& successText = {});
     void askText (const juce::String& title, const juce::String& message, const juce::String& initial,
                   const juce::String& okText, std::function<void (const juce::String&)> onOk);
@@ -38,6 +47,7 @@ public:
 
 private:
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
+    void libraryChanged();
     void timerCallback() override;
     void refreshAll();
     void refreshStatus();

@@ -632,7 +632,8 @@ BanksPanel::BanksPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
 
     allButton.onClick = [this] { filter = 0; rescanLibrary(); };
     banksButton.onClick = [this] { filter = 1; rescanLibrary(); };
-    backupsButton.onClick = [this] { filter = 2; rescanLibrary(); };
+    voicesButton.onClick = [this] { filter = 2; rescanLibrary(); };
+    backupsButton.onClick = [this] { filter = 3; rescanLibrary(); };
 
     loadButton.onClick = [this] { loadSelectedEntry(); };
     loadButton.setTooltip (tr ("Loads the bank into the editor. The OSCar is only changed by \"Send voices to synth\"."));
@@ -654,7 +655,7 @@ BanksPanel::BanksPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
 
     for (auto* b : std::initializer_list<juce::Component*> { &renameButton, &copyButton, &pasteButton, &swapButton, &revertButton,
                                                              &selectButton, &exportVoiceButton, &importVoiceButton, &allButton,
-                                                             &banksButton, &backupsButton, &loadButton, &saveAsButton,
+                                                             &banksButton, &voicesButton, &backupsButton, &loadButton, &saveAsButton,
                                                              &openFileButton, &exportSyxButton, &factoryButton, &folderButton,
                                                              &sequencesButton })
         addAndMakeVisible (b);
@@ -687,14 +688,17 @@ void BanksPanel::refresh()
     sequencesButton.setEnabled (seq.has_value() && ! seq->empty());
     allButton.setLit (filter == 0);
     banksButton.setLit (filter == 1);
-    backupsButton.setLit (filter == 2);
+    voicesButton.setLit (filter == 2);
+    backupsButton.setLit (filter == 3);
 }
 
 void BanksPanel::rescanLibrary()
 {
     entries.clear();
-    for (const auto& f : OscarProcessor::getBanksFolder().findChildFiles (juce::File::findFiles, false, "*.oscbank"))
+    for (const auto& f : OscarProcessor::getBanksFolder().findChildFiles (juce::File::findFiles, false, "*.oscbank;*.syx"))
         entries.push_back ({ f, "BANK", f.getLastModificationTime() });
+    for (const auto& f : OscarProcessor::getVoicesFolder().findChildFiles (juce::File::findFiles, false, "*.oscvoice"))
+        entries.push_back ({ f, "VOICE", f.getLastModificationTime() });
 
     for (const auto& f : OscarProcessor::getBackupFolder().findChildFiles (juce::File::findFiles, false, "*.syx"))
     {
@@ -709,8 +713,11 @@ void BanksPanel::rescanLibrary()
 
     shown.clear();
     for (const auto& e : entries)
-        if (filter == 0 || (filter == 1) == (e.kind == "BANK"))
+    {
+        const bool backup = e.kind != "BANK" && e.kind != "VOICE";
+        if (filter == 0 || (filter == 1 && e.kind == "BANK") || (filter == 2 && e.kind == "VOICE") || (filter == 3 && backup))
             shown.push_back (e);
+    }
 
     libraryList.updateContent();
     libraryList.repaint();
@@ -784,7 +791,9 @@ void BanksPanel::LibraryModel::paintListBoxItem (int row, juce::Graphics& g, int
     g.setColour (ink);
     g.drawText (tr (e.kind), 150, 0, 110, h, juce::Justification::centredLeft);
     juce::String name = e.file.getFileNameWithoutExtension();
-    if (e.kind != "BANK")
+    if (e.kind == "BANK" && e.file.hasFileExtension ("syx"))
+        name += "  (.syx)";
+    else if (e.kind != "BANK" && e.kind != "VOICE")
         name = name.substring (20);   // drop the date already shown
     g.drawText (name, 262, 0, w - 270, h, juce::Justification::centredLeft, true);
 }
@@ -799,7 +808,16 @@ void BanksPanel::loadSelectedEntry()
     const int row = libraryList.getSelectedRow();
     if (row < 0 || row >= (int) shown.size())
     {
-        proc.addLog (tr ("Choose a bank or a backup in the list first."));
+        proc.addLog (tr ("Choose a bank, a voice or a backup in the list first."));
+        return;
+    }
+    const auto& entry = shown[(size_t) row];
+    if (entry.kind == "VOICE")   // a voice goes into the selected voice
+    {
+        const int slot = proc.getSelectedSlot();
+        editor.showResult (proc.getDocument().importVoice (slot, entry.file),
+                           tr ("Imported %1 into voice %2 (not yet sent to the OSCar).",
+                               { entry.file.getFileName(), juce::String (slotLabel (slot)) }));
         return;
     }
     juce::String report;
@@ -852,14 +870,16 @@ void BanksPanel::resized()
 
     {
         auto c = cols[1].reduced (8.0f).toNearestInt();
-        groups.push_back ({ c.toFloat(), tr ("library: your banks and automatic backups") });
+        groups.push_back ({ c.toFloat(), tr ("library: your banks, your voices and the automatic backups") });
         auto g = c.reduced (12, 12).withTrimmedBottom (22);
         auto top = g.removeFromTop (32);
-        allButton.setBounds (top.removeFromLeft (90));
+        allButton.setBounds (top.removeFromLeft (80));
         top.removeFromLeft (8);
         banksButton.setBounds (top.removeFromLeft (120));
         top.removeFromLeft (8);
-        backupsButton.setBounds (top.removeFromLeft (110));
+        voicesButton.setBounds (top.removeFromLeft (110));
+        top.removeFromLeft (8);
+        backupsButton.setBounds (top.removeFromLeft (120));
         top.removeFromLeft (16);
         libraryNote = top.toFloat();
 
@@ -890,13 +910,13 @@ void BanksPanel::paint (juce::Graphics& g)
         else
             drawGroup (g, area, label);
     }
-    drawText (g, libraryNote, tr ("Every dump and every send is backed up automatically. Double-click to load into the editor."),
+    drawText (g, libraryNote, tr ("Double-click: a bank or a backup replaces the bank in the editor, a voice goes into the selected voice."),
               12.5f, colours::dim, juce::Justification::centredLeft);
     if (shown.empty())
     {
         g.setFont (Fonts::mono (14.0f));
         g.setColour (colours::vfdDim);
-        g.drawFittedText (tr ("Nothing here yet: \"Save bank as...\" adds your banks; dumps and sends add backups."),
+        g.drawFittedText (tr ("Nothing here yet: \"Save bank as...\" adds your banks, \"Save voice...\" your voices; dumps and sends add backups."),
                           libraryList.getBounds().reduced (20), juce::Justification::centred, 3);
     }
 }

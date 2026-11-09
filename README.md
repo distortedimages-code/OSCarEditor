@@ -11,7 +11,7 @@ L'interface est en **français** par défaut, avec **English** au choix dans **R
 
 - **Voix** : tous les réglages de la voix choisie (potards, faders d'enveloppe, sélecteurs). Chaque réglage part tout de suite en CC vers l'OSCar (*Live CC*). Tous les paramètres sont aussi exposés au DAW pour l'automation.
 - **Générateur** : générateur de sons « intelligent ». *Varier* modifie la voix, de subtil à radical. *Nouveau* crée une basse, un lead, un pad, un son percussif ou une texture à partir des plages et des sections de vraies voix d'OSCar. *Croiser* mélange deux voix. Les sections verrouillées ne bougent pas. Tune, molettes, arpégiateur, Function et Gate Time ne sont jamais modifiés. Des règles garantissent que le résultat s'entend (enveloppe d'ampli, filtre pas fermé, résonance raisonnable…). Chaque résultat joue tout de suite sur l'OSCar sans toucher à sa mémoire, et un historique permet de revenir en arrière.
-- **Banques** : la banque avec ses noms (renommer, copier, coller, échanger, revenir à la version de l'OSCar, exporter / importer une voix), et la bibliothèque. Celle-ci rassemble tes banques sauvegardées et toutes les sauvegardes automatiques ; un double-clic en charge une.
+- **Banques** : la banque avec ses noms (renommer, copier, coller, échanger, revenir à la version de l'OSCar, enregistrer / importer une voix), et la bibliothèque. Celle-ci rassemble tes banques, tes voix et toutes les sauvegardes automatiques ; un double-clic en charge une.
 - **Formes d'onde** : les 5 formes d'onde utilisateur (−8 à −12), à dessiner à la souris.
 - **Raccourcis Tauntek** : le clavier de l'OSCar avec la fonction de chaque raccourci TUNE/TRANSPOSE + touche. Les touches qui remplacent les voix en mémoire sont en rouge.
 - **Réglages** : ports MIDI, canal, langue, options (Live CC, horloge MIDI, MIDI Thru, suivre l'OSCar), état du patch CC dump, mises à jour et journal.
@@ -36,7 +36,7 @@ Option (désactivée par défaut) pour jouer l'OSCar depuis la piste du DAW, don
 
 ## Sauvegardes
 
-Tout ce qui est reçu et envoyé est sauvegardé dans `Documents/OSCar Editor/Backups`. Avant chaque envoi, le contenu connu de l'OSCar est aussi sauvegardé. Les banques nommées (*Enregistrer sous…*) vont dans `Documents/OSCar Editor/Banks`. Tout se recharge depuis la page **Banques**.
+Tout ce qui est reçu et envoyé est sauvegardé dans `Documents/OSCar Editor/Backups`. Avant chaque envoi, le contenu connu de l'OSCar est aussi sauvegardé. *Enregistrer la banque…* et *Exporter en .syx…* demandent juste un nom et enregistrent directement dans `Documents/OSCar Editor/Banks` ; *Sauver voix…* enregistre la voix sélectionnée dans `Documents/OSCar Editor/Voices`. Rien n'est jamais écrasé (un numéro est ajouté si le nom existe déjà). Tout se recharge depuis la bibliothèque de la page **Banques** (filtres *Mes banques*, *Mes voix*, *Sauvegardes*) : un double-clic sur une banque remplace la banque de l'éditeur, sur une voix la met dans la voix sélectionnée.
 
 ## Mises à jour
 

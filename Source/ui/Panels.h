@@ -113,13 +113,14 @@ private:
     LibraryModel libraryModel { *this };
     juce::ListBox bankList { "Bank", this }, libraryList { "Library", &libraryModel };
     std::vector<Entry> entries, shown;
-    int filter = 0;   // 0 all, 1 banks, 2 backups
+    int filter = 0;   // 0 all, 1 banks, 2 voices, 3 backups
     bool updating = false;
 
     atelier::LedButton renameButton { TRANS ("Rename") }, copyButton { TRANS ("Copy") }, pasteButton { TRANS ("Paste") }, swapButton { TRANS ("Swap...") },
-                       revertButton { TRANS ("Revert") }, selectButton { TRANS ("Select on synth") }, exportVoiceButton { TRANS ("Export voice...") },
+                       revertButton { TRANS ("Revert") }, selectButton { TRANS ("Select on synth") }, exportVoiceButton { TRANS ("Save voice...") },
                        importVoiceButton { TRANS ("Import voice...") };
-    atelier::LedButton allButton { TRANS ("All") }, banksButton { TRANS ("My banks") }, backupsButton { TRANS ("Backups") };
+    atelier::LedButton allButton { TRANS ("All") }, banksButton { TRANS ("My banks") }, voicesButton { TRANS ("My voices") },
+                       backupsButton { TRANS ("Backups") };
     atelier::CopperButton loadButton { TRANS ("Load into editor") };
     atelier::LedButton saveAsButton { TRANS ("Save bank as...") }, openFileButton { TRANS ("Open file...") }, exportSyxButton { TRANS ("Export .syx...") },
                        factoryButton { TRANS ("Factory voices") }, folderButton { TRANS ("Open folder") }, sequencesButton { TRANS ("Send sequences...") };

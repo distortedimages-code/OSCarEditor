@@ -74,7 +74,8 @@ public:
     juce::String selectOnOscar (int slot);
 
     static juce::File getBackupFolder();
-    static juce::File getBanksFolder();          // the user's saved banks (.oscbank)
+    static juce::File getBanksFolder();          // the user's saved banks (.oscbank, .syx)
+    static juce::File getVoicesFolder();         // the user's saved voices (.oscvoice)
     static juce::File getUserFolder();           // Documents/OSCar Editor
 
     //==============================================================================

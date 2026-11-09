@@ -268,6 +268,11 @@ juce::File OscarProcessor::getBanksFolder()
     return getUserFolder().getChildFile ("Banks");
 }
 
+juce::File OscarProcessor::getVoicesFolder()
+{
+    return getUserFolder().getChildFile ("Voices");
+}
+
 juce::File OscarProcessor::writeBackup (const juce::String& what, const std::vector<std::uint8_t>& bytes)
 {
     auto dir = getBackupFolder();
