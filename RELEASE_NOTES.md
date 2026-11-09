@@ -1,19 +1,11 @@
-## OSCar Editor 0.2.0
+## English
 
-**Interface en français** (English au choix dans Réglages). Les noms des réglages et des touches de l'OSCar restent ceux de la façade.
+**Disk image installer**: download OSCar-Editor-mac.dmg, drag each file onto the folder shown next to it, then run Installer.command in Terminal. It unblocks the plug-in and checks it for Logic Pro, and can also install everything by itself.
 
-**Nouveau look « Atelier »** : façade d'instrument avec joues en bois, potards, faders d'enveloppe, voyants et afficheur orange. La fenêtre peut être agrandie ou réduite.
+**Release notes in your language**: the update window shows these notes in the plug-in's language.
 
-**Rappel automatique** : quand tu choisis une voix sur l'OSCar (avec le patch CC dump Tauntek activé), le plugin affiche exactement ce que joue l'OSCar, Duo/Arp compris.
+## Français
 
-**Horloge MIDI** : l'arpégiateur et le séquenceur peuvent suivre l'horloge MIDI (Sync), avec la division en clair (1/16, 1/8T…). Le plugin peut envoyer l'horloge du DAW à l'OSCar, avec Start / Stop.
+**Installation par image disque** : télécharge OSCar-Editor-mac.dmg, glisse chaque fichier sur le dossier affiché en face, puis lance Installer.command dans Terminal. Il débloque le plugin et le vérifie pour Logic Pro, et peut aussi tout installer seul.
 
-**Générateur de sons** : Varier, Nouveau (basse, lead, pad, percussif, texture) et Croiser, avec verrous par section et historique. Les résultats jouent tout de suite sur l'OSCar, sans toucher à sa mémoire.
-
-**Page Banques** : tes banques, tes voix et toutes les sauvegardes automatiques, rechargeables d'un double-clic. Les voix s'enregistrent directement dans le dossier Voices, les banques dans Banks. Le contenu de l'OSCar est aussi sauvegardé avant chaque envoi.
-
-**Page Raccourcis Tauntek** : tous les raccourcis TUNE/TRANSPOSE sur un clavier, avec les touches dangereuses en rouge.
-
-**MIDI Thru** : jouer l'OSCar depuis la piste du DAW (notes et pitch bend).
-
-**Mises à jour intégrées** : le plugin signale les nouvelles versions et se met à jour lui-même sur Mac.
+**Notes de version dans ta langue** : la fenêtre de mise à jour affiche ces notes dans la langue du plugin.

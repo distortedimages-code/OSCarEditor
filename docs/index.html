@@ -1,6 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OSCar Editor</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Éditeur et librarian gratuit pour le synthé OSCar avec la carte MIDI Tauntek. AU, VST3 et application pour Mac.">
+<meta name="description" content="Free editor and librarian for the OSCar synth with the Tauntek MIDI board. AU for Logic Pro, VST3 and app for Mac.">
+<link rel="alternate" hreflang="en" href="index.html">
+<link rel="alternate" hreflang="fr" href="fr.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Semi+Condensed:wght@500;600;700&family=Cormorant+SC:wght@500;600&family=Share+Tech+Mono&display=swap">
@@ -351,8 +358,58 @@ footer a { color: var(--muted); }
   .specs { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .specs dd { margin-bottom: 6px; }
 }
-</style>
 
+/* language switch */
+.masthead { position: relative; }
+.lang { position: absolute; top: 6px; right: 0; display: flex; gap: 6px; }
+.langbtn { min-height: 26px; padding: 0 8px; gap: 7px; font-size: 11.5px; }
+.langbtn .led { width: 7px; height: 7px; }
+
+/* disk image window, as it opens in the Finder */
+.dmg { max-width: 640px; margin: 0; }
+.dmg-bar {
+  display: flex; align-items: center; gap: 7px; height: 26px; padding: 0 10px; border-radius: 8px 8px 0 0;
+  background: linear-gradient(180deg, #3a3c41, #2c2e32); box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+  font: 600 12px/1 var(--label); color: #b9b5ad;
+}
+.dmg-bar i { width: 11px; height: 11px; border-radius: 50%; background: #5a5d63; }
+.dmg-bar i:nth-child(1) { background: #e0675a; } .dmg-bar i:nth-child(2) { background: #e6c35c; } .dmg-bar i:nth-child(3) { background: #79b860; }
+.dmg-bar span { flex: 1; text-align: center; margin-right: 50px; }
+.dmg-win { position: relative; container-type: inline-size; border-radius: 0 0 8px 8px; overflow: hidden; box-shadow: 0 0 0 1px #000, 0 10px 26px rgba(0,0,0,.5); }
+.dmg-win img { width: 100%; aspect-ratio: 4 / 3; }
+.dmg-item {
+  position: absolute; transform: translate(-50%, -40%); display: grid; justify-items: center; gap: 0.6cqw;
+  font: 600 1.9cqw/1.15 var(--label); color: #f4f2ee; text-shadow: 0 1px 2px rgba(0,0,0,.6); white-space: nowrap;
+}
+.ic { display: grid; place-items: center; width: 8.4cqw; height: 8.4cqw; border-radius: 1.6cqw; font: 700 1.9cqw/1 var(--label); font-style: normal; color: #2a1206; }
+.ic.bundle { background: linear-gradient(180deg, #f6c08c, #d9783a); box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 1px 2px rgba(0,0,0,.5); }
+.ic.bundle.app { background: linear-gradient(180deg, #e9e4d8, #b9b2a2); }
+.ic.folder { width: 9.4cqw; height: 7cqw; border-radius: 0.8cqw; background: linear-gradient(180deg, #7fb3e6, #4b86c4); box-shadow: inset 0 1.2cqw 0 #9cc6ef, 0 1px 2px rgba(0,0,0,.5); }
+.ic.script { background: #1b1c1f; color: #e6e1d7; font-family: var(--mono); box-shadow: inset 0 0 0 1px #4a4d53, 0 1px 2px rgba(0,0,0,.5); }
+
+/* manual unblocking, folded */
+.manual { margin-top: 2px; }
+.manual summary { cursor: pointer; font: 600 12.5px/1.2 var(--label); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding-block: 6px; }
+.manual summary:hover { color: var(--text); }
+.manual .terminal { margin-top: 8px; }
+.terminal pre .ok { color: #79c25f; }
+.terminal pre .dim { color: var(--faint); }
+
+/* Ko-fi in a small window */
+.kofi-dialog {
+  width: min(430px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 10px 12px 12px; border: 1px solid #000; border-radius: 10px;
+  background: linear-gradient(180deg, #2b2d31, #222428); color: var(--text); box-shadow: 0 20px 60px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.kofi-dialog::backdrop { background: rgba(8, 9, 10, .66); backdrop-filter: blur(2px); }
+.kd-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.kd-head .mini-legend { flex: 1; margin: 0; }
+.kd-close { min-height: 30px; padding: 0 10px; }
+.kd-frame { border-radius: 6px; overflow: hidden; background: #f9f9f9; box-shadow: inset 0 0 0 1px #000; }
+.kd-frame iframe { display: block; width: 100%; height: min(690px, calc(100vh - 140px)); border: 0; background: #f9f9f9; }
+.kd-foot { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
 <div class="cheek l" aria-hidden="true"></div>
 <div class="cheek r" aria-hidden="true"></div>
 
@@ -366,172 +423,180 @@ footer a { color: var(--muted); }
     <p class="tag">oscar · midi · sysex · tauntek cc</p>
   </div>
   <div class="vents" aria-hidden="true"></div>
+  <nav class="lang" aria-label="Language">
+    <a class="btn langbtn on" href="index.html" hreflang="en" lang="en" data-lang="en"><span>EN</span><i class="led"></i></a>
+    <a class="btn langbtn" href="fr.html" hreflang="fr" lang="fr" data-lang="fr"><span>FR</span><i class="led"></i></a>
+  </nav>
 </header>
 
-<div class="display-row" aria-label="Version actuelle">
-  <a class="arrow" href="#nouveautes" aria-label="Nouveautés">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.2.0</span><span class="name">OSCAR EDITOR</span><span class="state">GRATUIT</span></div>
-  <a class="arrow" href="#installation" aria-label="Installation">&gt;</a>
+<div class="display-row" aria-label="Current version">
+  <a class="arrow" href="#news" aria-label="What's new">&lt;</a>
+  <div class="display"><span class="num" id="vfd-version">0.2.1</span><span class="name">OSCAR EDITOR</span><span class="state">FREE</span></div>
+  <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
 <nav class="tabs-bar" aria-label="Sections">
   <div class="tabs">
-    <a class="btn" href="#telecharger"><span>Télécharger</span><i class="led"></i></a>
-    <a class="btn" href="#nouveautes"><span>Nouveautés</span><i class="led"></i></a>
-    <a class="btn" href="#installation"><span>Installation</span><i class="led"></i></a>
-    <a class="btn" href="#raccourcis"><span>Raccourcis</span><i class="led"></i></a>
-    <a class="btn" href="#astuces"><span>Astuces</span><i class="led"></i></a>
-    <a class="btn" href="#retours"><span>Retours</span><i class="led"></i></a>
-    <a class="btn" href="#soutenir"><span>Soutenir</span><i class="led"></i></a>
+    <a class="btn" href="#download"><span>Download</span><i class="led"></i></a>
+    <a class="btn" href="#news"><span>What's new</span><i class="led"></i></a>
+    <a class="btn" href="#install"><span>Installation</span><i class="led"></i></a>
+    <a class="btn" href="#shortcuts"><span>Shortcuts</span><i class="led"></i></a>
+    <a class="btn" href="#tips"><span>Tips</span><i class="led"></i></a>
+    <a class="btn" href="#feedback"><span>Feedback</span><i class="led"></i></a>
+    <a class="btn" href="#support"><span>Support</span><i class="led"></i></a>
   </div>
 </nav>
 
 <main>
 
 <!-- download -->
-<section class="group" id="telecharger" aria-labelledby="t-dl">
-  <p class="legend">télécharger</p>
+<section class="group" id="download" aria-labelledby="t-dl">
+  <p class="legend">download</p>
   <div class="hero">
     <div>
-      <h2 id="t-dl">L'éditeur et librarian de l'OSCar</h2>
-      <p class="pitch">Sauvegarde, nomme, édite et invente les sons de ton OSCar depuis Logic Pro. Avec la carte MIDI Tauntek, chaque potard agit en direct et le plugin affiche exactement ce que joue l'OSCar.</p>
-      <a class="copper" id="download" href="https://github.com/distortedimages-code/OSCarEditor/releases/latest/download/OSCar-Editor-mac.zip">
+      <h2 id="t-dl">The OSCar editor and librarian</h2>
+      <p class="pitch">Back up, name, edit and invent sounds for your OSCar from Logic Pro. With the Tauntek MIDI board, every knob acts live and the plug-in shows exactly what the OSCar is playing.</p>
+      <a class="copper" id="download-btn" href="https://github.com/distortedimages-code/OSCarEditor/releases/latest/download/OSCar-Editor-mac.dmg">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1v9m0 0L4.5 6.5M8 10l3.5-3.5M2 12.5v1.5h12v-1.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Télécharger pour Mac
+        Download for Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.2.0</dd>
-        <dt>Formats</dt><dd>AU pour Logic Pro, VST3 et application autonome</dd>
-        <dt>Système</dt><dd>macOS 11 ou plus récent, Apple Silicon et Intel</dd>
-        <dt>Synthé</dt><dd>OSCar avec la carte MIDI Tauntek. Avec le MIDI d'origine, tout marche sauf l'édition en direct.</dd>
-        <dt>Prix</dt><dd>Gratuit</dd>
+        <dt>Version</dt><dd id="spec-version">0.2.1</dd>
+        <dt>Formats</dt><dd>AU for Logic Pro, VST3 and standalone app</dd>
+        <dt>System</dt><dd>macOS 11 or later, Apple silicon and Intel</dd>
+        <dt>Synth</dt><dd>OSCar with the Tauntek MIDI board. With the original MIDI, everything works except live editing.</dd>
+        <dt>Price</dt><dd>Free</dd>
       </dl>
       <div class="links">
-        <a href="https://github.com/distortedimages-code/OSCarEditor/releases" target="_blank" rel="noopener">Toutes les versions</a>
-        <a href="https://github.com/distortedimages-code/OSCarEditor" target="_blank" rel="noopener">Code source</a>
-        <a href="#installation">Guide d'installation</a>
+        <a href="https://github.com/distortedimages-code/OSCarEditor/releases" target="_blank" rel="noopener">All versions</a>
+        <a href="https://github.com/distortedimages-code/OSCarEditor" target="_blank" rel="noopener">Source code</a>
+        <a href="#install">Install guide</a>
       </div>
     </div>
 
-    <figure class="viewer" aria-label="Les pages du plugin">
-      <div class="screen"><img id="shot" src="img/voix.webp" width="1600" height="914" alt="OSCar Editor, page Voix"></div>
-      <div class="minis" role="group" aria-label="Choisir une page du plugin">
-<button type="button" class="mini on" id="shot-voix" data-i="0" aria-pressed="true"><span>Voix</span><i class="led"></i></button>
-<button type="button" class="mini" id="shot-generateur" data-i="1" aria-pressed="false"><span>Générateur</span><i class="led"></i></button>
-<button type="button" class="mini" id="shot-banques" data-i="2" aria-pressed="false"><span>Banques</span><i class="led"></i></button>
-<button type="button" class="mini" id="shot-formes-d-onde" data-i="3" aria-pressed="false"><span>Formes d'onde</span><i class="led"></i></button>
-<button type="button" class="mini" id="shot-raccourcis-tauntek" data-i="4" aria-pressed="false"><span>Raccourcis Tauntek</span><i class="led"></i></button>
-<button type="button" class="mini" id="shot-reglages" data-i="5" aria-pressed="false"><span>Réglages</span><i class="led"></i></button>
+    <figure class="viewer" aria-label="The plug-in's pages">
+      <div class="screen"><img id="shot" src="img/en/voix.webp" width="1600" height="914" alt="OSCar Editor, Voice page"></div>
+      <div class="minis" role="group" aria-label="Choose a page of the plug-in">
+<button type="button" class="mini on" id="shot-voix" data-i="0" aria-pressed="true"><span>Voice</span><i class="led"></i></button>
+<button type="button" class="mini" id="shot-generateur" data-i="1" aria-pressed="false"><span>Generator</span><i class="led"></i></button>
+<button type="button" class="mini" id="shot-banques" data-i="2" aria-pressed="false"><span>Banks</span><i class="led"></i></button>
+<button type="button" class="mini" id="shot-formes-d-onde" data-i="3" aria-pressed="false"><span>Waveforms</span><i class="led"></i></button>
+<button type="button" class="mini" id="shot-raccourcis-tauntek" data-i="4" aria-pressed="false"><span>Tauntek keys</span><i class="led"></i></button>
+<button type="button" class="mini" id="shot-reglages" data-i="5" aria-pressed="false"><span>Setup</span><i class="led"></i></button>
       </div>
-      <figcaption id="shot-caption">Tous les réglages de la voix choisie. Chaque potard part en CC vers l'OSCar, et tout s'automatise depuis le DAW.</figcaption>
+      <figcaption id="shot-caption">Every setting of the chosen voice. Each knob goes to the OSCar as a CC, and everything can be automated from the DAW.</figcaption>
     </figure>
   </div>
 </section>
 
 <!-- releases -->
-<section class="group" id="nouveautes" aria-labelledby="t-news">
-  <p class="legend">nouveautés</p>
-  <h2 id="t-news">Les dernières versions</h2>
+<section class="group" id="news" aria-labelledby="t-news">
+  <p class="legend">what's new</p>
+  <h2 id="t-news">Latest versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.2.0</span><div class="cap when">novembre 2026</div></div>
+      <div><span class="vchip">0.2.1</span><div class="cap when">latest version</div></div>
       <div class="notes">
-        <p><strong>Interface en français</strong> (English au choix dans Réglages). Les noms des réglages et des touches de l'OSCar restent ceux de la façade.</p>
-        <p><strong>Nouveau look « Atelier »</strong> : façade d'instrument avec joues en bois, potards, faders d'enveloppe, voyants et afficheur orange. La fenêtre peut être agrandie ou réduite.</p>
-        <p><strong>Rappel automatique</strong> : quand tu choisis une voix sur l'OSCar (avec le patch CC dump Tauntek activé), le plugin affiche exactement ce que joue l'OSCar, Duo/Arp compris.</p>
-        <p><strong>Horloge MIDI</strong> : l'arpégiateur et le séquenceur peuvent suivre l'horloge MIDI (Sync), avec la division en clair (1/16, 1/8T…). Le plugin peut envoyer l'horloge du DAW à l'OSCar, avec Start / Stop.</p>
-        <p><strong>Générateur de sons</strong> : Varier, Nouveau (basse, lead, pad, percussif, texture) et Croiser, avec verrous par section et historique. Les résultats jouent tout de suite sur l'OSCar, sans toucher à sa mémoire.</p>
-        <p><strong>Page Banques</strong> : tes banques, tes voix et toutes les sauvegardes automatiques, rechargeables d'un double-clic. Les voix s'enregistrent directement dans le dossier Voices, les banques dans Banks. Le contenu de l'OSCar est aussi sauvegardé avant chaque envoi.</p>
-        <p><strong>Page Raccourcis Tauntek</strong> : tous les raccourcis TUNE/TRANSPOSE sur un clavier, avec les touches dangereuses en rouge.</p>
-        <p><strong>MIDI Thru</strong> : jouer l'OSCar depuis la piste du DAW (notes et pitch bend).</p>
-        <p><strong>Mises à jour intégrées</strong> : le plugin signale les nouvelles versions et se met à jour lui-même sur Mac.</p>
+        <p><strong>Disk image installer</strong>: download OSCar-Editor-mac.dmg, drag each file onto the folder shown next to it, then run Installer.command in Terminal. It unblocks the plug-in and checks it for Logic Pro, and can also install everything by itself.</p>
+        <p><strong>Release notes in your language</strong>: the update window shows these notes in the plug-in's language.</p>
       </div>
     </article>
   </div>
-  <p class="update-hint"><i class="led on" aria-hidden="true"></i>Une fois installé, le plugin te prévient lui-même quand une version sort : un bouton Mise à jour apparaît en haut de sa fenêtre. Un clic, puis tu relances Logic.</p>
+  <p class="update-hint"><i class="led on" aria-hidden="true"></i>Once installed, the plug-in tells you itself when a version comes out: an Update button appears at the top of its window. One click, then restart Logic.</p>
 </section>
 
 <!-- install -->
-<section class="group" id="installation" aria-labelledby="t-install">
+<section class="group" id="install" aria-labelledby="t-install">
   <p class="legend">installation</p>
-  <h2 id="t-install">Installer et brancher, pas à pas</h2>
-  <p class="lead-text">Compte un quart d'heure la première fois. Les versions suivantes s'installent depuis le plugin, sans refaire ces étapes.</p>
+  <h2 id="t-install">Install and connect, step by step</h2>
+  <p class="lead-text">Allow fifteen minutes the first time. Later versions install from within the plug-in, without these steps.</p>
 
   <ol class="steps">
-    <li class="step">
+    <li class="step wide">
       <span class="step-n" aria-hidden="true">1</span>
       <div class="step-text">
-        <h3>Télécharger</h3>
-        <p>Le bouton <a href="#telecharger">Télécharger pour Mac</a> donne le fichier <code>OSCar-Editor-mac.zip</code>. Double-clique dessus s'il n'est pas déjà décompressé : tu obtiens trois fichiers.</p>
-        <p class="note">Logic Pro n'utilise que l'AU (OSCar Editor.component). Le VST3 sert aux autres logiciels, et l'application fonctionne sans DAW.</p>
+        <h3>Open the disk image and drag the files</h3>
+        <p>Double-click <code>OSCar-Editor-mac.dmg</code>. In the window that opens, drag each file onto the folder opposite: the AU onto <b>Components (AU)</b>, the VST3 onto <b>VST3</b>, the app onto <b>Applications</b>. macOS may ask for your password.</p>
+        <p class="note">Logic Pro only uses the AU. The VST3 is for other hosts, and the app works without a DAW. You can also skip this step: the script in step 2 installs everything by itself.</p>
       </div>
       <div class="step-art">
-        <div class="inset files" aria-label="Contenu du fichier zip">
-          <div class="zip">OSCar-Editor-mac.zip</div>
-          <div class="file"><span class="badge">AU</span><b>OSCar Editor.component</b></div>
-          <div class="file"><span class="badge b2">VST3</span><b>OSCar Editor.vst3</b></div>
-          <div class="file"><span class="badge b3">APP</span><b>OSCar Editor.app</b></div>
-        </div>
-      </div>
-    </li>
-
-    <li class="step">
-      <span class="step-n" aria-hidden="true">2</span>
-      <div class="step-text">
-        <h3>Ranger chaque fichier à sa place</h3>
-        <p>Dans le Finder, menu <kbd>Aller</kbd> › <kbd>Aller au dossier…</kbd> (ou <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd>). Colle le chemin, appuie sur Entrée, puis glisse le fichier dans la fenêtre qui s'ouvre.</p>
-        <p class="note">Le dossier Library (Bibliothèque) est caché dans le Finder, mais « Aller au dossier » l'ouvre quand même. Si une ancienne version s'y trouve, remplace-la.</p>
-      </div>
-      <div class="step-art">
-        <div class="inset files" aria-label="Où ranger les fichiers">
-          <div class="file"><span class="badge">AU</span><span><b>OSCar Editor.component</b><span class="dest">~/Library/Audio/Plug-Ins/Components</span></span></div>
-          <div class="file"><span class="badge b2">VST3</span><span><b>OSCar Editor.vst3</b><span class="dest">~/Library/Audio/Plug-Ins/VST3</span></span></div>
-          <div class="file"><span class="badge b3">APP</span><span><b>OSCar Editor.app</b><span class="dest">/Applications</span></span></div>
-        </div>
-      </div>
-    </li>
-
-    <li class="step wide">
-      <span class="step-n" aria-hidden="true">3</span>
-      <div class="step-text">
-        <h3>Débloquer le plugin, une seule fois</h3>
-        <p>Le plugin n'est pas notarisé par Apple : tant qu'il n'est pas débloqué, macOS empêche Logic de le charger. Ouvre Terminal (Applications › Utilitaires), colle ces lignes et appuie sur Entrée.</p>
-        <p class="note">Si rien ne s'affiche, c'est bon. « no matches found » veut dire qu'un fichier n'est pas dans son dossier : refais l'étape 2 (ou ignore la ligne de l'application si tu ne l'as pas installée). Les mises à jour faites depuis le plugin n'ont pas besoin de ce déblocage.</p>
-      </div>
-      <div class="step-art">
-        <div class="inset terminal">
-          <div class="term-bar"><span class="cap">Terminal</span><button type="button" class="btn copy" id="copy-cmd"><span>Copier</span><i class="led"></i></button></div>
-<pre id="cmd">xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/Components/OSCar*
-xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/OSCar*
-xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
-        </div>
-      </div>
-    </li>
-
-    <li class="step">
-      <span class="step-n" aria-hidden="true">4</span>
-      <div class="step-text">
-        <h3>L'ouvrir dans Logic Pro</h3>
-        <p>Relance Logic Pro : il vérifie les nouveaux plugins au démarrage. Crée une piste d'instrument logiciel, clique sur le slot d'instrument et choisis OSCar Editor dans les instruments AU, rubrique OSCarTools.</p>
-        <p class="note">Il n'apparaît pas ? Logic Pro › Réglages › Gestionnaire de modules : sélectionne OSCar Editor, puis « Réinitialiser et réanalyser la sélection ». S'il est refusé, refais l'étape 3. Le plugin ne produit aucun son : il parle directement à l'OSCar par ton interface MIDI.</p>
-      </div>
-      <div class="step-art">
-        <figure>
-          <img class="shot-crop" src="img/voix.webp" width="1600" height="914" alt="La fenêtre du plugin, page Voix" loading="lazy">
-          <figcaption>La fenêtre s'ouvre sur la page Voix. En haut à droite, les voyants Live CC et CC DUMP.</figcaption>
+        <figure class="dmg">
+          <div class="dmg-bar" aria-hidden="true"><i></i><i></i><i></i><span>OSCar Editor</span></div>
+          <div class="dmg-win">
+            <img src="img/dmg.webp" width="1080" height="810" alt="The disk image window: each file on the left, its folder on the right, Installer.command at the bottom" loading="lazy">
+            <span class="dmg-item" style="left:27.2%;top:30.7%"><i class="ic bundle">AU</i>OSCar Editor.component</span>
+            <span class="dmg-item" style="left:72.8%;top:30.7%"><i class="ic folder"></i>Components (AU)</span>
+            <span class="dmg-item" style="left:27.2%;top:48.9%"><i class="ic bundle">VST3</i>OSCar Editor.vst3</span>
+            <span class="dmg-item" style="left:72.8%;top:48.9%"><i class="ic folder"></i>VST3</span>
+            <span class="dmg-item" style="left:27.2%;top:67%"><i class="ic bundle app">APP</i>OSCar Editor.app</span>
+            <span class="dmg-item" style="left:72.8%;top:67%"><i class="ic folder"></i>Applications</span>
+            <span class="dmg-item" style="left:16.4%;top:87%"><i class="ic script">&gt;_</i>Installer.command</span>
+          </div>
         </figure>
       </div>
     </li>
 
     <li class="step wide">
-      <span class="step-n" aria-hidden="true">5</span>
+      <span class="step-n" aria-hidden="true">2</span>
       <div class="step-text">
-        <h3>Brancher l'OSCar et choisir les ports</h3>
-        <p>Un câble va toujours d'un OUT vers un IN. Puis, page <b>Réglages</b> du plugin : <b>Sortie</b> = la sortie de l'interface où arrive le câble 1, <b>Entrée</b> = l'entrée où arrive le câble 2, canal 1 sauf si ton OSCar est réglé autrement.</p>
-        <p class="note">Avec un câble USB-MIDI tout-en-un, les fiches IN et OUT sont parfois étiquetées à l'envers : si rien ne passe, inverse-les. Le plugin retient tes ports.</p>
+        <h3>Unblock and check with the script</h3>
+        <p>The plug-in isn't notarized by Apple: until it's unblocked, macOS stops Logic from loading it. Open Terminal (Applications › Utilities), type <kbd>bash</kbd> and a space, drag <code>Installer.command</code> from the disk image window, then press Return.</p>
+        <p class="note">The script installs whatever is missing, unblocks the plug-in and has macOS validate it the way Logic does. If Terminal asks to access a removable volume, allow it. Updates made from within the plug-in don't need this.</p>
       </div>
       <div class="step-art">
-        <div class="inset diagram"><svg class="cabling" viewBox="0 30 700 230" role="img" aria-label="Câble 1 : sortie MIDI de l'interface vers l'entrée MIDI de l'OSCar. Câble 2 : sortie MIDI de l'OSCar vers l'entrée MIDI de l'interface.">
+        <div class="inset terminal">
+          <div class="term-bar"><span class="cap">Terminal</span></div>
+<pre><span class="dim">$ bash /Volumes/OSCar\ Editor/Installer.command</span>
+
+OSCar Editor 0.2.1
+Installing and unblocking
+<span class="ok">  ✓ OSCar Editor.component  →  /Library/Audio/Plug-Ins/Components  (0.2.1)</span>
+<span class="ok">  ✓ OSCar Editor.vst3  →  /Library/Audio/Plug-Ins/VST3  (0.2.1)</span>
+<span class="ok">  ✓ OSCar Editor.app  →  /Applications  (0.2.1)</span>
+
+Checking the Audio Unit for Logic Pro (a few seconds)
+<span class="ok">  ✓ Audio Unit validated: Logic Pro can load it.</span>
+
+Done. Restart Logic Pro (or your DAW): OSCar Editor is in the
+AU instruments, under OSCarTools.</pre>
+        </div>
+        <details class="manual">
+          <summary>Without the script: the commands by hand</summary>
+          <div class="inset terminal">
+            <div class="term-bar"><span class="cap">Terminal</span><button type="button" class="btn copy" id="copy-cmd"><span>Copy</span><i class="led"></i></button></div>
+<pre id="cmd">xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/Components/OSCar* ~/Library/Audio/Plug-Ins/Components/OSCar*
+xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/OSCar* ~/Library/Audio/Plug-Ins/VST3/OSCar*
+xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
+          </div>
+          <p class="note">"No such file" for one of the two folders is normal: the plug-in is only in one of them.</p>
+        </details>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="step-n" aria-hidden="true">3</span>
+      <div class="step-text">
+        <h3>Open it in Logic Pro</h3>
+        <p>Restart Logic Pro: it checks new plug-ins when it starts. Create a software instrument track, click the instrument slot and choose OSCar Editor in the AU instruments, under OSCarTools.</p>
+        <p class="note">Not there? Logic Pro › Settings › Plug-in Manager: select OSCar Editor, then "Reset & Rescan Selection". The plug-in makes no sound: it talks straight to the OSCar through your MIDI interface.</p>
+      </div>
+      <div class="step-art">
+        <figure>
+          <img class="shot-crop" src="img/en/voix.webp" width="1600" height="914" alt="The plug-in window, Voice page" loading="lazy">
+          <figcaption>The window opens on the Voice page. Top right: the Live CC and CC DUMP lights.</figcaption>
+        </figure>
+      </div>
+    </li>
+
+    <li class="step wide">
+      <span class="step-n" aria-hidden="true">4</span>
+      <div class="step-text">
+        <h3>Connect the OSCar and choose the ports</h3>
+        <p>A cable always goes from an OUT to an IN. Then, on the plug-in's <b>Setup</b> page: <b>Out</b> = the interface output cable 1 is plugged into, <b>In</b> = the input cable 2 is plugged into, channel 1 unless your OSCar is set otherwise.</p>
+        <p class="note">With an all-in-one USB-MIDI cable, the IN and OUT plugs are sometimes labelled the other way round: if nothing gets through, swap them. The plug-in remembers your ports.</p>
+      </div>
+      <div class="step-art">
+        <div class="inset diagram"><svg class="cabling" viewBox="0 30 700 230" role="img" aria-label="Cable 1: the interface's MIDI output to the OSCar's MIDI input. Cable 2: the OSCar's MIDI output to the interface's MIDI input.">
   <defs>
     <marker id="arrowA" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ma"/></marker>
     <marker id="arrowB" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mb"/></marker>
@@ -543,58 +608,58 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
   <path class="usb" d="M146,100 L250,100"/>
   <text class="sl" x="198" y="91" text-anchor="middle">USB</text>
   <rect class="dev" x="250" y="52" width="164" height="104" rx="10"/>
-  <text class="dl" x="332" y="76" text-anchor="middle">Interface MIDI</text>
+  <text class="dl" x="332" y="76" text-anchor="middle">MIDI interface</text>
   <text class="pl" x="297" y="101" text-anchor="middle">MIDI OUT</text>
   <text class="pl" x="367" y="101" text-anchor="middle">MIDI IN</text>
   <circle class="din" cx="297" cy="128" r="15"/><circle class="pin" cx="288.8" cy="130.0" r="1.7"/><circle class="pin" cx="291.2" cy="124.2" r="1.7"/><circle class="pin" cx="297.0" cy="121.8" r="1.7"/><circle class="pin" cx="302.8" cy="124.2" r="1.7"/><circle class="pin" cx="305.2" cy="130.0" r="1.7"/><circle class="din" cx="367" cy="128" r="15"/><circle class="pin" cx="358.8" cy="130.0" r="1.7"/><circle class="pin" cx="361.2" cy="124.2" r="1.7"/><circle class="pin" cx="367.0" cy="121.8" r="1.7"/><circle class="pin" cx="372.8" cy="124.2" r="1.7"/><circle class="pin" cx="375.2" cy="130.0" r="1.7"/>
   <rect class="dev oscar" x="486" y="42" width="200" height="120" rx="8"/>
-  <text class="dl" x="586" y="66" text-anchor="middle">OSCar, face arrière</text>
+  <text class="dl" x="586" y="66" text-anchor="middle">OSCar, rear panel</text>
   <text class="pl" x="550" y="101" text-anchor="middle">MIDI IN</text>
   <text class="pl" x="622" y="101" text-anchor="middle">MIDI OUT</text>
   <circle class="din" cx="550" cy="128" r="15"/><circle class="pin" cx="541.8" cy="130.0" r="1.7"/><circle class="pin" cx="544.2" cy="124.2" r="1.7"/><circle class="pin" cx="550.0" cy="121.8" r="1.7"/><circle class="pin" cx="555.8" cy="124.2" r="1.7"/><circle class="pin" cx="558.2" cy="130.0" r="1.7"/><circle class="din" cx="622" cy="128" r="15"/><circle class="pin" cx="613.8" cy="130.0" r="1.7"/><circle class="pin" cx="616.2" cy="124.2" r="1.7"/><circle class="pin" cx="622.0" cy="121.8" r="1.7"/><circle class="pin" cx="627.8" cy="124.2" r="1.7"/><circle class="pin" cx="630.2" cy="130.0" r="1.7"/>
   <path class="c1" d="M297,144 C297,212 550,212 550,148" marker-end="url(#arrowA)"/>
   <rect class="t1" x="380" y="186" width="86" height="24" rx="12"/>
-  <text class="tt1" x="423" y="202" text-anchor="middle">câble 1</text>
+  <text class="tt1" x="423" y="202" text-anchor="middle">cable 1</text>
   <path class="c2" d="M622,144 C622,252 367,252 367,148" marker-end="url(#arrowB)"/>
   <rect class="t2" x="452" y="218" width="86" height="24" rx="12"/>
-  <text class="tt2" x="495" y="234" text-anchor="middle">câble 2</text>
+  <text class="tt2" x="495" y="234" text-anchor="middle">cable 2</text>
 </svg></div>
         <figure class="ports">
-          <img class="shot-crop" src="img/ports.webp" width="900" height="524" alt="Page Réglages : choix de la sortie, de l'entrée et du canal MIDI" loading="lazy">
-          <figcaption>Page Réglages : les noms affichés dépendent de ton interface.</figcaption>
+          <img class="shot-crop" src="img/en/ports.webp" width="900" height="524" alt="Setup page: MIDI output, input and channel" loading="lazy">
+          <figcaption>Setup page: the names shown depend on your interface.</figcaption>
         </figure>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="step-n" aria-hidden="true">5</span>
+      <div class="step-text">
+        <h3>Two settings on the OSCar</h3>
+        <p><b>Program change</b>, so the OSCar switches to the voice you click in the plug-in: hold <kbd>SPACE</kbd> (left of the keyboard) and press key −9. The −9 LED lights up.</p>
+        <p><b>Patch CC dump</b>, so the plug-in follows the voices chosen on the OSCar: hold <kbd>TUNE/TRANSPOSE</kbd> and press the "Enable patch CC dump" key, the last black key of the middle octave. The plug-in's CC DUMP light comes on at the next voice change.</p>
+        <p class="note">If the OSCar stops following after being switched off, do these two settings again.</p>
+      </div>
+      <div class="step-art">
+        <div class="combo"><kbd>SPACE</kbd><span>hold</span><span class="plus">+</span><span>key −9</span></div>
+        <div class="inset diagram"><svg class="kbd" viewBox="0 0 680 210" role="img" aria-label="Clavier de l'OSCar, touche à presser en couleur"><rect class="kw" x="10" y="46" width="30" height="120" rx="2"/><rect class="kw" x="40" y="46" width="30" height="120" rx="2"/><rect class="kw" x="70" y="46" width="30" height="120" rx="2"/><rect class="kw" x="100" y="46" width="30" height="120" rx="2"/><rect class="kw" x="130" y="46" width="30" height="120" rx="2"/><rect class="kw" x="160" y="46" width="30" height="120" rx="2"/><rect class="kw" x="190" y="46" width="30" height="120" rx="2"/><rect class="kw" x="220" y="46" width="30" height="120" rx="2"/><rect class="kw" x="250" y="46" width="30" height="120" rx="2"/><rect class="kw" x="280" y="46" width="30" height="120" rx="2"/><rect class="kw" x="310" y="46" width="30" height="120" rx="2"/><rect class="kw" x="340" y="46" width="30" height="120" rx="2"/><rect class="kw" x="370" y="46" width="30" height="120" rx="2"/><rect class="kw" x="400" y="46" width="30" height="120" rx="2"/><rect class="kw" x="430" y="46" width="30" height="120" rx="2"/><rect class="kw" x="460" y="46" width="30" height="120" rx="2"/><rect class="kw" x="490" y="46" width="30" height="120" rx="2"/><rect class="kw" x="520" y="46" width="30" height="120" rx="2"/><rect class="kw" x="550" y="46" width="30" height="120" rx="2"/><rect class="kw" x="580" y="46" width="30" height="120" rx="2"/><rect class="kw" x="610" y="46" width="30" height="120" rx="2"/><rect class="kw" x="640" y="46" width="30" height="120" rx="2"/><rect class="kb" x="30.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb on" x="60.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="120.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="150.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="180.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="240.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="270.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="330.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="360.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="390.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="450.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="480.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="540.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="570.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="600.7" y="46" width="18.6" height="74.4" rx="2"/><text class="kl" x="25.0" y="36" text-anchor="middle">−12</text><text class="kl on" x="70.0" y="36" text-anchor="middle">−9</text><text class="kl" x="655.0" y="36" text-anchor="middle">24</text><circle class="dot" cx="70.0" cy="106.4" r="5"/><path class="lead" d="M70.0,106.4 L70.0,192"/><text class="co" x="78.0" y="196" text-anchor="start">−9: the 2nd black key</text></svg></div>
+        <div class="combo"><kbd>TUNE/TRANSPOSE</kbd><span>hold</span><span class="plus">+</span><span>Enable patch CC dump</span></div>
+        <div class="inset diagram"><svg class="kbd" viewBox="0 0 680 210" role="img" aria-label="Clavier de l'OSCar, touche à presser en couleur"><rect class="kw" x="10" y="46" width="30" height="120" rx="2"/><rect class="kw" x="40" y="46" width="30" height="120" rx="2"/><rect class="kw" x="70" y="46" width="30" height="120" rx="2"/><rect class="kw" x="100" y="46" width="30" height="120" rx="2"/><rect class="kw" x="130" y="46" width="30" height="120" rx="2"/><rect class="kw" x="160" y="46" width="30" height="120" rx="2"/><rect class="kw" x="190" y="46" width="30" height="120" rx="2"/><rect class="kw" x="220" y="46" width="30" height="120" rx="2"/><rect class="kw" x="250" y="46" width="30" height="120" rx="2"/><rect class="kw" x="280" y="46" width="30" height="120" rx="2"/><rect class="kw" x="310" y="46" width="30" height="120" rx="2"/><rect class="kw" x="340" y="46" width="30" height="120" rx="2"/><rect class="kw" x="370" y="46" width="30" height="120" rx="2"/><rect class="kw" x="400" y="46" width="30" height="120" rx="2"/><rect class="kw" x="430" y="46" width="30" height="120" rx="2"/><rect class="kw" x="460" y="46" width="30" height="120" rx="2"/><rect class="kw" x="490" y="46" width="30" height="120" rx="2"/><rect class="kw" x="520" y="46" width="30" height="120" rx="2"/><rect class="kw" x="550" y="46" width="30" height="120" rx="2"/><rect class="kw" x="580" y="46" width="30" height="120" rx="2"/><rect class="kw" x="610" y="46" width="30" height="120" rx="2"/><rect class="kw" x="640" y="46" width="30" height="120" rx="2"/><rect class="kb" x="30.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="60.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="120.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="150.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="180.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="240.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="270.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="330.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="360.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb on" x="390.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="450.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="480.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="540.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="570.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="600.7" y="46" width="18.6" height="74.4" rx="2"/><text class="kl" x="25.0" y="36" text-anchor="middle">−12</text><text class="kl" x="655.0" y="36" text-anchor="middle">24</text><circle class="dot" cx="400.0" cy="106.4" r="5"/><path class="lead" d="M400.0,106.4 L400.0,192"/><text class="co" x="392.0" y="196" text-anchor="end">Enable patch CC dump</text></svg></div>
       </div>
     </li>
 
     <li class="step">
       <span class="step-n" aria-hidden="true">6</span>
       <div class="step-text">
-        <h3>Deux réglages sur l'OSCar</h3>
-        <p><b>Program change</b>, pour que l'OSCar passe sur la voix que tu cliques dans le plugin : maintiens <kbd>SPACE</kbd> (à gauche du clavier) et appuie sur la touche −9. La LED −9 s'allume.</p>
-        <p><b>Patch CC dump</b>, pour que le plugin suive les voix choisies sur l'OSCar : maintiens <kbd>TUNE/TRANSPOSE</kbd> et appuie sur la touche « Enable patch CC dump », la dernière touche noire de l'octave du milieu. Le voyant CC DUMP du plugin s'allume au prochain changement de voix.</p>
-        <p class="note">Si l'OSCar ne suit plus après avoir été éteint, refais ces deux réglages.</p>
+        <h3>Fetch your voices before anything else</h3>
+        <p>With the plug-in open, on the OSCar: hold <kbd>INSERT</kbd>, press <kbd>VOICE</kbd>, then <kbd>SPACE</kbd>. The OSCar sends its 36 voices in under a second and the bottom of the window reads "Voices received (36)".</p>
+        <p>A copy goes automatically to <span class="path">Documents › OSCar Editor › Backups</span>. That's your backup: everything reloads from the Banks page.</p>
+        <p class="note">Nothing shows up? The MIDI input chosen in step 4 isn't the right one, or cable 2 isn't plugged in properly.</p>
       </div>
       <div class="step-art">
-        <div class="combo"><kbd>SPACE</kbd><span>maintenir</span><span class="plus">+</span><span>touche −9</span></div>
-        <div class="inset diagram"><svg class="kbd" viewBox="0 0 680 210" role="img" aria-label="Clavier de l'OSCar, touche à presser en couleur"><rect class="kw" x="10" y="46" width="30" height="120" rx="2"/><rect class="kw" x="40" y="46" width="30" height="120" rx="2"/><rect class="kw" x="70" y="46" width="30" height="120" rx="2"/><rect class="kw" x="100" y="46" width="30" height="120" rx="2"/><rect class="kw" x="130" y="46" width="30" height="120" rx="2"/><rect class="kw" x="160" y="46" width="30" height="120" rx="2"/><rect class="kw" x="190" y="46" width="30" height="120" rx="2"/><rect class="kw" x="220" y="46" width="30" height="120" rx="2"/><rect class="kw" x="250" y="46" width="30" height="120" rx="2"/><rect class="kw" x="280" y="46" width="30" height="120" rx="2"/><rect class="kw" x="310" y="46" width="30" height="120" rx="2"/><rect class="kw" x="340" y="46" width="30" height="120" rx="2"/><rect class="kw" x="370" y="46" width="30" height="120" rx="2"/><rect class="kw" x="400" y="46" width="30" height="120" rx="2"/><rect class="kw" x="430" y="46" width="30" height="120" rx="2"/><rect class="kw" x="460" y="46" width="30" height="120" rx="2"/><rect class="kw" x="490" y="46" width="30" height="120" rx="2"/><rect class="kw" x="520" y="46" width="30" height="120" rx="2"/><rect class="kw" x="550" y="46" width="30" height="120" rx="2"/><rect class="kw" x="580" y="46" width="30" height="120" rx="2"/><rect class="kw" x="610" y="46" width="30" height="120" rx="2"/><rect class="kw" x="640" y="46" width="30" height="120" rx="2"/><rect class="kb" x="30.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb on" x="60.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="120.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="150.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="180.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="240.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="270.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="330.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="360.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="390.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="450.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="480.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="540.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="570.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="600.7" y="46" width="18.6" height="74.4" rx="2"/><text class="kl" x="25.0" y="36" text-anchor="middle">−12</text><text class="kl on" x="70.0" y="36" text-anchor="middle">−9</text><text class="kl" x="655.0" y="36" text-anchor="middle">24</text><circle class="dot" cx="70.0" cy="106.4" r="5"/><path class="lead" d="M70.0,106.4 L70.0,192"/><text class="co" x="78.0" y="196" text-anchor="start">−9 : la 2e touche noire</text></svg></div>
-        <div class="combo"><kbd>TUNE/TRANSPOSE</kbd><span>maintenir</span><span class="plus">+</span><span>Enable patch CC dump</span></div>
-        <div class="inset diagram"><svg class="kbd" viewBox="0 0 680 210" role="img" aria-label="Clavier de l'OSCar, touche à presser en couleur"><rect class="kw" x="10" y="46" width="30" height="120" rx="2"/><rect class="kw" x="40" y="46" width="30" height="120" rx="2"/><rect class="kw" x="70" y="46" width="30" height="120" rx="2"/><rect class="kw" x="100" y="46" width="30" height="120" rx="2"/><rect class="kw" x="130" y="46" width="30" height="120" rx="2"/><rect class="kw" x="160" y="46" width="30" height="120" rx="2"/><rect class="kw" x="190" y="46" width="30" height="120" rx="2"/><rect class="kw" x="220" y="46" width="30" height="120" rx="2"/><rect class="kw" x="250" y="46" width="30" height="120" rx="2"/><rect class="kw" x="280" y="46" width="30" height="120" rx="2"/><rect class="kw" x="310" y="46" width="30" height="120" rx="2"/><rect class="kw" x="340" y="46" width="30" height="120" rx="2"/><rect class="kw" x="370" y="46" width="30" height="120" rx="2"/><rect class="kw" x="400" y="46" width="30" height="120" rx="2"/><rect class="kw" x="430" y="46" width="30" height="120" rx="2"/><rect class="kw" x="460" y="46" width="30" height="120" rx="2"/><rect class="kw" x="490" y="46" width="30" height="120" rx="2"/><rect class="kw" x="520" y="46" width="30" height="120" rx="2"/><rect class="kw" x="550" y="46" width="30" height="120" rx="2"/><rect class="kw" x="580" y="46" width="30" height="120" rx="2"/><rect class="kw" x="610" y="46" width="30" height="120" rx="2"/><rect class="kw" x="640" y="46" width="30" height="120" rx="2"/><rect class="kb" x="30.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="60.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="120.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="150.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="180.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="240.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="270.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="330.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="360.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb on" x="390.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="450.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="480.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="540.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="570.7" y="46" width="18.6" height="74.4" rx="2"/><rect class="kb" x="600.7" y="46" width="18.6" height="74.4" rx="2"/><text class="kl" x="25.0" y="36" text-anchor="middle">−12</text><text class="kl" x="655.0" y="36" text-anchor="middle">24</text><circle class="dot" cx="400.0" cy="106.4" r="5"/><path class="lead" d="M400.0,106.4 L400.0,192"/><text class="co" x="392.0" y="196" text-anchor="end">Enable patch CC dump</text></svg></div>
-      </div>
-    </li>
-
-    <li class="step">
-      <span class="step-n" aria-hidden="true">7</span>
-      <div class="step-text">
-        <h3>Récupérer tes voix, avant tout le reste</h3>
-        <p>Plugin ouvert, sur l'OSCar : maintiens <kbd>INSERT</kbd>, appuie sur <kbd>VOICE</kbd>, puis sur <kbd>SPACE</kbd>. L'OSCar envoie ses 36 voix en moins d'une seconde et le bas de la fenêtre affiche « Voix reçues (36) ».</p>
-        <p>Une copie part automatiquement dans <span class="path">Documents › OSCar Editor › Backups</span>. C'est ta sauvegarde : tout se recharge depuis la page Banques.</p>
-        <p class="note">Rien ne s'affiche ? L'entrée MIDI choisie à l'étape 5 n'est pas la bonne, ou le câble 2 est mal branché.</p>
-      </div>
-      <div class="step-art">
-        <div class="combo"><kbd>INSERT</kbd><span>maintenir</span><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></div>
+        <div class="combo"><kbd>INSERT</kbd><span>hold</span><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">then</span><kbd>SPACE</kbd></div>
         <figure>
-          <img class="shot-crop" src="img/voix-recues.webp" width="900" height="698" alt="Page Banques : la liste des 36 voix reçues" loading="lazy">
-          <figcaption>Page Banques : les 36 voix reçues, avec leurs noms.</figcaption>
+          <img class="shot-crop" src="img/en/voix-recues.webp" width="900" height="698" alt="Banks page: the 36 voices received" loading="lazy">
+          <figcaption>Banks page: the 36 voices received, with their names.</figcaption>
         </figure>
       </div>
     </li>
@@ -602,79 +667,79 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
 </section>
 
 <!-- shortcuts -->
-<section class="group" id="raccourcis" aria-labelledby="t-keys">
-  <p class="legend">raccourcis</p>
-  <h2 id="t-keys">Les raccourcis Tauntek</h2>
-  <p class="lead-text">Maintiens <kbd>TUNE/TRANSPOSE</kbd>, appuie sur une touche du clavier, puis relâche. Clique une touche ou une ligne de la liste pour la retrouver.</p>
+<section class="group" id="shortcuts" aria-labelledby="t-keys">
+  <p class="legend">shortcuts</p>
+  <h2 id="t-keys">Tauntek shortcuts</h2>
+  <p class="lead-text">Hold <kbd>TUNE/TRANSPOSE</kbd>, press a key on the keyboard, then let go. Click a key or a line of the list to find it.</p>
   <div class="keys-top">
     <div class="keys-art">
-      <div class="display readout" aria-live="polite"><span class="ro-label" id="ro-label">ACTIVER LE PATCH CC DUMP</span><span class="ro-key" id="ro-key">La# · octave 2</span></div>
+      <div class="display readout" aria-live="polite"><span class="ro-label" id="ro-label">ENABLE PATCH CC DUMP</span><span class="ro-key" id="ro-key">A# · octave 2</span></div>
       <div class="inset diagram"><svg class="kbd" viewBox="0 0 680 136" role="img" aria-label="Clavier de l'OSCar, touches raccourcis en couleur"><rect class="kw sk r" data-k="0" x="10" y="8" width="30" height="120" rx="2"/><rect class="kw sk r" data-k="2" x="40" y="8" width="30" height="120" rx="2"/><rect class="kw" x="70" y="8" width="30" height="120" rx="2"/><rect class="kw" x="100" y="8" width="30" height="120" rx="2"/><rect class="kw" x="130" y="8" width="30" height="120" rx="2"/><rect class="kw" x="160" y="8" width="30" height="120" rx="2"/><rect class="kw" x="190" y="8" width="30" height="120" rx="2"/><rect class="kw" x="220" y="8" width="30" height="120" rx="2"/><rect class="kw" x="250" y="8" width="30" height="120" rx="2"/><rect class="kw" x="280" y="8" width="30" height="120" rx="2"/><rect class="kw" x="310" y="8" width="30" height="120" rx="2"/><rect class="kw" x="340" y="8" width="30" height="120" rx="2"/><rect class="kw sk n" data-k="21" x="370" y="8" width="30" height="120" rx="2"/><rect class="kw sk r" data-k="23" x="400" y="8" width="30" height="120" rx="2"/><rect class="kw sk r" data-k="24" x="430" y="8" width="30" height="120" rx="2"/><rect class="kw sk n" data-k="26" x="460" y="8" width="30" height="120" rx="2"/><rect class="kw" x="490" y="8" width="30" height="120" rx="2"/><rect class="kw sk n" data-k="29" x="520" y="8" width="30" height="120" rx="2"/><rect class="kw sk n" data-k="31" x="550" y="8" width="30" height="120" rx="2"/><rect class="kw sk n" data-k="33" x="580" y="8" width="30" height="120" rx="2"/><rect class="kw sk n" data-k="35" x="610" y="8" width="30" height="120" rx="2"/><rect class="kw sk n" data-k="36" x="640" y="8" width="30" height="120" rx="2"/><rect class="kb sk s" data-k="1" x="30.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk s" data-k="3" x="60.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb" x="120.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb" x="150.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb" x="180.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb" x="240.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb" x="270.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb" x="330.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk n" data-k="20" x="360.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk n" data-k="22" x="390.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk r" data-k="25" x="450.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk n" data-k="27" x="480.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk n" data-k="30" x="540.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk n" data-k="32" x="570.7" y="8" width="18.6" height="74.4" rx="2"/><rect class="kb sk n" data-k="34" x="600.7" y="8" width="18.6" height="74.4" rx="2"/></svg></div>
-      <div class="sk-legend"><span><i class="sw n"></i>Réglage</span><span><i class="sw r"></i>Remplace les 36 voix (enregistre une banque avant)</span><span><i class="sw s"></i>Écrase une zone de sauvegarde</span></div>
+      <div class="sk-legend"><span><i class="sw n"></i>Setting</span><span><i class="sw r"></i>Replaces the 36 voices (save a bank first)</span><span><i class="sw s"></i>Overwrites a save area</span></div>
     </div>
     <div class="other sc-group">
-      <h3 class="mini-legend">les autres manips</h3>
+      <h3 class="mini-legend">other moves</h3>
       <ul>
-        <li><span>Program change (allumer ou éteindre)</span><span class="combo"><kbd>SPACE</kbd><span>maintenir</span><span class="plus">+</span><span>touche −9</span></span></li>
-        <li><span>Envoyer les voix au plugin</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></span></li>
-        <li><span>Envoyer les séquences ou les formes d'onde</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>SEQ</kbd><span class="plus">ou</span><kbd>WAVEFORM</kbd><span class="plus">puis</span><kbd>SPACE</kbd></span></li>
-        <li><span>Tout envoyer</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>STORE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></span></li>
+        <li><span>Program change (on or off)</span><span class="combo"><kbd>SPACE</kbd><span>hold</span><span class="plus">+</span><span>key −9</span></span></li>
+        <li><span>Send the voices to the plug-in</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">then</span><kbd>SPACE</kbd></span></li>
+        <li><span>Send the sequences or the waveforms</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>SEQ</kbd><span class="plus">or</span><kbd>WAVEFORM</kbd><span class="plus">then</span><kbd>SPACE</kbd></span></li>
+        <li><span>Send everything</span><span class="combo"><kbd>INSERT</kbd><span class="plus">+</span><kbd>STORE</kbd><span class="plus">then</span><kbd>SPACE</kbd></span></li>
       </ul>
     </div>
   </div>
   <div class="sc-list">
-<div class="sc-col"><div class="sc-group"><h3 class="mini-legend">sons en mémoire</h3><ul><li><button type="button" class="sc r" data-k="0"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Charger la zone de sauvegarde 1</span><span class="sc-key">Do 1</span></button></li><li><button type="button" class="sc s" data-k="1"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Sauver dans la zone 1</span><span class="sc-key">Do# 1</span></button></li><li><button type="button" class="sc r" data-k="2"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Charger la zone de sauvegarde 2</span><span class="sc-key">Ré 1</span></button></li><li><button type="button" class="sc s" data-k="3"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Sauver dans la zone 2</span><span class="sc-key">Ré# 1</span></button></li><li><button type="button" class="sc r" data-k="23"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Charger les sons d'usine</span><span class="sc-key">Si 2</span></button></li><li><button type="button" class="sc r" data-k="24"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Charger les sons B</span><span class="sc-key">Do 3</span></button></li><li><button type="button" class="sc r" data-k="25"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Charger les sons C</span><span class="sc-key">Do# 3</span></button></li></ul></div></div>
-<div class="sc-col"><div class="sc-group"><h3 class="mini-legend">patch cc dump</h3><ul><li><button type="button" class="sc n" data-k="22"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Activer le patch CC dump</span><span class="sc-key">La# 2</span></button></li><li><button type="button" class="sc n" data-k="21"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Désactiver le patch CC dump</span><span class="sc-key">La 2</span></button></li></ul></div><div class="sc-group"><h3 class="mini-legend">pwm</h3><ul><li><button type="button" class="sc n" data-k="29"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM la plus lente</span><span class="sc-key">Fa 3</span></button></li><li><button type="button" class="sc n" data-k="30"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM plus lente</span><span class="sc-key">Fa# 3</span></button></li><li><button type="button" class="sc n" data-k="31"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM normale</span><span class="sc-key">Sol 3</span></button></li><li><button type="button" class="sc n" data-k="32"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM la plus rapide</span><span class="sc-key">Sol# 3</span></button></li></ul></div></div>
-<div class="sc-col"><div class="sc-group"><h3 class="mini-legend">jeu</h3><ul><li><button type="button" class="sc n" data-k="20"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Arpège aléatoire</span><span class="sc-key">Sol# 2</span></button></li><li><button type="button" class="sc n" data-k="26"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Vélocité vers l'enveloppe du VCF</span><span class="sc-key">Ré 3</span></button></li><li><button type="button" class="sc n" data-k="27"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Vélocité ignorée</span><span class="sc-key">Ré# 3</span></button></li></ul></div><div class="sc-group"><h3 class="mini-legend">lfo</h3><ul><li><button type="button" class="sc n" data-k="34"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Activer la synchro LFO</span><span class="sc-key">La# 3</span></button></li><li><button type="button" class="sc n" data-k="33"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Couper la synchro LFO</span><span class="sc-key">La 3</span></button></li><li><button type="button" class="sc n" data-k="35"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Activer LFO vers oscillateur 1</span><span class="sc-key">Si 3</span></button></li><li><button type="button" class="sc n" data-k="36"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Couper LFO vers oscillateur 1</span><span class="sc-key">Do aigu</span></button></li></ul></div></div>
+<div class="sc-col"><div class="sc-group"><h3 class="mini-legend">voices in memory</h3><ul><li><button type="button" class="sc r" data-k="0"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Load patches from save area 1</span><span class="sc-key">C 1</span></button></li><li><button type="button" class="sc s" data-k="1"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Save patches to save area 1</span><span class="sc-key">C# 1</span></button></li><li><button type="button" class="sc r" data-k="2"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Load patches from save area 2</span><span class="sc-key">D 1</span></button></li><li><button type="button" class="sc s" data-k="3"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Save patches to save area 2</span><span class="sc-key">D# 1</span></button></li><li><button type="button" class="sc r" data-k="23"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Load factory patches</span><span class="sc-key">B 2</span></button></li><li><button type="button" class="sc r" data-k="24"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Load B patches</span><span class="sc-key">C 3</span></button></li><li><button type="button" class="sc r" data-k="25"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Load C patches</span><span class="sc-key">C# 3</span></button></li></ul></div></div>
+<div class="sc-col"><div class="sc-group"><h3 class="mini-legend">patch cc dump</h3><ul><li><button type="button" class="sc n" data-k="22"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Enable patch CC dump</span><span class="sc-key">A# 2</span></button></li><li><button type="button" class="sc n" data-k="21"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Disable patch CC dump</span><span class="sc-key">A 2</span></button></li></ul></div><div class="sc-group"><h3 class="mini-legend">pwm</h3><ul><li><button type="button" class="sc n" data-k="29"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM slowest rate</span><span class="sc-key">F 3</span></button></li><li><button type="button" class="sc n" data-k="30"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM slower rate</span><span class="sc-key">F# 3</span></button></li><li><button type="button" class="sc n" data-k="31"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM normal rate</span><span class="sc-key">G 3</span></button></li><li><button type="button" class="sc n" data-k="32"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">PWM fastest rate</span><span class="sc-key">G# 3</span></button></li></ul></div></div>
+<div class="sc-col"><div class="sc-group"><h3 class="mini-legend">playing</h3><ul><li><button type="button" class="sc n" data-k="20"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Random arp mode</span><span class="sc-key">G# 2</span></button></li><li><button type="button" class="sc n" data-k="26"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Velocity to VCF envelope amount</span><span class="sc-key">D 3</span></button></li><li><button type="button" class="sc n" data-k="27"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Velocity not used</span><span class="sc-key">D# 3</span></button></li></ul></div><div class="sc-group"><h3 class="mini-legend">lfo</h3><ul><li><button type="button" class="sc n" data-k="34"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Enable LFO sync</span><span class="sc-key">A# 3</span></button></li><li><button type="button" class="sc n" data-k="33"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Disable LFO sync</span><span class="sc-key">A 3</span></button></li><li><button type="button" class="sc n" data-k="35"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Enable LFO to oscillator 1</span><span class="sc-key">B 3</span></button></li><li><button type="button" class="sc n" data-k="36"><span class="sk-sw" aria-hidden="true"></span><span class="sc-label">Disable LFO to oscillator 1</span><span class="sc-key">top C</span></button></li></ul></div></div>
   </div>
 </section>
 
 <!-- tips -->
-<section class="group" id="astuces" aria-labelledby="t-tips">
-  <p class="legend">astuces</p>
-  <h2 id="t-tips">Bon à savoir</h2>
+<section class="group" id="tips" aria-labelledby="t-tips">
+  <p class="legend">tips</p>
+  <h2 id="t-tips">Good to know</h2>
   <div class="tips">
     <div class="tip wide"><i class="led on" aria-hidden="true"></i><div>
-      <h3>Récupérer un son fait sur l'OSCar</h3>
-      <p>Le plugin ne reçoit que ce qui est enregistré dans l'OSCar, pas le son en cours de réglage. Pour garder un son créé directement sur la machine :</p>
+      <h3>Keep a sound made on the OSCar</h3>
+      <p>The plug-in only receives what is stored in the OSCar, not the sound you are tweaking. To keep a sound made on the synth itself:</p>
       <ol class="how">
-        <li>Sur l'OSCar, enregistre ton son dans une mémoire que tu peux écraser (STORE, comme d'habitude).</li>
-        <li>Maintiens <kbd>INSERT</kbd>, appuie sur <kbd>VOICE</kbd>, puis sur <kbd>SPACE</kbd> : le plugin reçoit les 36 voix avec leurs valeurs exactes et affiche « Voix reçues (36) ».</li>
-        <li>Dans le plugin, clique sur le numéro de cette mémoire : ton son s'affiche avec tous ses réglages.</li>
-        <li>Page Banques : « Renommer » pour lui donner un nom, puis « Sauver voix… » (dossier Voices) ou « Enregistrer la banque… » pour garder les 36 voix.</li>
+        <li>On the OSCar, store your sound in a memory you can overwrite (STORE, as usual).</li>
+        <li>Hold <kbd>INSERT</kbd>, press <kbd>VOICE</kbd>, then <kbd>SPACE</kbd>: the plug-in receives the 36 voices with their exact values and shows "Voices received (36)".</li>
+        <li>In the plug-in, click that memory's number: your sound shows up with all its settings.</li>
+        <li>Banks page: "Rename" to give it a name, then "Save voice…" (Voices folder) or "Save bank as…" to keep all 36 voices.</li>
       </ol>
-      <p class="small">Avec le patch CC dump, le plugin affiche déjà le son dès que tu choisis la mémoire sur l'OSCar, mais les potards sont à un cran près. Pour garder un son, préfère l'envoi INSERT, VOICE, SPACE.</p>
+      <p class="small">With the patch CC dump on, the plug-in already shows the sound when you pick the memory on the OSCar, but knobs are within one step. To keep a sound, use INSERT, VOICE, SPACE.</p>
     </div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Le son change en direct</h3><p>Avec Live CC allumé, chaque potard part tout de suite vers l'OSCar. Ce n'est enregistré dans sa mémoire qu'avec « Envoyer au synthé », qui écrit les 36 voix d'un coup.</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Le plugin suit l'OSCar</h3><p>Choisis une voix sur l'OSCar : le plugin l'affiche telle qu'elle joue, mode Duo ou Arp compris. Il faut le patch CC dump (étape 6).</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Essayer sans risque</h3><p>Le Générateur joue chaque essai sur l'OSCar sans toucher à sa mémoire. « Retour à l'original » annule, « Garder » met le son dans la voix.</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Arpège calé sur Logic</h3><p>Page Voix, bloc horloge midi : Sync sur Horloge MIDI et une Division (1/16, 1/8T…). Puis, au choix, « Envoyer l'horloge MIDI du DAW à l'OSCar » dans Réglages, ou l'horloge de Logic (Fichier › Réglages du projet › Synchronisation › MIDI, Destination = le port de l'OSCar, case Horloge). Pas les deux.</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Jouer l'OSCar depuis Logic</h3><p>Sélectionne la piste OSCar Editor et allume MIDI Thru (en bas de la fenêtre) : ton clavier maître et les régions MIDI de la piste jouent l'OSCar. Laisse-le éteint si tu joues déjà l'OSCar avec le module External Instrument de Logic.</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Rien ne se perd</h3><p>Chaque réception et chaque envoi est sauvegardé. « Sauver voix… » range une voix dans Voices, « Enregistrer la banque… » une banque dans Banks. Un double-clic les recharge.</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Gare aux touches rouges</h3><p>Sur la page Raccourcis Tauntek, les touches en rouge (sons d'usine, B, C, zones de sauvegarde) remplacent les 36 voix de l'OSCar. Enregistre une banque avant.</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Rien à router dans Logic</h3><p>Dans Logic, un instrument AU ne peut pas envoyer de MIDI vers une interface. OSCar Editor parle donc à l'OSCar par ses propres ports MIDI, choisis dans Réglages.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>The sound changes live</h3><p>With Live CC on, every knob goes straight to the OSCar. It's only stored in its memory with "Send voices to synth", which writes all 36 voices at once.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>The plug-in follows the OSCar</h3><p>Pick a voice on the OSCar: the plug-in shows it as it plays, Duo or Arp mode included. This needs the patch CC dump (step 5).</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Try things safely</h3><p>The Generator plays every try on the OSCar without touching its memory. "Back to original" undoes, "Keep" puts the sound in the voice.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Arpeggiator in time with Logic</h3><p>Voice page, midi clock block: Sync on MIDI clock and a Division (1/16, 1/8T…). Then either "Send the DAW's MIDI clock to the OSCar" in Setup, or Logic's own clock (File › Project Settings › Synchronization › MIDI, Destination = the OSCar's port, Clock box). Not both.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Play the OSCar from Logic</h3><p>Select the OSCar Editor track and turn on MIDI Thru (bottom of the window): your controller keyboard and the track's MIDI regions play the OSCar. Leave it off if you already play the OSCar through Logic's External Instrument plug-in.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Nothing gets lost</h3><p>Every receive and every send is backed up. "Save voice…" files a voice in Voices, "Save bank as…" a bank in Banks. A double-click loads them back.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Mind the red keys</h3><p>On the Tauntek keys page, the red keys (factory, B, C sounds, save areas) replace the OSCar's 36 voices. Save a bank first.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Nothing to route in Logic</h3><p>In Logic, an AU instrument can't send MIDI to an interface. So OSCar Editor talks to the OSCar through its own MIDI ports, chosen in Setup.</p></div></div>
   </div>
 </section>
 
 <!-- feedback + support -->
 <div class="duo">
-  <section class="group" id="retours" aria-labelledby="t-fb">
-    <p class="legend">retours</p>
-    <h2 id="t-fb">Un bug, une idée ?</h2>
-    <p>Dis-le sur GitHub : le formulaire est déjà préparé, il suffit de le compléter. Pour un bug, le journal de la page Réglages aide beaucoup.</p>
+  <section class="group" id="feedback" aria-labelledby="t-fb">
+    <p class="legend">feedback</p>
+    <h2 id="t-fb">A bug, an idea?</h2>
+    <p>Tell me on GitHub: the form is already laid out, you just fill it in. For a bug, the log from the Setup page helps a lot.</p>
     <div class="actions">
-      <a class="btn" href="https://github.com/distortedimages-code/OSCarEditor/issues/new?labels=bug&title=Bug%20%3A%20&body=%2A%2AVersion%20du%20plugin%20%3A%2A%2A%20%28en%20haut%20de%20la%20page%20R%C3%A9glages%29%0A%2A%2AmacOS%20%3A%2A%2A%0A%2A%2ADAW%20et%20format%20%28AU%2C%20VST3%20ou%20application%29%20%3A%2A%2A%0A%0A%2A%2ACe%20qui%20se%20passe%20%3A%2A%2A%0A%0A%2A%2ACe%20qui%20devrait%20se%20passer%20%3A%2A%2A%0A%0A%2A%2ALe%20journal%20%28page%20R%C3%A9glages%29%2C%20si%20possible%20%3A%2A%2A%0A" target="_blank" rel="noopener"><span>Signaler un bug</span><i class="led"></i></a>
-      <a class="btn" href="https://github.com/distortedimages-code/OSCarEditor/issues/new?labels=enhancement&title=Id%C3%A9e%20%3A%20&body=%2A%2ATon%20id%C3%A9e%20%3A%2A%2A%0A%0A%2A%2ADans%20quelle%20situation%20elle%20t%27aiderait%20%3A%2A%2A%0A" target="_blank" rel="noopener"><span>Proposer une idée</span><i class="led"></i></a>
+      <a class="btn" href="https://github.com/distortedimages-code/OSCarEditor/issues/new?labels=bug&title=Bug%3A%20&body=%2A%2APlug-in%20version%3A%2A%2A%20%28top%20of%20the%20Setup%20page%29%0A%2A%2AmacOS%3A%2A%2A%0A%2A%2ADAW%20and%20format%20%28AU%2C%20VST3%20or%20app%29%3A%2A%2A%0A%0A%2A%2AWhat%20happens%3A%2A%2A%0A%0A%2A%2AWhat%20should%20happen%3A%2A%2A%0A%0A%2A%2AThe%20log%20%28Setup%20page%29%2C%20if%20you%20can%3A%2A%2A%0A" target="_blank" rel="noopener"><span>Report a bug</span><i class="led"></i></a>
+      <a class="btn" href="https://github.com/distortedimages-code/OSCarEditor/issues/new?labels=enhancement&title=Idea%3A%20&body=%2A%2AYour%20idea%3A%2A%2A%0A%0A%2A%2AWhen%20it%20would%20help%20you%3A%2A%2A%0A" target="_blank" rel="noopener"><span>Suggest an idea</span><i class="led"></i></a>
     </div>
-    <p class="small" style="margin-top:14px">Il faut un compte GitHub (gratuit).</p>
+    <p class="small" style="margin-top:14px">You need a GitHub account (free).</p>
   </section>
 
-  <section class="group" id="soutenir" aria-labelledby="t-kofi">
-    <p class="legend">soutenir</p>
+  <section class="group" id="support" aria-labelledby="t-kofi">
+    <p class="legend">support</p>
     <div class="kofi">
-      <h2 id="t-kofi">Un café pour l'atelier</h2>
-      <p>OSCar Editor est gratuit et le restera. S'il te rend service, tu peux soutenir son développement sur Ko-fi.</p>
-      <div><a class="copper" href="https://ko-fi.com/amnesy" target="_blank" rel="noopener">Soutenir sur Ko-fi</a></div>
+      <h2 id="t-kofi">A coffee for the workshop</h2>
+      <p>OSCar Editor is free and will stay free. If it helps you, you can support its development on Ko-fi.</p>
+      <div><a class="copper" id="kofi-open" href="https://ko-fi.com/amnesy" target="_blank" rel="noopener">Support on Ko-fi</a></div>
     </div>
   </section>
 </div>
@@ -682,42 +747,59 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
 </main>
 
 <footer>
-  <p>OSCar Editor est un projet indépendant, sans lien avec Oxford Synthesiser Company ni avec Tauntek.</p>
-  <p>Carte MIDI, firmware et documentation : <a href="http://www.tauntek.com/OSCar.htm" target="_blank" rel="noopener">tauntek.com/OSCar.htm</a> · <a href="https://github.com/distortedimages-code/OSCarEditor" target="_blank" rel="noopener">Code source</a> · <a href="https://ko-fi.com/amnesy" target="_blank" rel="noopener">Ko-fi</a></p>
+  <p>OSCar Editor is an independent project, not affiliated with Oxford Synthesiser Company or Tauntek.</p>
+  <p>MIDI board, firmware and documentation: <a href="http://www.tauntek.com/OSCar.htm" target="_blank" rel="noopener">tauntek.com/OSCar.htm</a> · <a href="https://github.com/distortedimages-code/OSCarEditor" target="_blank" rel="noopener">Source code</a> · <a href="https://ko-fi.com/amnesy" target="_blank" rel="noopener">Ko-fi</a></p>
 </footer>
 
 </div>
 </div>
 
+<dialog class="kofi-dialog" id="kofi-dialog" aria-labelledby="kofi-title">
+  <div class="kd-head">
+    <p class="mini-legend" id="kofi-title">support oscar editor</p>
+    <button type="button" class="btn kd-close" id="kofi-close" aria-label="Close"><span>✕</span></button>
+  </div>
+  <div class="kd-frame"><iframe id="kofi-frame" title="Ko-fi" data-src="https://ko-fi.com/amnesy/?hidefeed=true&widget=true&embed=true&preview=true"></iframe></div>
+  <p class="kd-foot">Payment goes through Ko-fi. <a href="https://ko-fi.com/amnesy" target="_blank" rel="noopener">Open Ko-fi in a tab</a></p>
+</dialog>
+
 <script>
 (function () {
   "use strict";
   var REPO = "distortedimages-code/OSCarEditor";
+  var LANG = "en";
+  var T = {"copy": "Copy", "copied": "Copied", "selected": "Selected", "earlier": "Earlier versions", "latest": "latest version", "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]};
+
+  // --- language: a visitor who picked the other one before gets it again
+  var langLinks = Array.prototype.slice.call(document.querySelectorAll(".langbtn"));
+  langLinks.forEach(function (a) {
+    a.addEventListener("click", function () { try { localStorage.setItem("oscar-lang", a.getAttribute("data-lang")); } catch (e) {} });
+  });
+  try {
+    var pref = localStorage.getItem("oscar-lang");
+    if (pref && pref !== LANG) {
+      var target = langLinks.filter(function (a) { return a.getAttribute("data-lang") === pref; })[0];
+      if (target) { location.replace(target.getAttribute("href") + location.hash); return; }
+    }
+  } catch (e) {}
 
   // --- the plugin's pages
-  var PAGES = [
-  ["voix", "Voix", "Tous les réglages de la voix choisie. Chaque potard part en CC vers l'OSCar, et tout s'automatise depuis le DAW."],
-  ["generateur", "Générateur", "Varier, Nouveau (basse, lead, pad, percu, texture) et Croiser, avec des verrous par section. Chaque essai joue sur l'OSCar sans toucher à sa mémoire."],
-  ["banques", "Banques", "Les 36 voix avec leurs noms, et la bibliothèque : tes banques, tes voix et toutes les sauvegardes automatiques."],
-  ["formes-d-onde", "Formes d'onde", "Les cinq formes d'onde utilisateur (−8 à −12), à dessiner à la souris."],
-  ["raccourcis-tauntek", "Raccourcis Tauntek", "Tous les raccourcis TUNE/TRANSPOSE sur le clavier. Les touches qui remplacent les voix en mémoire sont en rouge."],
-  ["reglages", "Réglages", "Ports MIDI, langue, Live CC, horloge MIDI, MIDI Thru, mises à jour et journal."]
-  ];
+  var PAGES = [["voix", "Voice", "Every setting of the chosen voice. Each knob goes to the OSCar as a CC, and everything can be automated from the DAW.", "OSCar Editor, Voice page"], ["generateur", "Generator", "Vary, New (bass, lead, pad, percussive, texture) and Breed, with locks per section. Every try plays on the OSCar without touching its memory.", "OSCar Editor, Generator page"], ["banques", "Banks", "The 36 voices with their names, and the library: your banks, your voices and every automatic backup.", "OSCar Editor, Banks page"], ["formes-d-onde", "Waveforms", "The five user waveforms (−8 to −12), drawn with the mouse.", "OSCar Editor, Waveforms page"], ["raccourcis-tauntek", "Tauntek keys", "Every TUNE/TRANSPOSE shortcut on the keyboard. The keys that replace the voices in memory are red.", "OSCar Editor, Tauntek keys page"], ["reglages", "Setup", "MIDI ports, language, Live CC, MIDI clock, MIDI Thru, updates and log.", "OSCar Editor, Setup page"]];
+  var IMG = "img/en/";
   var shot = document.getElementById("shot"), caption = document.getElementById("shot-caption");
   var minis = Array.prototype.slice.call(document.querySelectorAll(".mini"));
   function showPage(i) {
     var p = PAGES[i];
-    shot.src = "img/" + p[0] + ".webp";
-    shot.alt = "OSCar Editor, page " + p[1];
+    shot.src = IMG + p[0] + ".webp";
+    shot.alt = p[3];
     caption.textContent = p[2];
     minis.forEach(function (b, j) { b.classList.toggle("on", j === i); b.setAttribute("aria-pressed", j === i ? "true" : "false"); });
   }
   minis.forEach(function (b) { b.addEventListener("click", function () { showPage(+b.dataset.i); }); });
-  // warm the cache so switching pages is instant
-  window.addEventListener("load", function () { PAGES.forEach(function (p) { var im = new Image(); im.src = "img/" + p[0] + ".webp"; }); });
+  window.addEventListener("load", function () { PAGES.forEach(function (p) { var im = new Image(); im.src = IMG + p[0] + ".webp"; }); });
 
   // --- shortcuts: a key on the drawing and its line in the list light up together
-  var SC = { "0":["Charger la zone de sauvegarde 1","Do · octave 1","r"],"1":["Sauver dans la zone 1","Do# · octave 1","s"],"2":["Charger la zone de sauvegarde 2","Ré · octave 1","r"],"3":["Sauver dans la zone 2","Ré# · octave 1","s"],"23":["Charger les sons d'usine","Si · octave 2","r"],"24":["Charger les sons B","Do · octave 3","r"],"25":["Charger les sons C","Do# · octave 3","r"],"22":["Activer le patch CC dump","La# · octave 2","n"],"21":["Désactiver le patch CC dump","La · octave 2","n"],"20":["Arpège aléatoire","Sol# · octave 2","n"],"26":["Vélocité vers l'enveloppe du VCF","Ré · octave 3","n"],"27":["Vélocité ignorée","Ré# · octave 3","n"],"29":["PWM la plus lente","Fa · octave 3","n"],"30":["PWM plus lente","Fa# · octave 3","n"],"31":["PWM normale","Sol · octave 3","n"],"32":["PWM la plus rapide","Sol# · octave 3","n"],"34":["Activer la synchro LFO","La# · octave 3","n"],"33":["Couper la synchro LFO","La · octave 3","n"],"35":["Activer LFO vers oscillateur 1","Si · octave 3","n"],"36":["Couper LFO vers oscillateur 1","Do aigu","n"] };
+  var SC = {"0": ["Load patches from save area 1", "C · octave 1", "r"], "1": ["Save patches to save area 1", "C# · octave 1", "s"], "2": ["Load patches from save area 2", "D · octave 1", "r"], "3": ["Save patches to save area 2", "D# · octave 1", "s"], "23": ["Load factory patches", "B · octave 2", "r"], "24": ["Load B patches", "C · octave 3", "r"], "25": ["Load C patches", "C# · octave 3", "r"], "22": ["Enable patch CC dump", "A# · octave 2", "n"], "21": ["Disable patch CC dump", "A · octave 2", "n"], "20": ["Random arp mode", "G# · octave 2", "n"], "26": ["Velocity to VCF envelope amount", "D · octave 3", "n"], "27": ["Velocity not used", "D# · octave 3", "n"], "29": ["PWM slowest rate", "F · octave 3", "n"], "30": ["PWM slower rate", "F# · octave 3", "n"], "31": ["PWM normal rate", "G · octave 3", "n"], "32": ["PWM fastest rate", "G# · octave 3", "n"], "34": ["Enable LFO sync", "A# · octave 3", "n"], "33": ["Disable LFO sync", "A · octave 3", "n"], "35": ["Enable LFO to oscillator 1", "B · octave 3", "n"], "36": ["Disable LFO to oscillator 1", "top C", "n"]};
   var roLabel = document.getElementById("ro-label"), roKey = document.getElementById("ro-key");
   var keyEls = Array.prototype.slice.call(document.querySelectorAll(".kbd [data-k]"));
   var rows = Array.prototype.slice.call(document.querySelectorAll(".sc[data-k]"));
@@ -739,21 +821,33 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
 
   // --- copy the Terminal lines
   var copyBtn = document.getElementById("copy-cmd"), cmd = document.getElementById("cmd");
-  copyBtn.addEventListener("click", function () {
-    var text = cmd.textContent;
-    var done = function (ok) {
-      copyBtn.querySelector("span").textContent = ok ? "Copié" : "Sélectionné";
-      copyBtn.classList.toggle("on", ok);
-      setTimeout(function () { copyBtn.querySelector("span").textContent = "Copier"; copyBtn.classList.remove("on"); }, 1800);
-    };
-    var select = function () {
-      var r = document.createRange(); r.selectNodeContents(cmd);
-      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); done(false);
-    };
-    try {
-      navigator.clipboard.writeText(text).then(function () { done(true); }, select);
-    } catch (e) { select(); }
-  });
+  if (copyBtn && cmd) {
+    copyBtn.addEventListener("click", function () {
+      var done = function (ok) {
+        copyBtn.querySelector("span").textContent = ok ? T.copied : T.selected;
+        copyBtn.classList.toggle("on", ok);
+        setTimeout(function () { copyBtn.querySelector("span").textContent = T.copy; copyBtn.classList.remove("on"); }, 1800);
+      };
+      var select = function () {
+        var r = document.createRange(); r.selectNodeContents(cmd);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); done(false);
+      };
+      try { navigator.clipboard.writeText(cmd.textContent).then(function () { done(true); }, select); } catch (e) { select(); }
+    });
+  }
+
+  // --- Ko-fi in a small window over the page (the link still works where dialogs can't open)
+  var kd = document.getElementById("kofi-dialog"), kf = document.getElementById("kofi-frame");
+  var kofiOpen = document.getElementById("kofi-open");
+  if (kd && kf && kofiOpen && typeof kd.showModal === "function") {
+    kofiOpen.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (!kf.getAttribute("src")) kf.setAttribute("src", kf.getAttribute("data-src"));
+      kd.showModal();
+    });
+    document.getElementById("kofi-close").addEventListener("click", function () { kd.close(); });
+    kd.addEventListener("click", function (e) { if (e.target === kd) kd.close(); });   // a click on the backdrop
+  }
 
   // --- the lit tab follows the section on screen
   var tabs = Array.prototype.slice.call(document.querySelectorAll(".tabs .btn"));
@@ -765,7 +859,7 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
       if (on) t.setAttribute("aria-current", "true"); else t.removeAttribute("aria-current");
     });
   }
-  light("telecharger");
+  light("download");
   if ("IntersectionObserver" in window) {
     var visible = {};
     var io = new IntersectionObserver(function (entries) {
@@ -777,16 +871,24 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
     sections.forEach(function (s) { io.observe(s); });
   }
 
-  // --- latest releases, straight from GitHub (kept as written above when GitHub can't be reached)
+  // --- latest releases and download link, straight from GitHub (the page keeps what it was built with otherwise)
   function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
   function inline(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/`(.+?)`/g, "<code>$1</code>"); }
+  // notes written in both languages: keep this page's language
+  function section(md) {
+    var parts = md.replace(/\r/g, "").split(/^##\s+(English|Fran(?:ç|c)ais)\s*$/m);
+    if (parts.length < 5) return md;
+    for (var i = 1; i < parts.length; i += 2)
+      if ((LANG === "fr") === /^Fran/.test(parts[i])) return parts[i + 1];
+    return md;
+  }
   function markdown(md) {
-    var out = [], list = null;
-    md.replace(/\r/g, "").split(/\n{2,}/).forEach(function (block) {
+    var out = [];
+    section(md).split(/\n{2,}/).forEach(function (block) {
       var lines = block.split("\n").filter(function (l) { return l.trim(); });
       if (!lines.length) return;
       if (/^#{1,6}\s/.test(lines[0]) && lines.length === 1) {
-        if (/^#{1,2}\s/.test(lines[0]) && /OSCar Editor/i.test(lines[0])) return;   // the title repeats the version
+        if (/OSCar Editor/i.test(lines[0])) return;
         out.push("<p><strong>" + inline(lines[0].replace(/^#+\s*/, "")) + "</strong></p>"); return;
       }
       if (lines.every(function (l) { return /^\s*[-*]\s/.test(l); })) {
@@ -796,8 +898,12 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
     });
     return out.join("");
   }
-  var months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-  function frDate(iso) { var d = new Date(iso); return isNaN(d) ? "" : d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear(); }
+  function date(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return "";
+    return LANG === "fr" ? d.getDate() + " " + T.months[d.getMonth()] + " " + d.getFullYear()
+                         : T.months[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
+  }
 
   try {
     fetch("https://api.github.com/repos/" + REPO + "/releases?per_page=6", { headers: { Accept: "application/vnd.github+json" } })
@@ -805,23 +911,27 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
       .then(function (list) {
         var pub = list.filter(function (r) { return !r.draft && !r.prerelease; });
         if (!pub.length) return;
-        var box = document.getElementById("releases");
         var card = function (r) {
           var v = esc((r.tag_name || "").replace(/^v/, ""));
-          return '<article class="release"><div><span class="vchip">' + v + '</span><div class="cap when">' + esc(frDate(r.published_at)) +
+          return '<article class="release"><div><span class="vchip">' + v + '</span><div class="cap when">' + esc(date(r.published_at)) +
                  '</div></div><div class="notes">' + markdown(r.body || "") + "</div></article>";
         };
-        // the latest version in full, the earlier ones folded
-        box.innerHTML = card(pub[0]) + (pub.length > 1
-          ? '<details class="older"><summary>Versions précédentes (' + (pub.length - 1) + ')</summary>' + pub.slice(1).map(card).join("") + "</details>"
+        document.getElementById("releases").innerHTML = card(pub[0]) + (pub.length > 1
+          ? '<details class="older"><summary>' + T.earlier + " (" + (pub.length - 1) + ")</summary>" + pub.slice(1).map(card).join("") + "</details>"
           : "");
         var latest = (pub[0].tag_name || "").replace(/^v/, "");
         if (latest) {
           document.getElementById("vfd-version").textContent = latest;
           document.getElementById("spec-version").textContent = latest;
         }
+        // the disk image when the latest release has one, otherwise its zip
+        var assets = pub[0].assets || [];
+        var file = assets.filter(function (a) { return /\.dmg$/i.test(a.name); })[0] || assets.filter(function (a) { return /mac\.zip$/i.test(a.name); })[0];
+        if (file) document.getElementById("download-btn").setAttribute("href", file.browser_download_url);
       })
       .catch(function () {});
   } catch (e) {}
 })();
 </script>
+</body>
+</html>

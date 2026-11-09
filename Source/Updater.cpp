@@ -302,6 +302,31 @@ juce::String Updater::expectedSha (const juce::String& text)
     return token.length() == 64 && token.containsOnly ("0123456789abcdef") ? token : juce::String();
 }
 
+juce::String Updater::notesForLanguage (const juce::String& notes, const juce::String& language)
+{
+    const auto lines = juce::StringArray::fromLines (notes);
+    int en = -1, fr = -1;
+    for (int i = 0; i < lines.size(); ++i)
+    {
+        const auto l = lines[i].trim();
+        if (! l.startsWith ("## "))
+            continue;
+        const auto title = l.substring (3).trim().toLowerCase();
+        if (title == "english") en = i;
+        else if (title == juce::String::fromUTF8 ("fran\xc3\xa7" "ais") || title == "francais") fr = i;
+    }
+    if (en < 0 || fr < 0)
+        return notes;
+
+    const int start = (language == "fr" ? fr : en) + 1;
+    const int other = language == "fr" ? en : fr;
+    const int end = other > start ? other : lines.size();
+    juce::StringArray section;
+    for (int i = start; i < end; ++i)
+        section.add (lines[i]);
+    return section.joinIntoString ("\n").trim();
+}
+
 juce::Array<juce::File> Updater::installedBundles()
 {
     juce::Array<juce::File> r;

@@ -47,6 +47,9 @@ public:
     static bool isNewer (const juce::String& candidate, const juce::String& current);
     static std::optional<Release> parseLatestRelease (const juce::String& json, const juce::String& assetName);
     static juce::String expectedSha (const juce::String& shaFileText);
+    // Release notes written in both languages ("## English" and "## Français" sections): keeps the
+    // section for 'language' ("en" or "fr") and drops the headings. Other notes come back unchanged.
+    static juce::String notesForLanguage (const juce::String& notes, const juce::String& language);
 
     // Replaces each existing bundle in 'targets' with the bundle of the same name found in
     // the zip. 'extract' unpacks the zip into a folder (ditto on macOS). Each replacement is

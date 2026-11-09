@@ -140,12 +140,25 @@ static void testInstall()
     dir.deleteRecursively();
 }
 
+static void testNotesLanguage()
+{
+    const auto both = juce::String::fromUTF8 ("## English\n\n**Disk image** to install.\n\n## Fran\xc3\xa7" "ais\n\n**Image disque** pour installer.\n");
+    CHECK (Updater::notesForLanguage (both, "en") == "**Disk image** to install.");
+    CHECK (Updater::notesForLanguage (both, "fr") == "**Image disque** pour installer.");
+    const juce::String plain ("Just one language.\n\n## Details\nMore.");
+    CHECK (Updater::notesForLanguage (plain, "fr") == plain);
+    const auto reversed = juce::String::fromUTF8 ("## Fran\xc3\xa7" "ais\nUn.\n## English\nOne.");
+    CHECK (Updater::notesForLanguage (reversed, "en") == "One.");
+    CHECK (Updater::notesForLanguage (reversed, "fr") == "Un.");
+}
+
 int main()
 {
     juce::ScopedJuceInitialiser_GUI init;
     testVersions();
     testParsing();
     testInstall();
+    testNotesLanguage();
     std::printf ("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;
 }

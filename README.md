@@ -70,6 +70,10 @@ Ce qui reste **à confirmer à l'oreille** : les *noms* de certains sélecteurs 
 
 ## Installation sur Mac
 
+**Depuis une release** : ouvrir `OSCar-Editor-mac.dmg`, glisser chaque fichier sur le raccourci de son dossier (Components, VST3, Applications), puis dans Terminal taper `bash `, glisser `Installer.command` et appuyer sur Entrée. Le script installe ce qui manque (dans `~/Library` si aucune copie n'est dans `/Library`), retire la quarantaine, signale les doublons et fait valider l'AU par `auval`, comme Logic Pro. L'image disque est construite par `tools/dmg/make_dmg.sh` (dmgbuild) ; le fond de fenêtre se refait avec `tools/dmg/make_background.py`.
+
+**Depuis les sources** :
+
 1. Ouvrir le Terminal dans ce dossier.
 2. `./build_mac.sh`
 

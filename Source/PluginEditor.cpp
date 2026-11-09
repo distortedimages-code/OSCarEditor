@@ -598,7 +598,7 @@ void OscarEditor::showUpdateDialog()
     if (rel.version.isEmpty())
         return;
 
-    auto notes = rel.notes.trim();
+    auto notes = Updater::notesForLanguage (rel.notes, proc.getLanguage()).trim();
     if (notes.length() > 1800)
         notes = notes.substring (0, 1800) + "...";
     const bool available = up.getState() == Updater::State::Available;
