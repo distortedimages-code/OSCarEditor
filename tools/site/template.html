@@ -1,0 +1,674 @@
+<title>OSCar Editor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Éditeur et librarian gratuit pour le synthé OSCar avec la carte MIDI Tauntek. AU, VST3 et application pour Mac.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Semi+Condensed:wght@500;600;700&family=Cormorant+SC:wght@500;600&family=Share+Tech+Mono&display=swap">
+<style>
+/* Layout: the browser window is the instrument. Wood cheeks on both edges, a dark panel
+   between them, sections framed like the plugin's control groups (dashed outline, bracket label). */
+:root {
+  color-scheme: dark;
+  --panel: #222428;
+  --panel-deep: #1b1c1f;
+  --raised: #2d3035;
+  --inset: #131416;
+  --line: #4a4d53;
+  --text: #e9e5dc;
+  --muted: #aeaaa1;
+  --faint: #7b7973;
+  --vfd: #ff9d4f;
+  --vfd-dim: #b8642a;
+  --vfd-bg: #170b04;
+  --led: #ff3d25;
+  --ivory: #ece6d8;
+  --copper-hi: #f4aa6c;
+  --copper: #c86930;
+  --copper-lo: #7c3612;
+
+  --display: "Cormorant SC", "Cormorant Garamond", Georgia, serif;
+  --label: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Share Tech Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --cheek: clamp(10px, 2.8vw, 40px);
+  --radius: 10px;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #25272b 0%, var(--panel) 30%, var(--panel-deep) 100%);
+  background-color: var(--panel);
+  color: var(--text);
+  font: 400 17px/1.6 var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 10; background: var(--panel);
+}
+a { color: var(--vfd); text-underline-offset: 3px; }
+a:hover { color: var(--copper-hi); }
+:focus-visible { outline: 2px solid var(--vfd); outline-offset: 3px; border-radius: 4px; }
+img { max-width: 100%; height: auto; display: block; }
+
+/* wood cheeks */
+.cheek {
+  position: fixed; top: 0; bottom: 0; width: var(--cheek); z-index: 20; pointer-events: none;
+  background-size: 100% 100%; background-repeat: no-repeat;
+}
+.cheek.l { left: 0; background-image: url("img/bois-gauche.webp"); box-shadow: inset -2px 0 3px rgba(0,0,0,.45), 3px 0 10px rgba(0,0,0,.45); }
+.cheek.r { right: 0; background-image: url("img/bois-droite.webp"); box-shadow: inset 2px 0 3px rgba(0,0,0,.45), -3px 0 10px rgba(0,0,0,.45); }
+
+.page {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 48px;
+}
+.wrap { max-width: 1120px; margin-inline: auto; padding-inline: var(--cheek); }
+
+/* masthead */
+.masthead { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: clamp(14px, 3vw, 40px); padding-block: 28px 14px; }
+.vents {
+  height: 46px; border-radius: 4px;
+  background: repeating-linear-gradient(180deg, #08090a 0 3px, #34373c 3px 4px, #1e2023 4px 6px);
+  box-shadow: inset 0 1px 0 rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.05);
+}
+.brand { text-align: center; }
+.brand h1 {
+  margin: 0; font: 600 clamp(38px, 6vw, 62px)/1 var(--display); letter-spacing: .01em; color: #f3efe6;
+  text-shadow: 0 1px 0 rgba(0,0,0,.6);
+}
+.tag { margin: 8px 0 0; font: 600 11.5px/1 var(--label); letter-spacing: .32em; text-transform: uppercase; color: var(--muted); }
+
+/* VFD display */
+.display-row { display: flex; justify-content: center; align-items: stretch; gap: 8px; margin-block: 8px 18px; }
+.display {
+  display: flex; align-items: baseline; justify-content: center; gap: 18px; min-width: 0; flex: 0 1 560px;
+  padding: 10px 22px; border-radius: 4px; background: var(--vfd-bg);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,.9), 0 0 0 1px #000, 0 1px 0 rgba(255,255,255,.06);
+  font-family: var(--mono); color: var(--vfd); text-shadow: 0 0 8px rgba(255,140,50,.45); white-space: nowrap; overflow: hidden;
+}
+.display .num { font-size: 26px; }
+.display .name { font-size: 22px; letter-spacing: .04em; overflow: hidden; text-overflow: ellipsis; }
+.display .state { font-family: var(--label); font-weight: 600; font-size: 12px; letter-spacing: .14em; color: var(--vfd-dim); text-shadow: none; }
+.arrow {
+  text-decoration: none;
+  width: 42px; flex: none; display: grid; place-items: center; border-radius: 4px; color: var(--muted); font: 600 15px var(--label);
+  background: linear-gradient(180deg, #3a3d43, #26282c); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 2px 3px rgba(0,0,0,.5);
+}
+
+/* LED buttons (tabs) */
+.tabs-bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; background: linear-gradient(180deg, var(--panel) 80%, rgba(34,36,40,0)); padding-block: 10px 14px; }
+.tabs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.btn {
+  position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 38px;
+  padding: 0 12px; border-radius: 4px; border: 0; cursor: pointer; text-decoration: none;
+  background: linear-gradient(180deg, #3b3e44 0%, #2a2c31 55%, #232529 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10), inset 0 -1px 0 rgba(0,0,0,.4), 0 2px 4px rgba(0,0,0,.55);
+  color: #d9d6cf; font: 600 13px/1.1 var(--label); letter-spacing: .1em; text-transform: uppercase;
+}
+.btn:hover { color: #fff; background: linear-gradient(180deg, #42454c 0%, #2e3036 55%, #26282c 100%); }
+.btn:active { transform: translateY(1px); box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 1px 2px rgba(0,0,0,.5); }
+.btn span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.led { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #3a1310; box-shadow: inset 0 1px 1px rgba(0,0,0,.6); }
+.on > .led, .led.on {
+  background: radial-gradient(circle at 40% 35%, #ffc2b5 0%, #ff4a2e 45%, #b8140a 100%);
+  box-shadow: 0 0 6px 2px rgba(255,60,30,.55);
+}
+.on { color: #fff; }
+
+/* groups */
+main { display: grid; gap: 28px; }
+.group { border: 1px dashed var(--line); border-radius: var(--radius); padding: 10px clamp(16px, 3vw, 34px) clamp(22px, 3vw, 34px); }
+.legend {
+  display: flex; align-items: center; gap: 14px; margin: 0 0 18px;
+  font: 600 13px/1 var(--label); letter-spacing: .06em; color: #d6d2ca; text-transform: lowercase;
+}
+.legend::before, .legend::after { content: ""; flex: 1; height: 8px; border-top: 1px solid #6c6f75; margin-top: 8px; }
+.legend::before { border-left: 1px solid #6c6f75; border-top-left-radius: 8px; }
+.legend::after { border-right: 1px solid #6c6f75; border-top-right-radius: 8px; }
+h2 { margin: 0 0 10px; font: 600 clamp(28px, 3.6vw, 36px)/1.1 var(--display); color: #f3efe6; text-wrap: balance; }
+h3 { margin: 0 0 6px; font: 600 19px/1.25 var(--label); letter-spacing: .02em; color: #f1ede5; text-wrap: balance; }
+.lead-text { max-width: 62ch; color: var(--muted); margin: 0 0 22px; }
+p { margin: 0 0 12px; }
+.small { font-size: 15px; color: var(--muted); }
+.cap { font: 600 12px/1.2 var(--label); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+
+/* download */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(20px, 4vw, 48px); align-items: start; }
+.hero p.pitch { font-size: 19px; color: #ddd9d0; max-width: 46ch; }
+.copper {
+  display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 18px 34px; margin-block: 8px 14px;
+  border-radius: 5px; text-decoration: none; color: #2a1206; font: 700 15px/1 var(--label); letter-spacing: .18em; text-transform: uppercase;
+  background: radial-gradient(ellipse 70% 120% at 50% 60%, var(--copper-hi) 0%, var(--copper) 45%, var(--copper-lo) 100%);
+  box-shadow: inset 0 1px 0 rgba(255,220,190,.55), inset 0 -2px 0 rgba(60,20,5,.5), 0 3px 8px rgba(0,0,0,.6), 0 0 22px rgba(232,120,50,.18);
+  text-shadow: 0 1px 0 rgba(255,200,160,.35);
+}
+.copper:hover { color: #1a0a03; filter: brightness(1.07); }
+.copper:active { transform: translateY(1px); }
+.copper svg { width: 16px; height: 16px; }
+.specs { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; margin: 10px 0 14px; font-size: 15.5px; }
+.specs dt { font: 600 12px/1.9 var(--label); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+.specs dd { margin: 0; color: var(--text); font-variant-numeric: tabular-nums; }
+.links { display: flex; flex-wrap: wrap; gap: 6px 20px; font: 600 14px var(--label); letter-spacing: .06em; }
+
+.viewer { margin: 0; display: grid; gap: 12px; min-width: 0; }
+.screen {
+  border-radius: 6px; overflow: hidden; background: var(--inset);
+  box-shadow: 0 0 0 1px #000, 0 10px 30px rgba(0,0,0,.55), 0 2px 0 rgba(255,255,255,.04);
+}
+.screen img { width: 100%; aspect-ratio: 1600 / 914; object-fit: cover; }
+.minis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mini {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 6px 7px; border: 0; border-radius: 4px; cursor: pointer;
+  background: linear-gradient(180deg, #35383e, #26282c); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 2px 3px rgba(0,0,0,.5);
+  color: #cfccc5; font: 600 12px/1.1 var(--label); letter-spacing: .08em; text-transform: uppercase;
+}
+.mini span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini:hover { color: #fff; }
+.viewer figcaption { font-size: 15.5px; color: var(--muted); min-height: 3.2em; }
+
+/* releases */
+.release { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px 28px; padding-block: 18px; border-top: 1px solid rgba(255,255,255,.06); }
+.release:first-of-type { border-top: 0; padding-top: 4px; }
+.vchip {
+  justify-self: start; padding: 6px 12px; border-radius: 3px; background: var(--vfd-bg); color: var(--vfd);
+  font: 20px/1 var(--mono); text-shadow: 0 0 8px rgba(255,140,50,.4); box-shadow: inset 0 2px 6px rgba(0,0,0,.9), 0 0 0 1px #000;
+}
+.release .when { margin-top: 8px; }
+.notes { max-width: 70ch; min-width: 0; }
+.notes p { color: #d7d3ca; }
+.notes strong { color: #f3efe6; font-weight: 600; }
+.notes ul { margin: 0 0 12px; padding-left: 20px; }
+.update-hint { display: flex; gap: 12px; align-items: center; margin-top: 8px; padding: 12px 16px; border-radius: 6px; background: rgba(0,0,0,.18); font-size: 15.5px; color: var(--muted); }
+
+/* install */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; counter-reset: step; }
+.step { display: grid; grid-template-columns: 54px minmax(0, 1fr) minmax(0, 1fr); gap: 10px 28px; padding-block: 26px; border-top: 1px solid rgba(255,255,255,.06); }
+.step:first-child { border-top: 0; padding-top: 6px; }
+.step-n {
+  width: 44px; height: 44px; display: grid; place-items: center; border-radius: 4px; background: var(--vfd-bg); color: var(--vfd);
+  font: 24px/1 var(--mono); text-shadow: 0 0 8px rgba(255,140,50,.45); box-shadow: inset 0 2px 6px rgba(0,0,0,.9), 0 0 0 1px #000;
+}
+.step-text { min-width: 0; }
+.step-text p { color: #d6d2c9; }
+.step-art { min-width: 0; display: grid; gap: 10px; align-content: start; }
+.step.wide .step-text { grid-column: 2 / -1; max-width: 72ch; }
+.step.wide .step-art { grid-column: 2 / -1; }
+.note { font-size: 15px; color: var(--muted); padding-left: 14px; border-left: 2px solid var(--line); }
+kbd, .keycap {
+  display: inline-block; padding: 2px 8px 1px; margin: 0 1px; border-radius: 3px; vertical-align: 1px;
+  background: linear-gradient(180deg, #3d4046, #2a2c31); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 1px 2px rgba(0,0,0,.6);
+  font: 600 12.5px/1.5 var(--label); letter-spacing: .08em; color: #f1ede5; white-space: nowrap;
+}
+code, .path { font-family: var(--mono); font-size: .92em; color: var(--vfd); overflow-wrap: anywhere; }
+.inset { background: var(--inset); border-radius: 6px; box-shadow: inset 0 2px 8px rgba(0,0,0,.7), 0 0 0 1px #000; }
+
+.files { padding: 12px 14px; display: grid; gap: 4px; }
+.files .zip { font: 600 13px var(--label); letter-spacing: .08em; color: var(--muted); padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.06); margin-bottom: 4px; }
+.file { display: grid; grid-template-columns: 46px minmax(0, 1fr); align-items: center; gap: 12px; padding: 6px 0; }
+.badge { justify-self: start; padding: 3px 7px; border-radius: 3px; font: 700 11px/1 var(--label); letter-spacing: .1em; color: #23140a; background: var(--vfd); }
+.badge.b2 { background: #d7c9a9; } .badge.b3 { background: #9fb7c7; }
+.file b { font: 600 15px var(--label); letter-spacing: .02em; color: var(--text); }
+.file .dest { display: block; font: 13.5px/1.4 var(--mono); color: var(--vfd); overflow-wrap: anywhere; }
+
+.terminal { overflow: hidden; }
+.term-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px 8px 14px; background: #1d1e21; border-bottom: 1px solid #000; }
+.term-bar .cap { color: var(--muted); }
+.copy { min-height: 30px; padding: 0 10px; font-size: 12px; }
+.terminal pre { margin: 0; padding: 14px; overflow-x: auto; font: 14px/1.7 var(--mono); color: #e7d9c8; }
+.terminal pre .c { color: var(--faint); }
+
+.diagram { padding: 10px; overflow-x: auto; }
+.ports { max-width: 560px; }
+.cabling { width: 100%; max-width: 760px; margin-inline: auto; height: auto; display: block; font-family: var(--label); }
+.cabling .dev { fill: #2f3237; stroke: #8d9097; stroke-width: 1.5; }
+.cabling .dev.oscar { fill: #34312c; stroke: #b6ab95; }
+.cabling .screen { fill: #15171a; }
+.cabling .usb { stroke: #8d9097; stroke-width: 4; fill: none; stroke-linecap: round; }
+.cabling .dl { fill: #ece8df; font-size: 14px; font-weight: 600; }
+.cabling .sl { fill: #a8a49b; font-size: 12px; }
+.cabling .pl { fill: #ece8df; font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.cabling .din { fill: #1a1b1e; stroke: #9aa0a8; stroke-width: 1.5; }
+.cabling .pin { fill: #9aa0a8; }
+.cabling .c1 { stroke: var(--vfd); stroke-width: 4.5; fill: none; }
+.cabling .c2 { stroke: var(--ivory); stroke-width: 4.5; fill: none; }
+.cabling .ma { fill: var(--vfd); } .cabling .mb { fill: var(--ivory); }
+.cabling .t1 { fill: var(--vfd); } .cabling .t2 { fill: var(--ivory); }
+.cabling .tt1, .cabling .tt2 { fill: #1a1006; font-size: 12.5px; font-weight: 700; }
+
+.kbd { width: 100%; height: auto; display: block; font-family: var(--label); }
+.kbd .kw { fill: var(--ivory); stroke: #0c0d0e; stroke-width: 1; }
+.kbd .kb { fill: #111214; stroke: #0c0d0e; stroke-width: 1; }
+.kbd .on { fill: var(--vfd); }
+.kbd .kl { fill: var(--faint); font-size: 11px; font-weight: 600; }
+.kbd .kl.on { fill: var(--vfd); font-size: 13px; font-weight: 700; }
+.kbd .dot { fill: #1a1006; }
+.kbd .lead { stroke: var(--vfd); stroke-width: 1.5; }
+.kbd .co { fill: var(--vfd); font-size: 14px; font-weight: 700; letter-spacing: .03em; }
+.combo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font: 600 13px var(--label); color: var(--muted); letter-spacing: .04em; }
+.combo .plus { color: var(--faint); }
+.shot-crop { border-radius: 6px; box-shadow: 0 0 0 1px #000, 0 6px 18px rgba(0,0,0,.5); }
+figure { margin: 0; }
+figure figcaption { margin-top: 6px; font-size: 14px; color: var(--faint); }
+
+/* tips */
+.tips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 40px; }
+.tip { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 4px 14px; align-items: start; }
+.tip .led { margin-top: 8px; }
+.tip p { margin: 0; color: #d0ccc3; font-size: 16px; }
+
+/* feedback + support */
+.duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.actions .btn { padding-inline: 14px 12px; min-height: 42px; }
+.kofi { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+
+footer { margin-top: 34px; display: grid; gap: 8px; text-align: center; font-size: 14px; color: var(--faint); }
+footer p { margin: 0; }
+footer a { color: var(--muted); }
+
+/* narrow screens */
+@media (max-width: 900px) {
+  .hero, .duo { grid-template-columns: minmax(0, 1fr); }
+  .step { grid-template-columns: 54px minmax(0, 1fr); }
+  .step-art { grid-column: 2; }
+  .tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  :root { --cheek: 10px; }
+  body { font-size: 16px; }
+  .masthead { grid-template-columns: minmax(0, 1fr); padding-top: 22px; }
+  .vents { display: none; }
+  .display { gap: 12px; padding: 8px 14px; }
+  .display .num { font-size: 22px; } .display .name { font-size: 17px; } .display .state { display: none; }
+  .arrow { width: 32px; }
+  .tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .tabs .btn { padding: 0 8px; font-size: 11.5px; letter-spacing: .06em; min-height: 34px; }
+  .release { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .step { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .step-art, .step.wide .step-text, .step.wide .step-art { grid-column: auto; }
+  .cabling { min-width: 520px; }
+  .tips { grid-template-columns: minmax(0, 1fr); }
+  .minis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mini span { white-space: normal; text-align: center; }
+  .specs { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .specs dd { margin-bottom: 6px; }
+}
+</style>
+
+<div class="cheek l" aria-hidden="true"></div>
+<div class="cheek r" aria-hidden="true"></div>
+
+<div class="page">
+<div class="wrap">
+
+<header class="masthead">
+  <div class="vents" aria-hidden="true"></div>
+  <div class="brand">
+    <h1>OSCar Editor</h1>
+    <p class="tag">oscar · midi · sysex · tauntek cc</p>
+  </div>
+  <div class="vents" aria-hidden="true"></div>
+</header>
+
+<div class="display-row" aria-label="Version actuelle">
+  <a class="arrow" href="#nouveautes" aria-label="Nouveautés">&lt;</a>
+  <div class="display"><span class="num" id="vfd-version">0.2.0</span><span class="name">OSCAR EDITOR</span><span class="state">GRATUIT</span></div>
+  <a class="arrow" href="#installation" aria-label="Installation">&gt;</a>
+</div>
+
+<nav class="tabs-bar" aria-label="Sections">
+  <div class="tabs">
+    <a class="btn" href="#telecharger"><span>Télécharger</span><i class="led"></i></a>
+    <a class="btn" href="#nouveautes"><span>Nouveautés</span><i class="led"></i></a>
+    <a class="btn" href="#installation"><span>Installation</span><i class="led"></i></a>
+    <a class="btn" href="#astuces"><span>Astuces</span><i class="led"></i></a>
+    <a class="btn" href="#retours"><span>Retours</span><i class="led"></i></a>
+    <a class="btn" href="#soutenir"><span>Soutenir</span><i class="led"></i></a>
+  </div>
+</nav>
+
+<main>
+
+<!-- download -->
+<section class="group" id="telecharger" aria-labelledby="t-dl">
+  <p class="legend">télécharger</p>
+  <div class="hero">
+    <div>
+      <h2 id="t-dl">L'éditeur et librarian de l'OSCar</h2>
+      <p class="pitch">Sauvegarde, nomme, édite et invente les sons de ton OSCar depuis ton DAW. Avec la carte MIDI Tauntek, chaque potard agit en direct et le plugin affiche exactement ce que joue l'OSCar.</p>
+      <a class="copper" id="download" href="{{DOWNLOAD}}">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1v9m0 0L4.5 6.5M8 10l3.5-3.5M2 12.5v1.5h12v-1.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Télécharger pour Mac
+      </a>
+      <dl class="specs">
+        <dt>Version</dt><dd id="spec-version">0.2.0</dd>
+        <dt>Formats</dt><dd>AU, VST3 et application autonome</dd>
+        <dt>Système</dt><dd>macOS 11 ou plus récent, Apple Silicon et Intel</dd>
+        <dt>Synthé</dt><dd>OSCar avec la carte MIDI Tauntek. Avec le MIDI d'origine, tout marche sauf l'édition en direct.</dd>
+        <dt>Prix</dt><dd>Gratuit</dd>
+      </dl>
+      <div class="links">
+        <a href="{{GH}}/releases" target="_blank" rel="noopener">Toutes les versions</a>
+        <a href="{{GH}}" target="_blank" rel="noopener">Code source</a>
+        <a href="#installation">Guide d'installation</a>
+      </div>
+    </div>
+
+    <figure class="viewer" aria-label="Les pages du plugin">
+      <div class="screen"><img id="shot" src="img/voix.webp" width="1600" height="914" alt="OSCar Editor, page Voix"></div>
+      <div class="minis" role="group" aria-label="Choisir une page du plugin">
+{{PAGE_BUTTONS}}
+      </div>
+      <figcaption id="shot-caption">{{FIRST_CAPTION}}</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- releases -->
+<section class="group" id="nouveautes" aria-labelledby="t-news">
+  <p class="legend">nouveautés</p>
+  <h2 id="t-news">Les dernières versions</h2>
+  <div id="releases">
+    <article class="release">
+      <div><span class="vchip">0.2.0</span><div class="cap when">novembre 2026</div></div>
+      <div class="notes">
+        <p><strong>Interface en français</strong> (English au choix dans Réglages). Les noms des réglages et des touches de l'OSCar restent ceux de la façade.</p>
+        <p><strong>Nouveau look « Atelier »</strong> : façade d'instrument avec joues en bois, potards, faders d'enveloppe, voyants et afficheur orange. La fenêtre peut être agrandie ou réduite.</p>
+        <p><strong>Rappel automatique</strong> : quand tu choisis une voix sur l'OSCar (avec le patch CC dump Tauntek activé), le plugin affiche exactement ce que joue l'OSCar, Duo/Arp compris.</p>
+        <p><strong>Horloge MIDI</strong> : l'arpégiateur et le séquenceur peuvent suivre l'horloge MIDI (Sync), avec la division en clair (1/16, 1/8T…). Le plugin peut envoyer l'horloge du DAW à l'OSCar, avec Start / Stop.</p>
+        <p><strong>Générateur de sons</strong> : Varier, Nouveau (basse, lead, pad, percussif, texture) et Croiser, avec verrous par section et historique. Les résultats jouent tout de suite sur l'OSCar, sans toucher à sa mémoire.</p>
+        <p><strong>Page Banques</strong> : tes banques, tes voix et toutes les sauvegardes automatiques, rechargeables d'un double-clic. Les voix s'enregistrent directement dans le dossier Voices, les banques dans Banks. Le contenu de l'OSCar est aussi sauvegardé avant chaque envoi.</p>
+        <p><strong>Page Raccourcis Tauntek</strong> : tous les raccourcis TUNE/TRANSPOSE sur un clavier, avec les touches dangereuses en rouge.</p>
+        <p><strong>MIDI Thru</strong> : jouer l'OSCar depuis la piste du DAW (notes et pitch bend).</p>
+        <p><strong>Mises à jour intégrées</strong> : le plugin signale les nouvelles versions et se met à jour lui-même sur Mac.</p>
+      </div>
+    </article>
+  </div>
+  <p class="update-hint"><i class="led on" aria-hidden="true"></i>Une fois installé, le plugin te prévient lui-même quand une version sort : un bouton Mise à jour apparaît en haut de sa fenêtre. Un clic, puis tu relances le DAW.</p>
+</section>
+
+<!-- install -->
+<section class="group" id="installation" aria-labelledby="t-install">
+  <p class="legend">installation</p>
+  <h2 id="t-install">Installer et brancher, pas à pas</h2>
+  <p class="lead-text">Compte un quart d'heure la première fois. Les versions suivantes s'installent depuis le plugin, sans refaire ces étapes.</p>
+
+  <ol class="steps">
+    <li class="step">
+      <span class="step-n" aria-hidden="true">1</span>
+      <div class="step-text">
+        <h3>Télécharger</h3>
+        <p>Le bouton <a href="#telecharger">Télécharger pour Mac</a> donne le fichier <code>OSCar-Editor-mac.zip</code>. Double-clique dessus s'il n'est pas déjà décompressé : tu obtiens trois fichiers.</p>
+        <p class="note">Tu peux n'installer que le format qu'utilise ton DAW. Live, Bitwig et Reaper lisent le VST3 ; Logic n'utilise que l'AU.</p>
+      </div>
+      <div class="step-art">
+        <div class="inset files" aria-label="Contenu du fichier zip">
+          <div class="zip">OSCar-Editor-mac.zip</div>
+          <div class="file"><span class="badge">AU</span><b>OSCar Editor.component</b></div>
+          <div class="file"><span class="badge b2">VST3</span><b>OSCar Editor.vst3</b></div>
+          <div class="file"><span class="badge b3">APP</span><b>OSCar Editor.app</b></div>
+        </div>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="step-n" aria-hidden="true">2</span>
+      <div class="step-text">
+        <h3>Ranger chaque fichier à sa place</h3>
+        <p>Dans le Finder, menu <kbd>Aller</kbd> › <kbd>Aller au dossier…</kbd> (ou <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd>). Colle le chemin, appuie sur Entrée, puis glisse le fichier dans la fenêtre qui s'ouvre.</p>
+        <p class="note">Le dossier Library (Bibliothèque) est caché dans le Finder, mais « Aller au dossier » l'ouvre quand même. Si une ancienne version s'y trouve, remplace-la.</p>
+      </div>
+      <div class="step-art">
+        <div class="inset files" aria-label="Où ranger les fichiers">
+          <div class="file"><span class="badge">AU</span><span><b>OSCar Editor.component</b><span class="dest">~/Library/Audio/Plug-Ins/Components</span></span></div>
+          <div class="file"><span class="badge b2">VST3</span><span><b>OSCar Editor.vst3</b><span class="dest">~/Library/Audio/Plug-Ins/VST3</span></span></div>
+          <div class="file"><span class="badge b3">APP</span><span><b>OSCar Editor.app</b><span class="dest">/Applications</span></span></div>
+        </div>
+      </div>
+    </li>
+
+    <li class="step wide">
+      <span class="step-n" aria-hidden="true">3</span>
+      <div class="step-text">
+        <h3>Débloquer le plugin, une seule fois</h3>
+        <p>Le plugin n'est pas notarisé par Apple : tant qu'il n'est pas débloqué, macOS empêche le DAW de le charger. Ouvre Terminal (Applications › Utilitaires), colle ces lignes et appuie sur Entrée.</p>
+        <p class="note">Si rien ne s'affiche, c'est bon. « no matches found » veut dire qu'un fichier n'est pas dans son dossier : refais l'étape 2 (ou ignore la ligne de l'application si tu ne l'as pas installée). Les mises à jour faites depuis le plugin n'ont pas besoin de ce déblocage.</p>
+      </div>
+      <div class="step-art">
+        <div class="inset terminal">
+          <div class="term-bar"><span class="cap">Terminal</span><button type="button" class="btn copy" id="copy-cmd"><span>Copier</span><i class="led"></i></button></div>
+<pre id="cmd">xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/Components/OSCar*
+xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/OSCar*
+xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
+        </div>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="step-n" aria-hidden="true">4</span>
+      <div class="step-text">
+        <h3>L'ouvrir dans le DAW</h3>
+        <p>Relance le DAW et fais-lui rescanner les plugins. Dans Live : Réglages › Plug-ins, active les Audio Units ou les dossiers VST3 système, puis relance le scan. Glisse ensuite OSCar Editor sur une piste MIDI vide et ouvre sa fenêtre.</p>
+        <p class="note">Le plugin ne produit aucun son : il parle directement à l'OSCar par ton interface MIDI. Dans Logic, il est rangé dans les instruments AU, rubrique OSCarTools.</p>
+      </div>
+      <div class="step-art">
+        <figure>
+          <img class="shot-crop" src="img/voix.webp" width="1600" height="914" alt="La fenêtre du plugin, page Voix" loading="lazy">
+          <figcaption>La fenêtre s'ouvre sur la page Voix. En haut à droite, les voyants Live CC et CC DUMP.</figcaption>
+        </figure>
+      </div>
+    </li>
+
+    <li class="step wide">
+      <span class="step-n" aria-hidden="true">5</span>
+      <div class="step-text">
+        <h3>Brancher l'OSCar et choisir les ports</h3>
+        <p>Un câble va toujours d'un OUT vers un IN. Puis, page <b>Réglages</b> du plugin : <b>Sortie</b> = la sortie de l'interface où arrive le câble 1, <b>Entrée</b> = l'entrée où arrive le câble 2, canal 1 sauf si ton OSCar est réglé autrement.</p>
+        <p class="note">Avec un câble USB-MIDI tout-en-un, les fiches IN et OUT sont parfois étiquetées à l'envers : si rien ne passe, inverse-les. Le plugin retient tes ports.</p>
+      </div>
+      <div class="step-art">
+        <div class="inset diagram">{{CABLING}}</div>
+        <figure class="ports">
+          <img class="shot-crop" src="img/ports.webp" width="900" height="524" alt="Page Réglages : choix de la sortie, de l'entrée et du canal MIDI" loading="lazy">
+          <figcaption>Page Réglages : les noms affichés dépendent de ton interface.</figcaption>
+        </figure>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="step-n" aria-hidden="true">6</span>
+      <div class="step-text">
+        <h3>Deux réglages sur l'OSCar</h3>
+        <p><b>Program change</b>, pour que l'OSCar passe sur la voix que tu cliques dans le plugin : maintiens <kbd>SPACE</kbd> (à gauche du clavier) et appuie sur la touche −9. La LED −9 s'allume.</p>
+        <p><b>Patch CC dump</b>, pour que le plugin suive les voix choisies sur l'OSCar : maintiens <kbd>TUNE/TRANSPOSE</kbd> et appuie sur la touche « Enable patch CC dump », la dernière touche noire de l'octave du milieu. Le voyant CC DUMP du plugin s'allume au prochain changement de voix.</p>
+        <p class="note">Si l'OSCar ne suit plus après avoir été éteint, refais ces deux réglages.</p>
+      </div>
+      <div class="step-art">
+        <div class="combo"><kbd>SPACE</kbd><span>maintenir</span><span class="plus">+</span><span>touche −9</span></div>
+        <div class="inset diagram">{{KB_PC}}</div>
+        <div class="combo"><kbd>TUNE/TRANSPOSE</kbd><span>maintenir</span><span class="plus">+</span><span>Enable patch CC dump</span></div>
+        <div class="inset diagram">{{KB_DUMP}}</div>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="step-n" aria-hidden="true">7</span>
+      <div class="step-text">
+        <h3>Récupérer tes voix, avant tout le reste</h3>
+        <p>Plugin ouvert, sur l'OSCar : maintiens <kbd>INSERT</kbd>, appuie sur <kbd>VOICE</kbd>, puis sur <kbd>SPACE</kbd>. L'OSCar envoie ses 36 voix en moins d'une seconde et le bas de la fenêtre affiche « Voix reçues (36) ».</p>
+        <p>Une copie part automatiquement dans <span class="path">Documents › OSCar Editor › Backups</span>. C'est ta sauvegarde : tout se recharge depuis la page Banques.</p>
+        <p class="note">Rien ne s'affiche ? L'entrée MIDI choisie à l'étape 5 n'est pas la bonne, ou le câble 2 est mal branché.</p>
+      </div>
+      <div class="step-art">
+        <div class="combo"><kbd>INSERT</kbd><span>maintenir</span><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></div>
+        <figure>
+          <img class="shot-crop" src="img/voix-recues.webp" width="900" height="698" alt="Page Banques : la liste des 36 voix reçues" loading="lazy">
+          <figcaption>Page Banques : les 36 voix reçues, avec leurs noms.</figcaption>
+        </figure>
+      </div>
+    </li>
+  </ol>
+</section>
+
+<!-- tips -->
+<section class="group" id="astuces" aria-labelledby="t-tips">
+  <p class="legend">astuces</p>
+  <h2 id="t-tips">Bon à savoir</h2>
+  <div class="tips">
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Le son change en direct</h3><p>Avec Live CC allumé, chaque potard part tout de suite vers l'OSCar. Ce n'est enregistré dans sa mémoire qu'avec « Envoyer au synthé », qui écrit les 36 voix d'un coup.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Le plugin suit l'OSCar</h3><p>Choisis une voix sur l'OSCar : le plugin l'affiche telle qu'elle joue, mode Duo ou Arp compris. Il faut le patch CC dump (étape 6).</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Essayer sans risque</h3><p>Le Générateur joue chaque essai sur l'OSCar sans toucher à sa mémoire. « Retour à l'original » annule, « Garder » met le son dans la voix.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Arpège calé sur le DAW</h3><p>Page Voix, bloc horloge midi : Sync sur Horloge MIDI et une Division (1/16, 1/8T…). Dans Réglages, active « Envoyer l'horloge MIDI du DAW à l'OSCar ».</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Jouer avec un autre clavier</h3><p>MIDI Thru (en bas de la fenêtre) fait passer les notes et le pitch bend de la piste vers l'OSCar. Laisse-le éteint si une autre piste envoie déjà des notes à l'OSCar.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Rien ne se perd</h3><p>Chaque réception et chaque envoi est sauvegardé. « Sauver voix… » range une voix dans Voices, « Enregistrer la banque… » une banque dans Banks. Un double-clic les recharge.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Gare aux touches rouges</h3><p>Sur la page Raccourcis Tauntek, les touches en rouge (sons d'usine, B, C, zones de sauvegarde) remplacent les 36 voix de l'OSCar. Enregistre une banque avant.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Pourquoi le plugin ouvre ses ports</h3><p>Live ne laisse pas sortir le SysEx d'un plugin. OSCar Editor parle donc à l'OSCar par ses propres ports MIDI, choisis dans Réglages.</p></div></div>
+  </div>
+</section>
+
+<!-- feedback + support -->
+<div class="duo">
+  <section class="group" id="retours" aria-labelledby="t-fb">
+    <p class="legend">retours</p>
+    <h2 id="t-fb">Un bug, une idée ?</h2>
+    <p>Dis-le sur GitHub : le formulaire est déjà préparé, il suffit de le compléter. Pour un bug, le journal de la page Réglages aide beaucoup.</p>
+    <div class="actions">
+      <a class="btn" href="{{BUG_URL}}" target="_blank" rel="noopener"><span>Signaler un bug</span><i class="led"></i></a>
+      <a class="btn" href="{{IDEA_URL}}" target="_blank" rel="noopener"><span>Proposer une idée</span><i class="led"></i></a>
+    </div>
+    <p class="small" style="margin-top:14px">Il faut un compte GitHub (gratuit).</p>
+  </section>
+
+  <section class="group" id="soutenir" aria-labelledby="t-kofi">
+    <p class="legend">soutenir</p>
+    <div class="kofi">
+      <h2 id="t-kofi">Un café pour l'atelier</h2>
+      <p>OSCar Editor est gratuit et le restera. S'il te rend service, tu peux soutenir son développement sur Ko-fi.</p>
+      <div><a class="copper" href="{{KOFI}}" target="_blank" rel="noopener">Soutenir sur Ko-fi</a></div>
+    </div>
+  </section>
+</div>
+
+</main>
+
+<footer>
+  <p>OSCar Editor est un projet indépendant, sans lien avec Oxford Synthesiser Company ni avec Tauntek.</p>
+  <p>Carte MIDI, firmware et documentation : <a href="{{TAUNTEK}}" target="_blank" rel="noopener">tauntek.com/OSCar.htm</a> · <a href="{{GH}}" target="_blank" rel="noopener">Code source</a> · <a href="{{KOFI}}" target="_blank" rel="noopener">Ko-fi</a></p>
+</footer>
+
+</div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var REPO = "{{REPO}}";
+
+  // --- the plugin's pages
+  var PAGES = [
+  {{PAGES_JS}}
+  ];
+  var shot = document.getElementById("shot"), caption = document.getElementById("shot-caption");
+  var minis = Array.prototype.slice.call(document.querySelectorAll(".mini"));
+  function showPage(i) {
+    var p = PAGES[i];
+    shot.src = "img/" + p[0] + ".webp";
+    shot.alt = "OSCar Editor, page " + p[1];
+    caption.textContent = p[2];
+    minis.forEach(function (b, j) { b.classList.toggle("on", j === i); b.setAttribute("aria-pressed", j === i ? "true" : "false"); });
+  }
+  minis.forEach(function (b) { b.addEventListener("click", function () { showPage(+b.dataset.i); }); });
+  // warm the cache so switching pages is instant
+  window.addEventListener("load", function () { PAGES.forEach(function (p) { var im = new Image(); im.src = "img/" + p[0] + ".webp"; }); });
+
+  // --- copy the Terminal lines
+  var copyBtn = document.getElementById("copy-cmd"), cmd = document.getElementById("cmd");
+  copyBtn.addEventListener("click", function () {
+    var text = cmd.textContent;
+    var done = function (ok) {
+      copyBtn.querySelector("span").textContent = ok ? "Copié" : "Sélectionné";
+      copyBtn.classList.toggle("on", ok);
+      setTimeout(function () { copyBtn.querySelector("span").textContent = "Copier"; copyBtn.classList.remove("on"); }, 1800);
+    };
+    var select = function () {
+      var r = document.createRange(); r.selectNodeContents(cmd);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); done(false);
+    };
+    try {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, select);
+    } catch (e) { select(); }
+  });
+
+  // --- the lit tab follows the section on screen
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".tabs .btn"));
+  var sections = tabs.map(function (t) { return document.querySelector(t.getAttribute("href")); });
+  function light(id) {
+    tabs.forEach(function (t) {
+      var on = t.getAttribute("href") === "#" + id;
+      t.classList.toggle("on", on);
+      if (on) t.setAttribute("aria-current", "true"); else t.removeAttribute("aria-current");
+    });
+  }
+  light("telecharger");
+  if ("IntersectionObserver" in window) {
+    var visible = {};
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { visible[e.target.id] = e.isIntersecting ? e.intersectionRatio : 0; });
+      var best = null, score = 0;
+      sections.forEach(function (s) { if ((visible[s.id] || 0) > score) { score = visible[s.id]; best = s.id; } });
+      if (best) light(best);
+    }, { rootMargin: "-80px 0px -45% 0px", threshold: [0, 0.1, 0.25, 0.5, 0.75, 1] });
+    sections.forEach(function (s) { io.observe(s); });
+  }
+
+  // --- latest releases, straight from GitHub (kept as written above when GitHub can't be reached)
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function inline(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/`(.+?)`/g, "<code>$1</code>"); }
+  function markdown(md) {
+    var out = [], list = null;
+    md.replace(/\r/g, "").split(/\n{2,}/).forEach(function (block) {
+      var lines = block.split("\n").filter(function (l) { return l.trim(); });
+      if (!lines.length) return;
+      if (/^#{1,6}\s/.test(lines[0]) && lines.length === 1) {
+        if (/^#{1,2}\s/.test(lines[0]) && /OSCar Editor/i.test(lines[0])) return;   // the title repeats the version
+        out.push("<p><strong>" + inline(lines[0].replace(/^#+\s*/, "")) + "</strong></p>"); return;
+      }
+      if (lines.every(function (l) { return /^\s*[-*]\s/.test(l); })) {
+        out.push("<ul>" + lines.map(function (l) { return "<li>" + inline(l.replace(/^\s*[-*]\s/, "")) + "</li>"; }).join("") + "</ul>"); return;
+      }
+      out.push("<p>" + inline(lines.join(" ")) + "</p>");
+    });
+    return out.join("");
+  }
+  var months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+  function frDate(iso) { var d = new Date(iso); return isNaN(d) ? "" : d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear(); }
+
+  try {
+    fetch("https://api.github.com/repos/" + REPO + "/releases?per_page=6", { headers: { Accept: "application/vnd.github+json" } })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (list) {
+        var pub = list.filter(function (r) { return !r.draft && !r.prerelease; });
+        if (!pub.length) return;
+        var box = document.getElementById("releases");
+        box.innerHTML = pub.map(function (r) {
+          var v = esc((r.tag_name || "").replace(/^v/, ""));
+          return '<article class="release"><div><span class="vchip">' + v + '</span><div class="cap when">' + esc(frDate(r.published_at)) +
+                 '</div></div><div class="notes">' + markdown(r.body || "") + "</div></article>";
+        }).join("");
+        var latest = (pub[0].tag_name || "").replace(/^v/, "");
+        if (latest) {
+          document.getElementById("vfd-version").textContent = latest;
+          document.getElementById("spec-version").textContent = latest;
+        }
+      })
+      .catch(function () {});
+  } catch (e) {}
+})();
+</script>

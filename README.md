@@ -48,6 +48,10 @@ Le plugin vérifie au plus une fois par jour les releases publiques de `distorte
 3. GitHub compile, teste et crée un **brouillon** de release `v0.3.0` avec `OSCar-Editor-mac.zip` et sa somme `.sha256` (une dizaine de minutes).
 4. Sur la page *Releases*, relire les notes puis **Publish release** (le tag est créé à ce moment-là). Les plugins installés la proposent au plus tard le lendemain (ou tout de suite avec *Vérifier*, page **Réglages**).
 
+## Site web
+
+La page de présentation (téléchargement, nouveautés, guide d'installation, astuces, retours) est servie par GitHub Pages depuis le dossier `docs/` : https://distortedimages-code.github.io/OSCarEditor/. Elle lit elle-même les releases publiées sur GitHub, donc une nouvelle version y apparaît sans rien modifier. Pour changer ses textes : modifier `tools/site/template.html`, puis lancer `python3 tools/site/make_site.py`.
+
 ## Vérifié sur le firmware Tauntek
 
 Les données du plugin ont été recoupées avec le code du firmware Tauntek (`tntkoscr.bin`, somme de contrôle 9D73 conforme au readme) et avec le tableau des CC :

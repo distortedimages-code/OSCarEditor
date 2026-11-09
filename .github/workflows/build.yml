@@ -6,7 +6,9 @@ name: build
 on:
   push:
     branches: [ "**" ]     # version tags are handled by release.yml
+    paths-ignore: [ "docs/**", "tools/site/**" ]   # the web page doesn't need a build
   pull_request:
+    paths-ignore: [ "docs/**", "tools/site/**" ]
   workflow_dispatch:
 
 jobs:
