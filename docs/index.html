@@ -262,6 +262,11 @@ figure figcaption { margin-top: 6px; font-size: 14px; color: var(--faint); }
 .tip { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 4px 14px; align-items: start; }
 .tip .led { margin-top: 8px; }
 .tip p { margin: 0; color: #d0ccc3; font-size: 16px; }
+.tip.wide { grid-column: 1 / -1; padding: 18px 20px; border-radius: 6px; background: rgba(0,0,0,.18); }
+.tip.wide .led { margin-top: 7px; }
+.how { margin: 10px 0 10px; padding-left: 22px; display: grid; gap: 6px; color: #d0ccc3; font-size: 16px; max-width: 78ch; }
+.how li::marker { color: var(--vfd); font-family: var(--mono); }
+.tip.wide p.small { margin-top: 2px; font-size: 15px; color: var(--muted); }
 
 /* feedback + support */
 .duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; }
@@ -385,18 +390,18 @@ footer a { color: var(--muted); }
       <div><span class="vchip">0.2.0</span><div class="cap when">novembre 2026</div></div>
       <div class="notes">
         <p><strong>Interface en français</strong> (English au choix dans Réglages). Les noms des réglages et des touches de l'OSCar restent ceux de la façade.</p>
-        <p><strong>Nouveau look « Atelier »</strong> : façade d'instrument avec joues en bois, potards, faders d'enveloppe, voyants et afficheur orange. La fenêtre peut être agrandie ou réduite.</p>
-        <p><strong>Rappel automatique</strong> : quand tu choisis une voix sur l'OSCar (avec le patch CC dump Tauntek activé), le plugin affiche exactement ce que joue l'OSCar, Duo/Arp compris.</p>
-        <p><strong>Horloge MIDI</strong> : l'arpégiateur et le séquenceur peuvent suivre l'horloge MIDI (Sync), avec la division en clair (1/16, 1/8T…). Le plugin peut envoyer l'horloge du DAW à l'OSCar, avec Start / Stop.</p>
-        <p><strong>Générateur de sons</strong> : Varier, Nouveau (basse, lead, pad, percussif, texture) et Croiser, avec verrous par section et historique. Les résultats jouent tout de suite sur l'OSCar, sans toucher à sa mémoire.</p>
-        <p><strong>Page Banques</strong> : tes banques, tes voix et toutes les sauvegardes automatiques, rechargeables d'un double-clic. Les voix s'enregistrent directement dans le dossier Voices, les banques dans Banks. Le contenu de l'OSCar est aussi sauvegardé avant chaque envoi.</p>
-        <p><strong>Page Raccourcis Tauntek</strong> : tous les raccourcis TUNE/TRANSPOSE sur un clavier, avec les touches dangereuses en rouge.</p>
-        <p><strong>MIDI Thru</strong> : jouer l'OSCar depuis la piste du DAW (notes et pitch bend).</p>
-        <p><strong>Mises à jour intégrées</strong> : le plugin signale les nouvelles versions et se met à jour lui-même sur Mac.</p>
+        <p><strong>Nouveau look « Atelier »</strong> : façade d'instrument avec joues en bois, potards, faders d'enveloppe, voyants et afficheur orange. La fenêtre peut être agrandie ou réduite.</p>
+        <p><strong>Rappel automatique</strong> : quand tu choisis une voix sur l'OSCar (avec le patch CC dump Tauntek activé), le plugin affiche exactement ce que joue l'OSCar, Duo/Arp compris.</p>
+        <p><strong>Horloge MIDI</strong> : l'arpégiateur et le séquenceur peuvent suivre l'horloge MIDI (Sync), avec la division en clair (1/16, 1/8T…). Le plugin peut envoyer l'horloge du DAW à l'OSCar, avec Start / Stop.</p>
+        <p><strong>Générateur de sons</strong> : Varier, Nouveau (basse, lead, pad, percussif, texture) et Croiser, avec verrous par section et historique. Les résultats jouent tout de suite sur l'OSCar, sans toucher à sa mémoire.</p>
+        <p><strong>Page Banques</strong> : tes banques, tes voix et toutes les sauvegardes automatiques, rechargeables d'un double-clic. Les voix s'enregistrent directement dans le dossier Voices, les banques dans Banks. Le contenu de l'OSCar est aussi sauvegardé avant chaque envoi.</p>
+        <p><strong>Page Raccourcis Tauntek</strong> : tous les raccourcis TUNE/TRANSPOSE sur un clavier, avec les touches dangereuses en rouge.</p>
+        <p><strong>MIDI Thru</strong> : jouer l'OSCar depuis la piste du DAW (notes et pitch bend).</p>
+        <p><strong>Mises à jour intégrées</strong> : le plugin signale les nouvelles versions et se met à jour lui-même sur Mac.</p>
       </div>
     </article>
   </div>
-  <p class="update-hint"><i class="led on" aria-hidden="true"></i>Une fois installé, le plugin te prévient lui-même quand une version sort : un bouton Mise à jour apparaît en haut de sa fenêtre. Un clic, puis tu relances le DAW.</p>
+  <p class="update-hint"><i class="led on" aria-hidden="true"></i>Une fois installé, le plugin te prévient lui-même quand une version sort : un bouton Mise à jour apparaît en haut de sa fenêtre. Un clic, puis tu relances le DAW.</p>
 </section>
 
 <!-- install -->
@@ -410,8 +415,8 @@ footer a { color: var(--muted); }
       <span class="step-n" aria-hidden="true">1</span>
       <div class="step-text">
         <h3>Télécharger</h3>
-        <p>Le bouton <a href="#telecharger">Télécharger pour Mac</a> donne le fichier <code>OSCar-Editor-mac.zip</code>. Double-clique dessus s'il n'est pas déjà décompressé : tu obtiens trois fichiers.</p>
-        <p class="note">Tu peux n'installer que le format qu'utilise ton DAW. Live, Bitwig et Reaper lisent le VST3 ; Logic n'utilise que l'AU.</p>
+        <p>Le bouton <a href="#telecharger">Télécharger pour Mac</a> donne le fichier <code>OSCar-Editor-mac.zip</code>. Double-clique dessus s'il n'est pas déjà décompressé : tu obtiens trois fichiers.</p>
+        <p class="note">Tu peux n'installer que le format qu'utilise ton DAW. Live, Bitwig et Reaper lisent le VST3 ; Logic n'utilise que l'AU.</p>
       </div>
       <div class="step-art">
         <div class="inset files" aria-label="Contenu du fichier zip">
@@ -428,7 +433,7 @@ footer a { color: var(--muted); }
       <div class="step-text">
         <h3>Ranger chaque fichier à sa place</h3>
         <p>Dans le Finder, menu <kbd>Aller</kbd> › <kbd>Aller au dossier…</kbd> (ou <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd>). Colle le chemin, appuie sur Entrée, puis glisse le fichier dans la fenêtre qui s'ouvre.</p>
-        <p class="note">Le dossier Library (Bibliothèque) est caché dans le Finder, mais « Aller au dossier » l'ouvre quand même. Si une ancienne version s'y trouve, remplace-la.</p>
+        <p class="note">Le dossier Library (Bibliothèque) est caché dans le Finder, mais « Aller au dossier » l'ouvre quand même. Si une ancienne version s'y trouve, remplace-la.</p>
       </div>
       <div class="step-art">
         <div class="inset files" aria-label="Où ranger les fichiers">
@@ -443,8 +448,8 @@ footer a { color: var(--muted); }
       <span class="step-n" aria-hidden="true">3</span>
       <div class="step-text">
         <h3>Débloquer le plugin, une seule fois</h3>
-        <p>Le plugin n'est pas notarisé par Apple : tant qu'il n'est pas débloqué, macOS empêche le DAW de le charger. Ouvre Terminal (Applications › Utilitaires), colle ces lignes et appuie sur Entrée.</p>
-        <p class="note">Si rien ne s'affiche, c'est bon. « no matches found » veut dire qu'un fichier n'est pas dans son dossier : refais l'étape 2 (ou ignore la ligne de l'application si tu ne l'as pas installée). Les mises à jour faites depuis le plugin n'ont pas besoin de ce déblocage.</p>
+        <p>Le plugin n'est pas notarisé par Apple : tant qu'il n'est pas débloqué, macOS empêche le DAW de le charger. Ouvre Terminal (Applications › Utilitaires), colle ces lignes et appuie sur Entrée.</p>
+        <p class="note">Si rien ne s'affiche, c'est bon. « no matches found » veut dire qu'un fichier n'est pas dans son dossier : refais l'étape 2 (ou ignore la ligne de l'application si tu ne l'as pas installée). Les mises à jour faites depuis le plugin n'ont pas besoin de ce déblocage.</p>
       </div>
       <div class="step-art">
         <div class="inset terminal">
@@ -460,8 +465,8 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
       <span class="step-n" aria-hidden="true">4</span>
       <div class="step-text">
         <h3>L'ouvrir dans le DAW</h3>
-        <p>Relance le DAW et fais-lui rescanner les plugins. Dans Live : Réglages › Plug-ins, active les Audio Units ou les dossiers VST3 système, puis relance le scan. Glisse ensuite OSCar Editor sur une piste MIDI vide et ouvre sa fenêtre.</p>
-        <p class="note">Le plugin ne produit aucun son : il parle directement à l'OSCar par ton interface MIDI. Dans Logic, il est rangé dans les instruments AU, rubrique OSCarTools.</p>
+        <p>Relance le DAW et fais-lui rescanner les plugins. Dans Live : Réglages › Plug-ins, active les Audio Units ou les dossiers VST3 système, puis relance le scan. Glisse ensuite OSCar Editor sur une piste MIDI vide et ouvre sa fenêtre.</p>
+        <p class="note">Le plugin ne produit aucun son : il parle directement à l'OSCar par ton interface MIDI. Dans Logic, il est rangé dans les instruments AU, rubrique OSCarTools.</p>
       </div>
       <div class="step-art">
         <figure>
@@ -475,8 +480,8 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
       <span class="step-n" aria-hidden="true">5</span>
       <div class="step-text">
         <h3>Brancher l'OSCar et choisir les ports</h3>
-        <p>Un câble va toujours d'un OUT vers un IN. Puis, page <b>Réglages</b> du plugin : <b>Sortie</b> = la sortie de l'interface où arrive le câble 1, <b>Entrée</b> = l'entrée où arrive le câble 2, canal 1 sauf si ton OSCar est réglé autrement.</p>
-        <p class="note">Avec un câble USB-MIDI tout-en-un, les fiches IN et OUT sont parfois étiquetées à l'envers : si rien ne passe, inverse-les. Le plugin retient tes ports.</p>
+        <p>Un câble va toujours d'un OUT vers un IN. Puis, page <b>Réglages</b> du plugin : <b>Sortie</b> = la sortie de l'interface où arrive le câble 1, <b>Entrée</b> = l'entrée où arrive le câble 2, canal 1 sauf si ton OSCar est réglé autrement.</p>
+        <p class="note">Avec un câble USB-MIDI tout-en-un, les fiches IN et OUT sont parfois étiquetées à l'envers : si rien ne passe, inverse-les. Le plugin retient tes ports.</p>
       </div>
       <div class="step-art">
         <div class="inset diagram"><svg class="cabling" viewBox="0 30 700 230" role="img" aria-label="Câble 1 : sortie MIDI de l'interface vers l'entrée MIDI de l'OSCar. Câble 2 : sortie MIDI de l'OSCar vers l'entrée MIDI de l'interface.">
@@ -508,8 +513,8 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
   <text class="tt2" x="495" y="234" text-anchor="middle">câble 2</text>
 </svg></div>
         <figure class="ports">
-          <img class="shot-crop" src="img/ports.webp" width="900" height="524" alt="Page Réglages : choix de la sortie, de l'entrée et du canal MIDI" loading="lazy">
-          <figcaption>Page Réglages : les noms affichés dépendent de ton interface.</figcaption>
+          <img class="shot-crop" src="img/ports.webp" width="900" height="524" alt="Page Réglages : choix de la sortie, de l'entrée et du canal MIDI" loading="lazy">
+          <figcaption>Page Réglages : les noms affichés dépendent de ton interface.</figcaption>
         </figure>
       </div>
     </li>
@@ -518,8 +523,8 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
       <span class="step-n" aria-hidden="true">6</span>
       <div class="step-text">
         <h3>Deux réglages sur l'OSCar</h3>
-        <p><b>Program change</b>, pour que l'OSCar passe sur la voix que tu cliques dans le plugin : maintiens <kbd>SPACE</kbd> (à gauche du clavier) et appuie sur la touche −9. La LED −9 s'allume.</p>
-        <p><b>Patch CC dump</b>, pour que le plugin suive les voix choisies sur l'OSCar : maintiens <kbd>TUNE/TRANSPOSE</kbd> et appuie sur la touche « Enable patch CC dump », la dernière touche noire de l'octave du milieu. Le voyant CC DUMP du plugin s'allume au prochain changement de voix.</p>
+        <p><b>Program change</b>, pour que l'OSCar passe sur la voix que tu cliques dans le plugin : maintiens <kbd>SPACE</kbd> (à gauche du clavier) et appuie sur la touche −9. La LED −9 s'allume.</p>
+        <p><b>Patch CC dump</b>, pour que le plugin suive les voix choisies sur l'OSCar : maintiens <kbd>TUNE/TRANSPOSE</kbd> et appuie sur la touche « Enable patch CC dump », la dernière touche noire de l'octave du milieu. Le voyant CC DUMP du plugin s'allume au prochain changement de voix.</p>
         <p class="note">Si l'OSCar ne suit plus après avoir été éteint, refais ces deux réglages.</p>
       </div>
       <div class="step-art">
@@ -534,15 +539,15 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
       <span class="step-n" aria-hidden="true">7</span>
       <div class="step-text">
         <h3>Récupérer tes voix, avant tout le reste</h3>
-        <p>Plugin ouvert, sur l'OSCar : maintiens <kbd>INSERT</kbd>, appuie sur <kbd>VOICE</kbd>, puis sur <kbd>SPACE</kbd>. L'OSCar envoie ses 36 voix en moins d'une seconde et le bas de la fenêtre affiche « Voix reçues (36) ».</p>
-        <p>Une copie part automatiquement dans <span class="path">Documents › OSCar Editor › Backups</span>. C'est ta sauvegarde : tout se recharge depuis la page Banques.</p>
-        <p class="note">Rien ne s'affiche ? L'entrée MIDI choisie à l'étape 5 n'est pas la bonne, ou le câble 2 est mal branché.</p>
+        <p>Plugin ouvert, sur l'OSCar : maintiens <kbd>INSERT</kbd>, appuie sur <kbd>VOICE</kbd>, puis sur <kbd>SPACE</kbd>. L'OSCar envoie ses 36 voix en moins d'une seconde et le bas de la fenêtre affiche « Voix reçues (36) ».</p>
+        <p>Une copie part automatiquement dans <span class="path">Documents › OSCar Editor › Backups</span>. C'est ta sauvegarde : tout se recharge depuis la page Banques.</p>
+        <p class="note">Rien ne s'affiche ? L'entrée MIDI choisie à l'étape 5 n'est pas la bonne, ou le câble 2 est mal branché.</p>
       </div>
       <div class="step-art">
         <div class="combo"><kbd>INSERT</kbd><span>maintenir</span><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">puis</span><kbd>SPACE</kbd></div>
         <figure>
-          <img class="shot-crop" src="img/voix-recues.webp" width="900" height="698" alt="Page Banques : la liste des 36 voix reçues" loading="lazy">
-          <figcaption>Page Banques : les 36 voix reçues, avec leurs noms.</figcaption>
+          <img class="shot-crop" src="img/voix-recues.webp" width="900" height="698" alt="Page Banques : la liste des 36 voix reçues" loading="lazy">
+          <figcaption>Page Banques : les 36 voix reçues, avec leurs noms.</figcaption>
         </figure>
       </div>
     </li>
@@ -554,12 +559,23 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
   <p class="legend">astuces</p>
   <h2 id="t-tips">Bon à savoir</h2>
   <div class="tips">
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Le son change en direct</h3><p>Avec Live CC allumé, chaque potard part tout de suite vers l'OSCar. Ce n'est enregistré dans sa mémoire qu'avec « Envoyer au synthé », qui écrit les 36 voix d'un coup.</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Le plugin suit l'OSCar</h3><p>Choisis une voix sur l'OSCar : le plugin l'affiche telle qu'elle joue, mode Duo ou Arp compris. Il faut le patch CC dump (étape 6).</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Essayer sans risque</h3><p>Le Générateur joue chaque essai sur l'OSCar sans toucher à sa mémoire. « Retour à l'original » annule, « Garder » met le son dans la voix.</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Arpège calé sur le DAW</h3><p>Page Voix, bloc horloge midi : Sync sur Horloge MIDI et une Division (1/16, 1/8T…). Dans Réglages, active « Envoyer l'horloge MIDI du DAW à l'OSCar ».</p></div></div>
+    <div class="tip wide"><i class="led on" aria-hidden="true"></i><div>
+      <h3>Récupérer un son fait sur l'OSCar</h3>
+      <p>Le plugin ne reçoit que ce qui est enregistré dans l'OSCar, pas le son en cours de réglage. Pour garder un son créé directement sur la machine :</p>
+      <ol class="how">
+        <li>Sur l'OSCar, enregistre ton son dans une mémoire que tu peux écraser (STORE, comme d'habitude).</li>
+        <li>Maintiens <kbd>INSERT</kbd>, appuie sur <kbd>VOICE</kbd>, puis sur <kbd>SPACE</kbd> : le plugin reçoit les 36 voix avec leurs valeurs exactes et affiche « Voix reçues (36) ».</li>
+        <li>Dans le plugin, clique sur le numéro de cette mémoire : ton son s'affiche avec tous ses réglages.</li>
+        <li>Page Banques : « Renommer » pour lui donner un nom, puis « Sauver voix… » (dossier Voices) ou « Enregistrer la banque… » pour garder les 36 voix.</li>
+      </ol>
+      <p class="small">Avec le patch CC dump, le plugin affiche déjà le son dès que tu choisis la mémoire sur l'OSCar, mais les potards sont à un cran près. Pour garder un son, préfère l'envoi INSERT, VOICE, SPACE.</p>
+    </div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Le son change en direct</h3><p>Avec Live CC allumé, chaque potard part tout de suite vers l'OSCar. Ce n'est enregistré dans sa mémoire qu'avec « Envoyer au synthé », qui écrit les 36 voix d'un coup.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Le plugin suit l'OSCar</h3><p>Choisis une voix sur l'OSCar : le plugin l'affiche telle qu'elle joue, mode Duo ou Arp compris. Il faut le patch CC dump (étape 6).</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Essayer sans risque</h3><p>Le Générateur joue chaque essai sur l'OSCar sans toucher à sa mémoire. « Retour à l'original » annule, « Garder » met le son dans la voix.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Arpège calé sur le DAW</h3><p>Page Voix, bloc horloge midi : Sync sur Horloge MIDI et une Division (1/16, 1/8T…). Dans Réglages, active « Envoyer l'horloge MIDI du DAW à l'OSCar ».</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Jouer avec un autre clavier</h3><p>MIDI Thru (en bas de la fenêtre) fait passer les notes et le pitch bend de la piste vers l'OSCar. Laisse-le éteint si une autre piste envoie déjà des notes à l'OSCar.</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Rien ne se perd</h3><p>Chaque réception et chaque envoi est sauvegardé. « Sauver voix… » range une voix dans Voices, « Enregistrer la banque… » une banque dans Banks. Un double-clic les recharge.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Rien ne se perd</h3><p>Chaque réception et chaque envoi est sauvegardé. « Sauver voix… » range une voix dans Voices, « Enregistrer la banque… » une banque dans Banks. Un double-clic les recharge.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Gare aux touches rouges</h3><p>Sur la page Raccourcis Tauntek, les touches en rouge (sons d'usine, B, C, zones de sauvegarde) remplacent les 36 voix de l'OSCar. Enregistre une banque avant.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Pourquoi le plugin ouvre ses ports</h3><p>Live ne laisse pas sortir le SysEx d'un plugin. OSCar Editor parle donc à l'OSCar par ses propres ports MIDI, choisis dans Réglages.</p></div></div>
   </div>
@@ -569,8 +585,8 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
 <div class="duo">
   <section class="group" id="retours" aria-labelledby="t-fb">
     <p class="legend">retours</p>
-    <h2 id="t-fb">Un bug, une idée ?</h2>
-    <p>Dis-le sur GitHub : le formulaire est déjà préparé, il suffit de le compléter. Pour un bug, le journal de la page Réglages aide beaucoup.</p>
+    <h2 id="t-fb">Un bug, une idée ?</h2>
+    <p>Dis-le sur GitHub : le formulaire est déjà préparé, il suffit de le compléter. Pour un bug, le journal de la page Réglages aide beaucoup.</p>
     <div class="actions">
       <a class="btn" href="https://github.com/distortedimages-code/OSCarEditor/issues/new?labels=bug&title=Bug%20%3A%20&body=%2A%2AVersion%20du%20plugin%20%3A%2A%2A%20%28en%20haut%20de%20la%20page%20R%C3%A9glages%29%0A%2A%2AmacOS%20%3A%2A%2A%0A%2A%2ADAW%20et%20format%20%28AU%2C%20VST3%20ou%20application%29%20%3A%2A%2A%0A%0A%2A%2ACe%20qui%20se%20passe%20%3A%2A%2A%0A%0A%2A%2ACe%20qui%20devrait%20se%20passer%20%3A%2A%2A%0A%0A%2A%2ALe%20journal%20%28page%20R%C3%A9glages%29%2C%20si%20possible%20%3A%2A%2A%0A" target="_blank" rel="noopener"><span>Signaler un bug</span><i class="led"></i></a>
       <a class="btn" href="https://github.com/distortedimages-code/OSCarEditor/issues/new?labels=enhancement&title=Id%C3%A9e%20%3A%20&body=%2A%2ATon%20id%C3%A9e%20%3A%2A%2A%0A%0A%2A%2ADans%20quelle%20situation%20elle%20t%27aiderait%20%3A%2A%2A%0A" target="_blank" rel="noopener"><span>Proposer une idée</span><i class="led"></i></a>
@@ -592,7 +608,7 @@ xattr -dr com.apple.quarantine /Applications/OSCar*</pre>
 
 <footer>
   <p>OSCar Editor est un projet indépendant, sans lien avec Oxford Synthesiser Company ni avec Tauntek.</p>
-  <p>Carte MIDI, firmware et documentation : <a href="http://www.tauntek.com/OSCar.htm" target="_blank" rel="noopener">tauntek.com/OSCar.htm</a> · <a href="https://github.com/distortedimages-code/OSCarEditor" target="_blank" rel="noopener">Code source</a> · <a href="https://ko-fi.com/amnesy" target="_blank" rel="noopener">Ko-fi</a></p>
+  <p>Carte MIDI, firmware et documentation : <a href="http://www.tauntek.com/OSCar.htm" target="_blank" rel="noopener">tauntek.com/OSCar.htm</a> · <a href="https://github.com/distortedimages-code/OSCarEditor" target="_blank" rel="noopener">Code source</a> · <a href="https://ko-fi.com/amnesy" target="_blank" rel="noopener">Ko-fi</a></p>
 </footer>
 
 </div>
