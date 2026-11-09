@@ -1,0 +1,195 @@
+// The six pages of the editor, drawn in the Atelier style. Each one reads the
+// processor/document in refresh() and sends edits back through the processor.
+
+#pragma once
+
+#include <JuceHeader.h>
+
+#include "../PluginProcessor.h"
+#include "Atelier.h"
+#include "Lang.h"
+
+class OscarEditor;
+
+namespace panels
+{
+constexpr int width = 1304, height = 510;   // every page is laid out on this logical size
+
+//==============================================================================
+class VoicePanel : public juce::Component
+{
+public:
+    explicit VoicePanel (OscarProcessor&);
+    ~VoicePanel() override;
+    void refresh();
+    void paint (juce::Graphics&) override;
+    void resized() override;
+
+private:
+    struct Group { juce::Rectangle<float> area; juce::String label; };
+    atelier::Knob& knob (const char* id);
+    atelier::Selector& selector (const char* id, bool labelLeft = false);
+    void layout();
+
+    OscarProcessor& proc;
+    std::map<std::string, std::unique_ptr<atelier::Knob>> knobs;
+    std::map<std::string, std::unique_ptr<atelier::Fader>> faders;
+    std::map<std::string, std::unique_ptr<atelier::Selector>> selectors;
+    juce::OwnedArray<atelier::LedButton> filterTypes;
+    atelier::LedButton lfoToOsc1 { "LFO > Osc 1", atelier::LedButton::LedPlace::Below },
+                       lfoSync { "LFO Sync", atelier::LedButton::LedPlace::Below };
+    atelier::Knob tempo { TRANS ("Tempo (global)"), atelier::KnobStyle::Knurled };
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> tempoAttachment;
+
+    // MIDI clock: Sync sets Trigger to Ext (arp and sequencer step on the MIDI clock),
+    // Division picks the steps through the global Tempo.
+    void refreshClock();
+    bool followsClock() const;
+    atelier::Selector syncSelector { TRANS ("Sync") }, divisionSelector { TRANS ("Division") };
+    std::unique_ptr<juce::ParameterAttachment> tempoWatch;
+    int lastTrigger = 1;   // Multi
+    std::vector<juce::Rectangle<float>> columns;
+    std::vector<Group> groups;
+};
+
+//==============================================================================
+class GeneratorPanel : public juce::Component
+{
+public:
+    explicit GeneratorPanel (OscarProcessor&);
+    void refresh();
+    void paint (juce::Graphics&) override;
+    void resized() override;
+
+private:
+    OscarProcessor& proc;
+    juce::OwnedArray<atelier::LedButton> modes, locks;
+    juce::OwnedArray<atelier::Pad> pads;
+    atelier::Selector parentA { TRANS ("Parent A") }, parentB { TRANS ("Parent B") };
+    atelier::Knob amount { TRANS ("Amount"), atelier::KnobStyle::Brass, 100 };
+    atelier::CopperButton generateButton { TRANS ("Generate") };
+    atelier::LedButton prevButton { TRANS ("< Previous") }, nextButton { TRANS ("Next >") }, auditionButton { TRANS ("Audition (Live CC)") },
+                       originalButton { TRANS ("Back to original") };
+    atelier::CopperButton keepButton { TRANS ("Keep") };
+    std::vector<std::pair<juce::Rectangle<float>, juce::String>> groups;
+    std::vector<juce::Rectangle<float>> columns;
+    juce::Rectangle<float> historyArea, amountNote, parentsNote, locksNote;
+};
+
+//==============================================================================
+class BanksPanel : public juce::Component, private juce::ListBoxModel
+{
+public:
+    BanksPanel (OscarProcessor&, OscarEditor&);
+    ~BanksPanel() override;
+    void refresh();
+    void rescanLibrary();
+    void paint (juce::Graphics&) override;
+    void resized() override;
+
+private:
+    struct Entry { juce::File file; juce::String kind; juce::Time when; };
+
+    // the bank list (left) uses this model; the library list has its own
+    int getNumRows() override;
+    void paintListBoxItem (int, juce::Graphics&, int, int, bool) override;
+    void selectedRowsChanged (int) override;
+    void listBoxItemDoubleClicked (int, const juce::MouseEvent&) override;
+
+    struct LibraryModel : juce::ListBoxModel
+    {
+        explicit LibraryModel (BanksPanel& p) : owner (p) {}
+        int getNumRows() override;
+        void paintListBoxItem (int, juce::Graphics&, int, int, bool) override;
+        void listBoxItemDoubleClicked (int, const juce::MouseEvent&) override;
+        BanksPanel& owner;
+    };
+
+    void loadSelectedEntry();
+    void saveBankAs();
+
+    OscarProcessor& proc;
+    OscarEditor& editor;
+    LibraryModel libraryModel { *this };
+    juce::ListBox bankList { "Bank", this }, libraryList { "Library", &libraryModel };
+    std::vector<Entry> entries, shown;
+    int filter = 0;   // 0 all, 1 banks, 2 backups
+    bool updating = false;
+
+    atelier::LedButton renameButton { TRANS ("Rename") }, copyButton { TRANS ("Copy") }, pasteButton { TRANS ("Paste") }, swapButton { TRANS ("Swap...") },
+                       revertButton { TRANS ("Revert") }, selectButton { TRANS ("Select on synth") }, exportVoiceButton { TRANS ("Export voice...") },
+                       importVoiceButton { TRANS ("Import voice...") };
+    atelier::LedButton allButton { TRANS ("All") }, banksButton { TRANS ("My banks") }, backupsButton { TRANS ("Backups") };
+    atelier::CopperButton loadButton { TRANS ("Load into editor") };
+    atelier::LedButton saveAsButton { TRANS ("Save bank as...") }, openFileButton { TRANS ("Open file...") }, exportSyxButton { TRANS ("Export .syx...") },
+                       factoryButton { TRANS ("Factory voices") }, folderButton { TRANS ("Open folder") }, sequencesButton { TRANS ("Send sequences...") };
+    std::vector<std::pair<juce::Rectangle<float>, juce::String>> groups;
+    juce::Rectangle<float> libraryNote;
+};
+
+//==============================================================================
+class WavesPanel : public juce::Component
+{
+public:
+    WavesPanel (OscarProcessor&, OscarEditor&);
+    void refresh();
+    void paint (juce::Graphics&) override;
+    void resized() override;
+    void mouseDown (const juce::MouseEvent&) override;
+    void mouseDrag (const juce::MouseEvent&) override;
+
+private:
+    void draw (const juce::MouseEvent&);
+    OscarProcessor& proc;
+    OscarEditor& editor;
+    juce::OwnedArray<atelier::LedButton> tables;
+    atelier::CopperButton sendButton { TRANS ("Send waveforms") };
+    juce::Rectangle<float> group, bars, infoArea;
+    juce::String info;
+    int table = 0;
+};
+
+//==============================================================================
+class KeysPanel : public juce::Component
+{
+public:
+    KeysPanel();
+    void paint (juce::Graphics&) override;
+    void resized() override;
+
+private:
+    atelier::LedButton tauntekButton { TRANS ("Tauntek OSCar page") };
+    juce::Rectangle<float> keyboard, cards;
+};
+
+//==============================================================================
+class SetupPanel : public juce::Component, private juce::ChangeListener
+{
+public:
+    SetupPanel (OscarProcessor&, OscarEditor&);
+    ~SetupPanel() override;
+    void refresh();
+    void refreshPorts();
+    void paint (juce::Graphics&) override;
+    void resized() override;
+
+private:
+    void changeListenerCallback (juce::ChangeBroadcaster*) override { refresh(); }
+
+    OscarProcessor& proc;
+    OscarEditor& editor;
+    juce::ComboBox outBox, inBox, channelBox;
+    juce::StringArray outIds, inIds;
+    atelier::LedButton rescanButton { TRANS ("Rescan") }, followButton { TRANS ("Follow the OSCar's voice changes") },
+                       selectAfterButton { TRANS ("Select the voice after sending") }, liveButton { TRANS ("Live CC (Tauntek)") },
+                       thruButton { TRANS ("MIDI Thru: play the OSCar from this track") },
+                       clockButton { TRANS ("Send the DAW's MIDI clock to the OSCar") };
+    atelier::LedButton checkButton { TRANS ("Check now") }, autoButton { TRANS ("Check automatically") }, notesButton { TRANS ("What's new") };
+    atelier::CopperButton installButton { TRANS ("Install update") };
+    atelier::LedButton frenchButton { juce::String::fromUTF8 ("Fran\xc3\xa7" "ais") }, englishButton { "English" };
+    juce::TextEditor help, logView;
+    std::vector<std::pair<juce::Rectangle<float>, juce::String>> groups;
+    juce::Rectangle<float> portsLabels, dumpText, updateText;
+};
+
+} // namespace panels

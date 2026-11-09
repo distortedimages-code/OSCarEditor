@@ -1,0 +1,1099 @@
+#include "PluginProcessor.h"
+#include "PluginEditor.h"
+#include "ui/Lang.h"
+
+using lang::tr;
+
+using namespace oscar;
+
+namespace
+{
+    const juce::Identifier idState ("OSCarEditorState"), idOutId ("outId"), idOutName ("outName"),
+                           idInId ("inId"), idInName ("inName"), idChannel ("channel"),
+                           idSlot ("slot"), idFollow ("follow"), idSelectAfter ("selectAfter"),
+                           idLiveCc ("liveCc"), idThru ("midiThru"), idClock ("clockOut"), idHost ("HostParams");
+
+    // A note the OSCar's own keyboard just played that comes back through the DAW
+    // (track input monitoring) is an echo: it must not be sent to the OSCar again.
+    constexpr double kEchoWindowMs = 150.0;
+
+    juce::StringArray differingParams (const VoiceData& a, const VoiceData& b)
+    {
+        juce::StringArray names;
+        for (const auto& p : allParams())
+            if (getParam (a, p) != getParam (b, p))
+                names.addIfNotAlreadyThere (p.coding == CcCoding::ArpNibble ? juce::String ("Arpeggiator")
+                                                                             : juce::String (p.section) + " " + p.name);
+        return names;
+    }
+
+    juce::String shortList (const juce::StringArray& names, int max = 6)
+    {
+        juce::StringArray shown;
+        for (int i = 0; i < names.size() && i < max; ++i)
+            shown.add (names[i]);
+        if (names.size() > max)
+            shown.add (tr ("+%1 more", { juce::String (names.size() - max) }));
+        return shown.joinIntoString (", ");
+    }
+
+    // Find a device by identifier, falling back to its name (identifiers can change between sessions).
+    juce::String resolveDevice (const juce::Array<juce::MidiDeviceInfo>& devices,
+                                const juce::String& id, const juce::String& name)
+    {
+        for (const auto& d : devices)
+            if (id.isNotEmpty() && d.identifier == id)
+                return d.identifier;
+        for (const auto& d : devices)
+            if (name.isNotEmpty() && d.name == name)
+                return d.identifier;
+        return {};
+    }
+
+    juce::String deviceName (const juce::Array<juce::MidiDeviceInfo>& devices, const juce::String& id)
+    {
+        for (const auto& d : devices)
+            if (d.identifier == id)
+                return d.name;
+        return {};
+    }
+
+    juce::String hostId (const ParamDef& p) { return juce::String ("cc_") + p.id; }
+
+    // The test suite sets this so it never touches the user's settings, ports or backups.
+    juce::File testRoot()
+    {
+        const auto dir = juce::SystemStats::getEnvironmentVariable ("OSCAR_EDITOR_TEST_DIR", {});
+        return dir.isNotEmpty() ? juce::File (dir) : juce::File();
+    }
+
+    int choiceValue (const ParamDef& p, int index)
+    {
+        if (p.choices.empty()) return 0;
+        return p.choices[(size_t) juce::jlimit (0, (int) p.choices.size() - 1, index)].value;
+    }
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout OscarProcessor::createHostLayout()
+{
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+
+    for (const auto& p : allParams())
+    {
+        if (p.cc < 0)
+            continue;
+
+        const auto name = juce::String (p.section) + " " + p.name;
+        if (p.kind == ParamKind::Knob)
+        {
+            layout.add (std::make_unique<juce::AudioParameterInt> (juce::ParameterID { hostId (p), 1 }, name, 0, kKnobMaxEditable, 128));
+        }
+        else
+        {
+            juce::StringArray labels;
+            for (const auto& c : p.choices)
+                labels.add (c.label);
+            layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { hostId (p), 1 }, name, labels, 0));
+        }
+    }
+
+    layout.add (std::make_unique<juce::AudioParameterInt> (juce::ParameterID { "tempo", 1 }, "Tempo (global)", 1, 254, 128));
+    return layout;
+}
+
+OscarProcessor::OscarProcessor()
+    : AudioProcessor (BusesProperties().withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
+      hostParams (*this, nullptr, idHost, createHostLayout())
+{
+    for (const auto& p : allParams())
+        if (p.cc >= 0)
+            hostList.push_back ({ hostParams.getRawParameterValue (hostId (p)), &p, -1 });
+    hostList.push_back ({ hostParams.getRawParameterValue ("tempo"), nullptr, -1 });
+
+    // Re-open the ports used last time, so a fresh instance is ready to go.
+    auto& g = globalSettings();
+    if (testRoot() == juce::File())
+    {
+        midi.openOutput (resolveDevice (juce::MidiOutput::getAvailableDevices(), g.getValue ("outId"), g.getValue ("outName")));
+        midi.openInput (resolveDevice (juce::MidiInput::getAvailableDevices(), g.getValue ("inId"), g.getValue ("inName")));
+    }
+    channel = juce::jlimit (1, 16, g.getIntValue ("channel", 1));
+
+    // French unless chosen otherwise (the test suite runs in English).
+    lang::apply (g.getValue ("language", testRoot() != juce::File() ? "en" : "fr"));
+
+    document.addChangeListener (this);
+    juce::Timer::startTimer (40);
+    juce::HighResolutionTimer::startTimer (2);
+}
+
+OscarProcessor::~OscarProcessor()
+{
+    juce::HighResolutionTimer::stopTimer();   // waits for a running callback
+    juce::Timer::stopTimer();
+    document.removeChangeListener (this);
+    midi.closeAll();
+}
+
+juce::PropertiesFile& OscarProcessor::globalSettings()
+{
+    if (settingsFile == nullptr && testRoot() != juce::File())
+    {
+        juce::PropertiesFile::Options o;
+        settingsFile = std::make_unique<juce::PropertiesFile> (testRoot().getChildFile ("test.settings"), o);
+    }
+
+    if (settingsFile == nullptr)
+    {
+        juce::PropertiesFile::Options o;
+        o.applicationName = "OSCar Editor";
+        o.filenameSuffix = ".settings";
+        o.folderName = "OSCar Editor";
+        o.osxLibrarySubFolder = "Application Support";
+        settingsFile = std::make_unique<juce::PropertiesFile> (o);
+    }
+    return *settingsFile;
+}
+
+void OscarProcessor::saveGlobalPorts()
+{
+    auto& g = globalSettings();
+    g.setValue ("outId", midi.getOutputId());
+    g.setValue ("outName", deviceName (juce::MidiOutput::getAvailableDevices(), midi.getOutputId()));
+    g.setValue ("inId", midi.getInputId());
+    g.setValue ("inName", deviceName (juce::MidiInput::getAvailableDevices(), midi.getInputId()));
+    g.setValue ("channel", channel.load());
+    g.saveIfNeeded();
+}
+
+//==============================================================================
+void OscarProcessor::addLog (const juce::String& text)
+{
+    for (const auto& line : juce::StringArray::fromLines (text))
+        if (line.isNotEmpty())
+            log.add (juce::Time::getCurrentTime().toString (false, true, true, true) + "  " + line);
+    while (log.size() > 200)
+        log.remove (0);
+    statusBroadcaster.sendChangeMessage();
+}
+
+void OscarProcessor::setSelectedSlot (int slot)
+{
+    slot = juce::jlimit (0, kNumVoices - 1, slot);
+    if (slot != selectedSlot)
+    {
+        selectedSlot = slot;
+        statusBroadcaster.sendChangeMessage();
+    }
+}
+
+void OscarProcessor::setChannel (int ch)
+{
+    channel = juce::jlimit (1, 16, ch);
+    saveGlobalPorts();
+    statusBroadcaster.sendChangeMessage();
+}
+
+void OscarProcessor::setLanguage (const juce::String& code)
+{
+    lang::apply (code);
+    globalSettings().setValue ("language", lang::current());
+    globalSettings().saveIfNeeded();
+    languageChanged.sendChangeMessage();
+}
+
+juce::String OscarProcessor::getLanguage() const
+{
+    return lang::current();
+}
+
+void OscarProcessor::setClockOut (bool b)
+{
+    clockOut = b;
+    statusBroadcaster.sendChangeMessage();
+}
+
+void OscarProcessor::setMidiThru (bool b)
+{
+    midiThru = b;
+    statusBroadcaster.sendChangeMessage();
+}
+
+void OscarProcessor::setLiveCc (bool b)
+{
+    if (b && ! liveCc)
+        resyncHost = true;   // don't replay automation moves made while it was off
+    liveCc = b;
+    statusBroadcaster.sendChangeMessage();
+}
+
+juce::String OscarProcessor::setOutputDevice (const juce::String& identifier)
+{
+    const auto err = midi.openOutput (identifier);
+    saveGlobalPorts();
+    if (err.isNotEmpty())
+        addLog (err);
+    statusBroadcaster.sendChangeMessage();
+    return err;
+}
+
+juce::String OscarProcessor::setInputDevice (const juce::String& identifier)
+{
+    const auto err = midi.openInput (identifier);
+    saveGlobalPorts();
+    if (err.isNotEmpty())
+        addLog (err);
+    statusBroadcaster.sendChangeMessage();
+    return err;
+}
+
+//==============================================================================
+juce::File OscarProcessor::getBackupFolder()
+{
+    if (testRoot() != juce::File())
+        return testRoot().getChildFile ("Backups");
+    return juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+               .getChildFile ("OSCar Editor").getChildFile ("Backups");
+}
+
+juce::File OscarProcessor::getUserFolder()
+{
+    if (testRoot() != juce::File())
+        return testRoot();
+    return juce::File::getSpecialLocation (juce::File::userDocumentsDirectory).getChildFile ("OSCar Editor");
+}
+
+juce::File OscarProcessor::getBanksFolder()
+{
+    return getUserFolder().getChildFile ("Banks");
+}
+
+juce::File OscarProcessor::writeBackup (const juce::String& what, const std::vector<std::uint8_t>& bytes)
+{
+    auto dir = getBackupFolder();
+    if (! dir.createDirectory())
+        return {};
+    const auto stamp = juce::Time::getCurrentTime().formatted ("%Y-%m-%d %H-%M-%S");
+    auto f = dir.getNonexistentChildFile (stamp + " " + what, ".syx", false);
+    if (! f.replaceWithData (bytes.data(), bytes.size()))
+        return {};
+    return f;
+}
+
+//==============================================================================
+// Live CC
+//==============================================================================
+void OscarProcessor::queueCc (const std::vector<CcMessage>& messages)
+{
+    if (messages.empty())
+        return;
+
+    const juce::ScopedLock sl (outboxLock);
+    for (const auto& m : messages)
+    {
+        // Latest value wins, and moves to the end so a batch keeps its own order
+        // (CC 51 must stay before the CC 50 that follows it).
+        outbox.erase (std::remove_if (outbox.begin(), outbox.end(),
+                                      [&] (const CcMessage& o) { return o.first == m.first; }),
+                      outbox.end());
+        outbox.push_back (m);
+    }
+}
+
+void OscarProcessor::editParam (int slot, const ParamDef& p, int value)
+{
+    document.setParam (slot, p, value);
+
+    if (! liveCc || slot != selectedSlot)
+        return;
+
+    if (oscarSound && oscarSlot == slot)
+        pushDifferencesToOscar();
+    else if (oscarSlot < 0 || oscarSlot == slot)   // never touch another voice the OSCar is playing
+        queueCc (ccMessagesFor (p, document.getVoice (slot)));
+}
+
+void OscarProcessor::pushDifferencesToOscar()
+{
+    if (! liveCc || ! oscarSound || oscarSlot != selectedSlot)
+        return;
+
+    const auto& v = document.getVoice (selectedSlot);
+    if (v == *oscarSound)
+        return;
+
+    std::vector<CcMessage> msgs;
+    bool arpDone = false;
+    for (const auto& p : allParams())
+    {
+        if (p.cc < 0 || getParam (v, p) == getParam (*oscarSound, p))
+            continue;
+        if (p.coding == CcCoding::ArpNibble)
+        {
+            if (arpDone) continue;
+            arpDone = true;
+        }
+        const auto m = ccMessagesFor (p, v);
+        msgs.insert (msgs.end(), m.begin(), m.end());
+    }
+
+    queueCc (msgs);
+    oscarSound = v;
+}
+
+void OscarProcessor::changeListenerCallback (juce::ChangeBroadcaster*)
+{
+    // Undo, paste, revert, file loads...: keep what the OSCar plays equal to the editor.
+    pushDifferencesToOscar();
+}
+
+void OscarProcessor::oscarSelected (int slot)
+{
+    oscarSlot = slot;
+    oscarSound = document.getOscarVoice (slot);   // the OSCar just loaded it from memory
+    const int token = ++selectionToken;
+
+    // After the OSCar's own CC dump has gone by, make it play the editor's version.
+    juce::Timer::callAfterDelay (400, [weak = juce::WeakReference<OscarProcessor> (this), token]
+    {
+        if (weak != nullptr && weak->selectionToken == token)
+            weak->pushDifferencesToOscar();
+    });
+}
+
+void OscarProcessor::chooseVoice (int slot)
+{
+    setSelectedSlot (slot);
+    if (liveCc && midi.isOutputOpen())
+    {
+        if (midi.isBusy())
+            addLog (tr ("A transfer is still in progress: the OSCar was not switched to voice %1.", { juce::String (slotLabel (slot)) }));
+        else if (midi.sendProgramChange (channel, slot))
+            oscarSelected (slot);
+    }
+}
+
+void OscarProcessor::hiResTimerCallback()
+{
+    pumpThru();
+
+    // 1. Host automation -> CC (only on change; never on load)
+    const bool live = liveCc;
+    if (hostSuspend > 0)
+        resyncHost = true;
+    const bool resync = hostSuspend > 0 || resyncHost.exchange (false);
+    std::vector<CcMessage> msgs;
+    bool arpChanged = false;
+
+    for (auto& h : hostList)
+    {
+        const int now = juce::roundToInt (h.raw->load());
+        if (now == h.last)
+            continue;
+        const bool first = h.last < 0;
+        h.last = now;
+        if (resync || first || ! live)
+            continue;
+
+        if (h.def == nullptr)
+            msgs.emplace_back (kTempoCc, juce::jlimit (0, 127, now >> 1));
+        else if (h.def->coding == CcCoding::ArpNibble)
+            arpChanged = true;
+        else
+        {
+            const int value = h.def->kind == ParamKind::Knob ? now : choiceValue (*h.def, now);
+            const int c = ccValueFor (h.def->coding, value);
+            if (c >= 0)
+                msgs.emplace_back (h.def->cc, c);
+        }
+    }
+
+    if (arpChanged)
+    {
+        int dir = 3, mode = 0, function = 0;
+        for (const auto& h : hostList)
+        {
+            if (h.def == nullptr) continue;
+            const int v = choiceValue (*h.def, juce::roundToInt (h.raw->load()));
+            if (std::string (h.def->id) == "arpDir")   dir = v;
+            if (std::string (h.def->id) == "arpMode")  mode = v;
+            if (std::string (h.def->id) == "function") function = v;
+        }
+        msgs.emplace_back (51, ccValueFor (CcCoding::ArpNibble, (dir & 3) | ((mode & 3) << 2)));
+        const int f = ccValueFor (CcCoding::SixSparse, function);
+        if (f >= 0)
+            msgs.emplace_back (50, f);
+    }
+
+    queueCc (msgs);
+
+    // 2. Outbox -> OSCar (waits while a SysEx transfer is on the wire)
+    const juce::ScopedLock sl (outboxLock);
+    if (! outbox.empty() && midi.sendControllers (channel, outbox))
+        outbox.clear();
+}
+
+//==============================================================================
+// Generator
+//==============================================================================
+oscar::Corpus OscarProcessor::learningCorpus() const
+{
+    // Learn from the factory bank, the user's bank and what the OSCar holds.
+    std::vector<VoiceData> extra (document.getBank().voices.begin(), document.getBank().voices.end());
+    if (const auto& known = document.getOscarBank())
+        extra.insert (extra.end(), known->voices.begin(), known->voices.end());
+    return Corpus::withFactory (extra);
+}
+
+void OscarProcessor::applyToSelected (const VoiceData& v, const juce::String& undoKey)
+{
+    const int slot = selectedSlot;
+    document.setVoice (slot, v, undoKey);
+
+    // Audition: make the OSCar play it now. When we don't know what it is playing,
+    // send the whole voice rather than the differences.
+    if (liveCc && (oscarSlot == slot || oscarSlot < 0))
+    {
+        if (oscarSound && oscarSlot == slot)
+        {
+            pushDifferencesToOscar();
+        }
+        else
+        {
+            std::vector<CcMessage> msgs;
+            bool arpDone = false;
+            for (const auto& p : allParams())
+            {
+                if (p.cc < 0) continue;
+                if (p.coding == CcCoding::ArpNibble) { if (arpDone) continue; arpDone = true; }
+                const auto m = ccMessagesFor (p, v);
+                msgs.insert (msgs.end(), m.begin(), m.end());
+            }
+            queueCc (msgs);
+            if (oscarSlot == slot)
+                oscarSound = v;
+        }
+    }
+}
+
+void OscarProcessor::generate()
+{
+    const int slot = selectedSlot;
+    if (genSlot != slot || genHistory.empty())
+    {
+        genHistory.clear();
+        genHistory.push_back ({ document.getVoice (slot), tr ("ORIGINAL") + juce::String::fromUTF8 (" \xc2\xb7 ") + tr ("VOICE %1", { juce::String (slotLabel (slot)) }), juce::Time::getCurrentTime() });
+        genSlot = slot;
+        genIndex = 0;
+    }
+
+    const auto& base = document.getVoice (slot);
+    const auto corpus = learningCorpus();
+    Generator g ((std::uint32_t) juce::Random::getSystemRandom().nextInt());
+    VoiceData out;
+    juce::String label;
+
+    switch (gen.mode)
+    {
+        case GenMode::Vary:
+            out = g.vary (base, gen.amount, gen.locks, corpus);
+            label = tr ("VARY") + juce::String::fromUTF8 (" \xc2\xb7 ") + juce::String (juce::roundToInt (gen.amount * 100.0)) + " %";
+            break;
+        case GenMode::New:
+            out = g.create (base, gen.family, gen.locks, corpus);
+            label = tr ("NEW") + juce::String::fromUTF8 (" \xc2\xb7 ") + lang::upper (tr (familyName (gen.family)));
+            break;
+        case GenMode::Breed:
+        {
+            const int a = juce::jlimit (0, kNumVoices - 1, gen.parentA), b = juce::jlimit (0, kNumVoices - 1, gen.parentB);
+            // the slot's own sound is parent A when A is the slot being generated into
+            const auto& pa = (a == slot) ? genHistory.front().voice : document.getVoice (a);
+            const auto& pb = (b == slot) ? genHistory.front().voice : document.getVoice (b);
+            out = g.breed (pa, pb, gen.amount * 0.5, gen.locks, corpus);
+            label = tr ("BREED") + juce::String::fromUTF8 (" \xc2\xb7 ") + juce::String (slotLabel (a)) + " x " + juce::String (slotLabel (b));
+            break;
+        }
+    }
+
+    // a new result drops the "future" if we had stepped back
+    genHistory.resize ((size_t) genIndex + 1);
+    genHistory.push_back ({ out, juce::String (genHistory.size()).paddedLeft ('0', 2) + "  " + label, juce::Time::getCurrentTime() });
+    genIndex = (int) genHistory.size() - 1;
+    applyToSelected (out, "generator");
+    addLog (liveCc ? tr ("Generated (%1) into voice %2: playing on the OSCar, not stored in its memory yet.", { label.toLowerCase(), juce::String (slotLabel (slot)) })
+                   : tr ("Generated (%1) into voice %2.", { label.toLowerCase(), juce::String (slotLabel (slot)) }));
+}
+
+void OscarProcessor::genStep (int delta)
+{
+    if (genHistory.empty() || genSlot != selectedSlot)
+        return;
+    const int i = juce::jlimit (0, (int) genHistory.size() - 1, genIndex + delta);
+    if (i == genIndex)
+        return;
+    genIndex = i;
+    applyToSelected (genHistory[(size_t) i].voice, "generator");
+    statusBroadcaster.sendChangeMessage();
+}
+
+void OscarProcessor::genBackToOriginal()
+{
+    if (genHistory.empty() || genSlot != selectedSlot)
+        return;
+    genIndex = 0;
+    applyToSelected (genHistory.front().voice, "generator");
+    addLog (tr ("Voice %1 is back to its original sound.", { juce::String (slotLabel (genSlot)) }));
+}
+
+void OscarProcessor::genKeep()
+{
+    if (genHistory.empty())
+        return;
+    addLog (tr ("Kept %1 in voice %2. \"Send voices to synth\" stores it in the OSCar.",
+                { genHistory[(size_t) genIndex].label.fromFirstOccurrenceOf ("  ", false, false).toLowerCase(), juce::String (slotLabel (genSlot)) }));
+    genHistory.clear();
+    genIndex = -1;
+    genSlot = -1;
+    statusBroadcaster.sendChangeMessage();
+}
+
+//==============================================================================
+// MIDI thru (CC engine thread)
+//==============================================================================
+void OscarProcessor::pumpThru()
+{
+    const double now = juce::Time::getMillisecondCounterHiRes();
+    const bool busy = midi.isBusy();
+    const bool on = midiThru;
+    const int ch = channel;
+    std::vector<juce::MidiMessage> out;
+
+    if (! busy)
+    {
+        for (int n = 0; n < 128; ++n)
+        {
+            // note-offs held back during a transfer, or notes still on when thru was turned off
+            if (thruPendingOff[(size_t) n] || (! on && thruActive[(size_t) n]))
+            {
+                out.push_back (juce::MidiMessage::noteOff (ch, n));
+                thruPendingOff[(size_t) n] = false;
+                thruActive[(size_t) n] = false;
+            }
+        }
+        if (! on && thruBent)
+        {
+            out.push_back (juce::MidiMessage::pitchWheel (ch, 8192));
+            thruBent = false;
+        }
+    }
+
+    int s1, n1, s2, n2;
+    thruFifo.prepareToRead (thruFifo.getNumReady(), s1, n1, s2, n2);
+
+    auto handle = [&] (const std::array<std::uint8_t, 3>& d)
+    {
+        if (d[0] >= 0xF8)                           // clock tick, Start, Continue, Stop
+        {
+            if (! busy)
+                out.push_back (juce::MidiMessage ((int) d[0]));
+            return;
+        }
+        if (! on)
+            return;
+        const int status = d[0] & 0xF0, note = d[1] & 0x7F, vel = d[2] & 0x7F;
+
+        if (status == 0x90 && vel > 0)
+        {
+            if (now - midi.lastNoteOnFromOscar (note) < kEchoWindowMs)
+            {
+                thruEchoed[(size_t) note] = true;   // its note-off is an echo too
+                return;
+            }
+            if (busy)
+                return;                             // not during a transfer
+            thruEchoed[(size_t) note] = false;
+            thruActive[(size_t) note] = true;
+            out.push_back (juce::MidiMessage::noteOn (ch, note, (juce::uint8) vel));
+        }
+        else if (status == 0x80 || status == 0x90)
+        {
+            if (thruEchoed[(size_t) note])
+            {
+                thruEchoed[(size_t) note] = false;
+                return;
+            }
+            if (! thruActive[(size_t) note])
+                return;
+            if (busy)
+            {
+                thruPendingOff[(size_t) note] = true;
+                return;
+            }
+            thruActive[(size_t) note] = false;
+            out.push_back (juce::MidiMessage::noteOff (ch, note, (juce::uint8) vel));
+        }
+        else if (status == 0xE0 && ! busy)
+        {
+            const int value = (d[2] << 7) | d[1];
+            thruBent = value != 8192;
+            out.push_back (juce::MidiMessage::pitchWheel (ch, value));
+        }
+    };
+
+    // events are sent when they are due (they carry their position in the audio block)
+    int consumed = 0;
+    for (int part = 0; part < 2; ++part)
+    {
+        const int start = part == 0 ? s1 : s2, count = part == 0 ? n1 : n2;
+        int i = 0;
+        for (; i < count; ++i)
+        {
+            const auto& e = thruData[(size_t) (start + i)];
+            if (e.when > now + 0.5)
+                break;
+            handle (e.data);
+            ++consumed;
+        }
+        if (i < count)
+            break;
+    }
+    thruFifo.finishedRead (consumed);
+
+    if (out.empty() || midi.sendShortMessages (out))
+        return;
+
+    // A transfer started meanwhile (or the port is closed): never leave a note hanging.
+    for (const auto& m : out)
+    {
+        if (m.isNoteOn())
+            thruActive[(size_t) m.getNoteNumber()] = false;
+        else if (m.isNoteOff() && midi.isOutputOpen())
+            thruPendingOff[(size_t) m.getNoteNumber()] = true;
+    }
+}
+
+//==============================================================================
+// Transfers
+//==============================================================================
+juce::String OscarProcessor::sendVoices (bool selectSlotAfter)
+{
+    if (! midi.isOutputOpen())
+        return tr ("No MIDI output selected.");
+    if (midi.isBusy())
+        return tr ("A transfer is still in progress.");
+
+    // What the OSCar holds is about to be overwritten: keep a copy when we know it.
+    if (const auto& known = document.getOscarBank(); known && *known != document.getBank())
+        writeBackup ("OSCar voices before send", buildVoiceMessage (*known));
+
+    const auto msg = buildVoiceMessage (document.getBank());
+    const auto backup = writeBackup ("sent voices", msg);
+
+    if (! midi.sendSysex (msg))
+        return tr ("The MIDI output refused the data.");
+
+    document.markVoicesSent();
+    addLog (tr ("Sent 36 voices (%1 bytes, about %2 s).", { juce::String ((int) msg.size()), juce::String (transferSeconds (msg.size()), 1) })
+            + (backup.existsAsFile() ? juce::String() : " " + tr ("Warning: backup file could not be written.")));
+
+    if (selectSlotAfter)
+    {
+        const int slot = selectedSlot;
+        const int delay = (int) midi.busyRemainingMs() + 300;
+        juce::Timer::callAfterDelay (delay, [weak = juce::WeakReference<OscarProcessor> (this), slot]
+        {
+            if (weak != nullptr)
+            {
+                const auto err = weak->selectOnOscar (slot);
+                if (err.isNotEmpty())
+                    weak->addLog (err);
+            }
+        });
+    }
+    return {};
+}
+
+juce::String OscarProcessor::sendWaves()
+{
+    if (! document.getWaves())
+        return tr ("No waveform data loaded yet: dump the waveforms from the OSCar first.");
+    if (! midi.isOutputOpen())
+        return tr ("No MIDI output selected.");
+    if (midi.isBusy())
+        return tr ("A transfer is still in progress.");
+
+    const auto msg = buildWaveMessage (*document.getWaves());
+    const auto backup = writeBackup ("sent waveforms", msg);
+    if (! midi.sendSysex (msg))
+        return tr ("The MIDI output refused the data.");
+
+    document.markWavesSent();
+    addLog (tr ("Sent waveforms -8 to -12 (%1 bytes).", { juce::String ((int) msg.size()) })
+            + (backup.existsAsFile() ? juce::String() : " " + tr ("Warning: backup file could not be written.")));
+    return {};
+}
+
+juce::String OscarProcessor::sendSequences()
+{
+    if (! document.getSequences() || document.getSequences()->empty())
+        return tr ("No sequence data loaded.");
+    if (! midi.isOutputOpen())
+        return tr ("No MIDI output selected.");
+    if (midi.isBusy())
+        return tr ("A transfer is still in progress.");
+
+    const auto msg = buildSequenceMessage (*document.getSequences());
+    writeBackup ("sent sequences", msg);
+    if (! midi.sendSysex (msg))
+        return tr ("The MIDI output refused the data.");
+
+    addLog (tr ("Sent sequences (%1 bytes, about %2 s).", { juce::String ((int) msg.size()), juce::String (transferSeconds (msg.size()), 1) }));
+    return {};
+}
+
+juce::String OscarProcessor::selectOnOscar (int slot)
+{
+    if (! midi.isOutputOpen())
+        return tr ("No MIDI output selected.");
+    if (slot < 0 || slot >= kNumVoices)
+        return tr ("No voice selected.");
+    if (midi.isBusy())
+        return tr ("A transfer is still in progress.");
+    if (! midi.sendProgramChange (channel, slot))
+        return tr ("The MIDI output refused the program change.");
+    oscarSelected (slot);
+    addLog (tr ("Program change %1 sent (voice %2).", { juce::String (slot), juce::String (slotLabel (slot)) }));
+    return {};
+}
+
+//==============================================================================
+// Incoming
+//==============================================================================
+void OscarProcessor::sysexReceived (const std::vector<std::uint8_t>& message)
+{
+    if (message.size() < 3 || message[1] != kManufacturerId)
+        return; // another device's SysEx: not ours
+
+    DumpContents d;
+    std::string err;
+    if (! parseStream (message, d, err))
+    {
+        writeBackup ("received (unreadable)", message);
+        addLog (tr ("Received OSCar data could not be read: %1 Nothing was changed. Try the dump again.", { tr (juce::String (err)) }));
+        return;
+    }
+
+    juce::StringArray kinds;
+    if (d.voices)    kinds.add ("voices");
+    if (d.waves)     kinds.add ("waveforms");
+    if (d.sequences) kinds.add ("sequences");
+    const auto backup = writeBackup ("received " + kinds.joinIntoString (" "), message);
+
+    // The OSCar's current sound may differ from its memory (panel moves): stop assuming.
+    if (d.voices)
+        oscarSound.reset();
+
+    addLog (document.receiveDump (d)
+            + (backup.existsAsFile() ? juce::String() : "\n" + tr ("Warning: backup file could not be written.")));
+}
+
+void OscarProcessor::programChangeReceived (int, int program)
+{
+    if (program < 0 || program >= kNumVoices)
+        return;
+    if (followOscar)
+        setSelectedSlot (program);
+    oscarSelected (program);
+    awaitingDumpSince = juce::Time::getMillisecondCounterHiRes();   // a Tauntek with CC dump on answers within ~0.2 s
+}
+
+void OscarProcessor::controllerReceived (int, int cc, int value)
+{
+    if (cc < 14 || cc > 55)
+        return;
+
+    const auto now = juce::Time::getMillisecondCounterHiRes();
+    if (now - lastDumpCcMs > 300.0)
+    {
+        std::fill (dumpValues.begin(), dumpValues.end(), -1);
+        dumpCount = 0;
+    }
+    dumpValues[(size_t) cc] = value;
+    ++dumpCount;
+    lastDumpCcMs = now;
+}
+
+void OscarProcessor::timerCallback()
+{
+    if (awaitingDumpSince > 0 && juce::Time::getMillisecondCounterHiRes() - awaitingDumpSince > 1500.0)
+    {
+        awaitingDumpSince = 0;
+        if (++ccDumpMisses >= 2 && ccDumpState != CcDumpState::Missing)
+        {
+            ccDumpState = CcDumpState::Missing;
+            statusBroadcaster.sendChangeMessage();
+        }
+    }
+
+    // A Tauntek patch dump is a burst of ~41 CCs; evaluate it once the burst is over.
+    if (dumpCount > 0 && juce::Time::getMillisecondCounterHiRes() - lastDumpCcMs > 120.0)
+    {
+        if (dumpCount >= 30)
+            evaluateCcDump();
+        std::fill (dumpValues.begin(), dumpValues.end(), -1);
+        dumpCount = 0;
+    }
+}
+
+void OscarProcessor::evaluateCcDump()
+{
+    awaitingDumpSince = 0;
+    ccDumpMisses = 0;
+    if (ccDumpState != CcDumpState::Active)
+    {
+        ccDumpState = CcDumpState::Active;
+        statusBroadcaster.sendChangeMessage();
+    }
+
+    if (oscarSlot < 0)
+    {
+        addLog (tr ("Patch CC dump received, but the plugin doesn't know which voice is playing (turn on program change on the OSCar: SPACE + key -9)."));
+        return;
+    }
+
+    // Total recall: rebuild what the OSCar is playing. What we know of its memory is the
+    // best reference for the knobs' lowest bit; otherwise the editor's copy.
+    const int slot = oscarSlot;
+    const auto voice = juce::String (slotLabel (slot));
+    const auto known = document.getOscarVoice (slot);
+    const auto editor = document.getVoice (slot);
+    const auto recall = voiceFromCcDump (known ? *known : editor, dumpValues);
+    oscarSound = recall.voice;
+
+    if (! recall.unreadable.empty())
+    {
+        juce::StringArray names;
+        for (const auto& n : recall.unreadable) names.add (juce::String (n));
+        addLog (tr ("Voice %1: unexpected values in the OSCar's dump for %2 (left unchanged).", { voice, shortList (names) }));
+    }
+
+    // Edits made in the plugin and not sent yet win: the OSCar is made to play them.
+    if (document.hasUnsentEdits (slot))
+    {
+        document.oscarReportedVoice (slot, recall.voice, false);
+        if (liveCc && slot == selectedSlot)
+        {
+            pushDifferencesToOscar();
+            addLog (tr ("Voice %1 has edits not sent to the OSCar's memory yet: the OSCar now plays the plugin's version.", { voice }));
+        }
+        else
+        {
+            addLog (liveCc ? tr ("Voice %1 has edits not sent to the OSCar's memory yet: the OSCar plays its stored version.", { voice })
+                           : tr ("Voice %1 has edits not sent to the OSCar's memory yet: the OSCar plays its stored version (Live CC is off).", { voice }));
+        }
+        return;
+    }
+
+    // Otherwise the plugin shows what the OSCar plays.
+    const auto diff = differingParams (editor, recall.voice);
+    document.oscarReportedVoice (slot, recall.voice, true);
+    if (diff.isEmpty())
+        addLog (tr ("Voice %1 on the OSCar matches the plugin (OK).", { voice }));
+    else
+        addLog (tr ("Voice %1 updated from the OSCar: %2. Undo to go back.", { voice, shortList (diff) }));
+}
+
+void OscarProcessor::receiveProgress (int bytes)
+{
+    receiveBytes = bytes;
+    statusBroadcaster.sendChangeMessage();
+}
+
+//==============================================================================
+bool OscarProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+{
+    const auto out = layouts.getMainOutputChannelSet();
+    return out == juce::AudioChannelSet::stereo() || out == juce::AudioChannelSet::mono();
+}
+
+void OscarProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+{
+    // Silent: the plugin only talks to the OSCar through its own MIDI ports.
+    buffer.clear();
+
+    if (isNonRealtime())   // offline bounce: nothing goes to the hardware
+    {
+        midiMessages.clear();
+        clockRunning = false;
+        return;
+    }
+
+    // Real-time safe: no locks, no allocation. Events are collected for this block, put in
+    // time order, then queued; the CC engine thread sends each one when it is due.
+    const double sr = sampleRate.load();
+    const int numSamples = buffer.getNumSamples();
+    const double blockMs = 1000.0 * numSamples / sr;
+
+    // Where this block sits on the system clock. Hosts call processBlock at slightly irregular
+    // moments, so the expected start (previous start + previous length) is only pulled gently
+    // towards the call time; this keeps the clock ticks evenly spaced.
+    const double wall = juce::Time::getMillisecondCounterHiRes();
+    double blockStart = predictedBlockMs + 0.05 * (wall - predictedBlockMs);
+    if (predictedBlockMs <= 0 || std::abs (wall - predictedBlockMs) > 50.0)
+        blockStart = wall;
+    predictedBlockMs = blockStart + blockMs;
+
+    std::array<OutEvent, 512> events;
+    size_t count = 0;
+    auto add = [&] (std::uint8_t a, std::uint8_t b, std::uint8_t c, int sampleOffset)
+    {
+        if (count < events.size())
+            events[count++] = { { a, b, c }, blockStart + 1000.0 * juce::jlimit (0, juce::jmax (0, numSamples - 1), sampleOffset) / sr };
+    };
+
+    // MIDI thru: notes and pitch bend only (a stray CC must not change the sound behind the editor's back)
+    if (midiThru)
+    {
+        for (const auto meta : midiMessages)
+        {
+            if (meta.numBytes != 3)
+                continue;
+            const auto status = meta.data[0] & 0xF0;
+            if (status == 0x80 || status == 0x90 || status == 0xE0)
+                add (meta.data[0], meta.data[1], meta.data[2], meta.samplePosition);
+        }
+    }
+    midiMessages.clear();
+
+    // MIDI clock from the host's tempo and transport
+    bool playing = false;
+    double bpm = 120.0, ppq = 0.0;
+    if (clockOut)
+        if (auto* head = getPlayHead())
+            if (const auto pos = head->getPosition())
+                if (pos->getIsPlaying() && pos->getPpqPosition().hasValue())
+                {
+                    playing = true;
+                    ppq = *pos->getPpqPosition();
+                    bpm = juce::jlimit (20.0, 400.0, pos->getBpm().orFallback (120.0));
+                }
+
+    if (playing)
+    {
+        const double ticksPerSample = bpm / 60.0 * 24.0 / sr;
+        const double tick0 = ppq * 24.0;
+        if (! clockRunning || std::abs (nextClockTick - tick0) > 1.5)   // start, loop or jump
+            nextClockTick = std::ceil (tick0 - 1.0e-6);
+        if (! clockRunning)
+            add (ppq < 0.001 ? 0xFA : 0xFB, 0, 0, 0);    // Start from the top, otherwise Continue
+        const double tick1 = tick0 + numSamples * ticksPerSample;
+        for (; nextClockTick < tick1; nextClockTick += 1.0)
+            add (0xF8, 0, 0, (int) ((nextClockTick - tick0) / ticksPerSample));
+        clockRunning = true;
+    }
+    else if (clockRunning)
+    {
+        add (0xFC, 0, 0, 0);   // Stop
+        clockRunning = false;
+    }
+
+    std::stable_sort (events.begin(), events.begin() + (std::ptrdiff_t) count,
+                      [] (const OutEvent& x, const OutEvent& y) { return x.when < y.when; });
+
+    int s1, n1, s2, n2;
+    thruFifo.prepareToWrite ((int) count, s1, n1, s2, n2);   // when full, the rest is dropped
+    for (int i = 0; i < n1 + n2; ++i)
+        thruData[(size_t) (i < n1 ? s1 + i : s2 + i - n1)] = events[(size_t) i];
+    thruFifo.finishedWrite (n1 + n2);
+}
+
+juce::AudioProcessorEditor* OscarProcessor::createEditor()
+{
+    return new OscarEditor (*this);
+}
+
+//==============================================================================
+void OscarProcessor::getStateInformation (juce::MemoryBlock& destData)
+{
+    juce::ValueTree s (idState);
+    s.appendChild (document.toValueTree(), nullptr);
+    s.appendChild (hostParams.copyState(), nullptr);
+    s.setProperty (idOutId, midi.getOutputId(), nullptr);
+    s.setProperty (idOutName, deviceName (juce::MidiOutput::getAvailableDevices(), midi.getOutputId()), nullptr);
+    s.setProperty (idInId, midi.getInputId(), nullptr);
+    s.setProperty (idInName, deviceName (juce::MidiInput::getAvailableDevices(), midi.getInputId()), nullptr);
+    s.setProperty (idChannel, channel.load(), nullptr);
+    s.setProperty (idSlot, selectedSlot, nullptr);
+    s.setProperty (idFollow, followOscar, nullptr);
+    s.setProperty (idSelectAfter, selectAfterSend, nullptr);
+    s.setProperty (idLiveCc, liveCc.load(), nullptr);
+    s.setProperty (idThru, midiThru.load(), nullptr);
+    s.setProperty (idClock, clockOut.load(), nullptr);
+
+    if (auto xml = s.createXml())
+        copyXmlToBinary (*xml, destData);
+}
+
+void OscarProcessor::setStateInformation (const void* data, int sizeInBytes)
+{
+    auto xml = getXmlFromBinary (data, sizeInBytes);
+    if (xml == nullptr)
+        return;
+    auto state = juce::ValueTree::fromXml (*xml);
+    if (! state.hasType (idState))
+        return;
+
+    if (juce::MessageManager::existsAndIsCurrentThread())
+        applyState (state);
+    else
+        juce::MessageManager::callAsync ([weak = juce::WeakReference<OscarProcessor> (this), state]
+        {
+            if (weak != nullptr)
+                weak->applyState (state);
+        });
+}
+
+void OscarProcessor::applyState (const juce::ValueTree& s)
+{
+    document.fromValueTree (s.getChildWithName ("OSCarBank"));
+
+    // Restoring automation values must not send anything.
+    const auto host = s.getChildWithName (idHost);
+    if (host.isValid())
+    {
+        ++hostSuspend;
+        resyncHost = true;
+        hostParams.replaceState (host);
+        resyncHost = true;
+        --hostSuspend;
+    }
+
+    const auto outId = resolveDevice (juce::MidiOutput::getAvailableDevices(),
+                                      s.getProperty (idOutId).toString(), s.getProperty (idOutName).toString());
+    const auto inId = resolveDevice (juce::MidiInput::getAvailableDevices(),
+                                     s.getProperty (idInId).toString(), s.getProperty (idInName).toString());
+    if (testRoot() == juce::File())
+    {
+        if (outId.isNotEmpty() && outId != midi.getOutputId()) midi.openOutput (outId);
+        if (inId.isNotEmpty() && inId != midi.getInputId())    midi.openInput (inId);
+    }
+
+    channel = juce::jlimit (1, 16, (int) s.getProperty (idChannel, 1));
+    selectedSlot = juce::jlimit (0, kNumVoices - 1, (int) s.getProperty (idSlot, 0));
+    followOscar = (bool) s.getProperty (idFollow, true);
+    selectAfterSend = (bool) s.getProperty (idSelectAfter, true);
+    liveCc = (bool) s.getProperty (idLiveCc, true);
+    midiThru = (bool) s.getProperty (idThru, false);
+    clockOut = (bool) s.getProperty (idClock, false);
+
+    // A reloaded project says nothing about what the OSCar is playing now.
+    oscarSlot = -1;
+    oscarSound.reset();
+    statusBroadcaster.sendChangeMessage();
+}
+
+//==============================================================================
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
+{
+    return new OscarProcessor();
+}

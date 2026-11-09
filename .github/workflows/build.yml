@@ -1,0 +1,53 @@
+# Builds and tests on GitHub's machines: no Mac or Windows tools needed locally.
+# Push this folder to a GitHub repository, open the "Actions" tab, and download
+# the artefacts of the latest run.
+name: build
+
+on:
+  push:
+    branches: [ "**" ]     # version tags are handled by release.yml
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release -j 4
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Package
+        run: |
+          mkdir -p out
+          cd build/OSCarEditor_artefacts/Release
+          for b in "AU/OSCar Editor.component" "VST3/OSCar Editor.vst3" "Standalone/OSCar Editor.app"; do
+            codesign --force --deep --sign - "$b"
+          done
+          ditto -c -k --keepParent "AU/OSCar Editor.component" ../../../out/OSCar-Editor-AU-mac.zip
+          ditto -c -k --keepParent "VST3/OSCar Editor.vst3" ../../../out/OSCar-Editor-VST3-mac.zip
+          ditto -c -k --keepParent "Standalone/OSCar Editor.app" ../../../out/OSCar-Editor-App-mac.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OSCar-Editor-mac
+          path: out/*.zip
+
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -B build
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OSCar-Editor-windows
+          path: |
+            build/OSCarEditor_artefacts/Release/VST3
+            build/OSCarEditor_artefacts/Release/Standalone
