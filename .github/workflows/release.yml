@@ -27,6 +27,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VER=$(sed -n 's/^project(OSCarEditor VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)
+          if [ "$GITHUB_REF_TYPE" = "tag" ] && gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            # publishing a release made by hand creates its tag, which lands here: nothing left to do
+            echo "Release $GITHUB_REF_NAME already exists: nothing to build."
+            echo "SKIP=1" >> "$GITHUB_ENV"; exit 0
+          fi
           if [ "$GITHUB_REF_TYPE" = "tag" ]; then
             if [ "${GITHUB_REF_NAME#v}" != "$VER" ]; then
               echo "The tag $GITHUB_REF_NAME doesn't match VERSION $VER in CMakeLists.txt"; exit 1
@@ -37,15 +42,19 @@ jobs:
           echo "VERSION=$VER" >> "$GITHUB_ENV"
 
       - name: Configure
+        if: env.SKIP != '1'
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
+        if: env.SKIP != '1'
         run: cmake --build build --config Release -j 4
 
       - name: Test
+        if: env.SKIP != '1'
         run: ctest --test-dir build --output-on-failure
 
       - name: Package
+        if: env.SKIP != '1'
         run: |
           ART=build/OSCarEditor_artefacts/Release
           mkdir -p pkg out
@@ -58,6 +67,7 @@ jobs:
           (cd out && shasum -a 256 OSCar-Editor-mac.zip > OSCar-Editor-mac.zip.sha256)
 
       - name: Create the draft release
+        if: env.SKIP != '1'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
