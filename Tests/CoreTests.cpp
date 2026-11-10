@@ -4,6 +4,7 @@
 #include "../Source/core/FactoryBank.h"
 #include "../Source/core/OscarParams.h"
 #include "../Source/core/OscarSysex.h"
+#include "../Source/core/Performance.h"
 
 #include <cstdio>
 #include <fstream>
@@ -590,6 +591,76 @@ static void testInitVoice()
         CHECK (b <= 0x0F);   // nibbles only
 }
 
+// Scales and randoms (MIFM1's): the quantizer, the steps of Transpose, the random ranges and loops.
+static void testPerformance()
+{
+    const auto major = scales()[1].mask, minor = scales()[2].mask;
+    CHECK (scales()[0].mask == 0 && std::string (scales()[1].name) == "MAJOR");
+    CHECK (quantizeNote (61, major, 0) == 60);          // C#: a tie, the lower
+    CHECK (quantizeNote (66, major, 0) == 65);          // F#: F
+    CHECK (quantizeNote (63, minor, 9) == 62);          // A minor: D# -> D
+    CHECK (quantizeNote (61, 0, 0) == 61);              // no scale
+    CHECK (inScale (69 + 3, minor, 9) && ! inScale (69 + 4, minor, 9));
+    // Transpose from the root: the nearest note of the scale, within -7..+7
+    CHECK (nearestInterval (1, 0, major, 0, -7, 7) == 0);
+    CHECK (nearestInterval (6, 0, major, 0, -7, 7) == 5);
+    CHECK (nearestInterval (7, 0, scales()[13].mask, 0, -7, 7) == 6);   // whole tone: 7 is out, 6 in
+    // turned one step at a time, it walks through the scale both ways and never sticks
+    CHECK (stepInterval (0, 1, 0, major, 0, -7, 7) == 2);
+    CHECK (stepInterval (2, 1, 0, major, 0, -7, 7) == 0);
+    CHECK (stepInterval (4, 5, 0, major, 0, -7, 7) == 5);
+    CHECK (stepInterval (7, 8, 0, major, 0, -7, 7) == 7);
+    // from another note (Osc 2 over a transposed oscillator 1): the interval lands in the scale
+    for (int ref = 0; ref < 12; ++ref)
+        for (int s = -7; s <= 7; ++s)
+        {
+            const int q = nearestInterval (s, ref, minor, 9, -7, 7);
+            CHECK (q >= -7 && q <= 7 && inScale (ref + q, minor, 9));
+        }
+
+    // randoms: within the travel, none at x = 0.5, the whole travel at 100
+    const auto& freq = *findParam ("filterFreq");
+    const auto& tune = *findParam ("tuneSemi");
+    CHECK (isRandomisable (freq) && isRandomisable (tune) && isRandomisable (*findParam ("octaveShift")));
+    CHECK (! isRandomisable (*findParam ("wave1")) && ! isRandomisable (*findParam ("arpMode")));
+    CHECK (randomValue (freq, 100, 50, 0.5) == 100);
+    CHECK (randomValue (freq, 100, 100, 1.0) == kKnobMaxEditable && randomValue (freq, 100, 100, 0.0) == 0);
+    CHECK (randomValue (freq, 100, -50, 1.0) == 100 + 127);
+    CHECK (randomValue (tune, 7, 100, 1.0) == 14 && randomValue (tune, 7, 100, 0.0) == 0);
+    std::mt19937 rng (5);
+    for (int i = 0; i < 2000; ++i)
+    {
+        const int base = (int) (rng() % 255), amount = (int) (rng() % 201) - 100;
+        const int v = randomValue (freq, base, amount, (rng() % 1001) / 1000.0);
+        CHECK (v >= 0 && v <= kKnobMaxEditable && std::abs (v - base) <= std::abs (amount) * 254 / 100 + 1);
+    }
+    // a loop: the same values for the same seed and step, others for another seed
+    int same = 0, differ = 0;
+    for (int step = 0; step < 16; ++step)
+    {
+        const double x = loopRandom (3, 7, step);
+        CHECK (x >= 0.0 && x <= 1.0);
+        same += x == loopRandom (3, 7, step) ? 1 : 0;
+        differ += x != loopRandom (4, 7, step) ? 1 : 0;
+    }
+    CHECK (same == 16 && differ >= 14);
+    CHECK (randomRates()[(size_t) defaultRandomRate()].beats == 0.25);
+    const auto& lengths = randomLoopLengths();
+    CHECK (lengths.front() == 2 && lengths.back() == 64 && std::find (lengths.begin(), lengths.end(), 9) != lengths.end());
+
+    // the waves: 0..1, as MIFM1 draws them
+    CHECK (modShapes()[kShapeSampleHold].random && modShapes()[kShapeSmooth].random && ! modShapes()[2].random);
+    CHECK (std::abs (waveValue (2, 0.25) - 1.0) < 1e-9 && std::abs (waveValue (2, 0.0) - 0.5) < 1e-9);   // sine
+    CHECK (waveValue (4, 0.0) == 1.0 && waveValue (5, 0.0) == 0.0);   // saw falls, ramp rises
+    CHECK (waveValue (6, 0.25) == 1.0 && waveValue (6, 0.75) == 0.0);  // square
+    for (size_t shape = 2; shape < modShapes().size(); ++shape)
+        for (int k = 0; k <= 200; ++k)
+        {
+            const double x = waveValue ((int) shape, k / 200.0);
+            CHECK (x >= 0.0 && x <= 1.0);
+        }
+}
+
 int main (int argc, char** argv)
 {
     if (argc < 2)
@@ -613,6 +684,7 @@ int main (int argc, char** argv)
     testRejections();
     testCombinedMessage();
     testFuzz();
+    testPerformance();
 
     std::printf ("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;

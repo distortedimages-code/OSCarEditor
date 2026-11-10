@@ -5,7 +5,7 @@ if(APPLE)
     set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Universal binary")
 endif()
 
-project(OSCarEditor VERSION 0.5.5 LANGUAGES C CXX)
+project(OSCarEditor VERSION 0.6.0 LANGUAGES C CXX)
 
 # GitHub repository whose releases the plugin checks for updates (public releases).
 set(OSCAR_UPDATE_REPO "distortedimages-code/OSCarEditor" CACHE STRING "owner/repo checked for updates (empty = no update check)")
@@ -30,7 +30,8 @@ endif()
 add_library(oscar_core STATIC
     Source/core/OscarSysex.cpp
     Source/core/OscarParams.cpp
-    Source/core/Generator.cpp)
+    Source/core/Generator.cpp
+    Source/core/Performance.cpp)
 target_compile_features(oscar_core PUBLIC cxx_std_17)
 set_target_properties(oscar_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 

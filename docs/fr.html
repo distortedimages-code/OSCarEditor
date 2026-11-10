@@ -426,7 +426,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Version actuelle">
   <a class="arrow" href="#news" aria-label="Nouveautés">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.5.5</span><span class="name">OXIDE</span><span class="state">GRATUIT</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.6.0</span><span class="name">OXIDE</span><span class="state">GRATUIT</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -456,7 +456,7 @@ footer a { color: var(--muted); }
         Télécharger pour Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.5.5</dd>
+        <dt>Version</dt><dd id="spec-version">0.6.0</dd>
         <dt>Formats</dt><dd>AU pour Logic Pro, VST3 et application autonome</dd>
         <dt>Système</dt><dd>macOS 11 ou plus récent, Apple Silicon et Intel</dd>
         <dt>Synthé</dt><dd>OSCar avec la carte MIDI Tauntek. Avec le MIDI d'origine, tout marche sauf l'édition en direct.</dd>
@@ -491,8 +491,9 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Les dernières versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.5.5</span><div class="cap when">dernière version</div></div>
+      <div><span class="vchip">0.6.0</span><div class="cap when">dernière version</div></div>
       <div class="notes">
+        <p><strong>0.6.0 : RANDOM et SCALE.</strong> Deux nouvelles fonctions en haut de la fenêtre, comme dans MIFM1. RANDOM allumé, tourner un potard ou une tirette de la page Voix règle combien il bouge au lieu de sa valeur (Transpose, Osc 2 Interval et Octave Shift aussi). Ce qu'il suit se choisit juste à côté, tout au même endroit : SHAPE, S&amp;H (une nouvelle valeur à chaque pas : vers le haut, de nouvelles valeurs ; vers le bas, des valeurs qui reviennent les mêmes à chaque boucle), SMOOTH (un glissement d'une valeur au hasard à la suivante, en boucle aussi vers le bas) ou une des ondes des LFO de MIFM1 (sinus, triangle, dent de scie, rampe, carré, pump, escalier, rebond, clave, montées, descentes, zigzag : un seul LFO pour toutes les commandes, à l'envers vers le bas) ; RATE, de 1/32 à 16 mesures, sur le tempo et les mesures du DAW ; LOOP, n'importe quelle longueur de 2 à 64 pas. Plus loin, plus large ; au milieu (ou double-clic), rien, et la commande retrouve sa valeur. RANDOM à nouveau, les potards se tournent comme d'habitude : une petite LED marque chaque commande qui bouge (rouge : vers le haut, ambre : vers le bas). Clic droit sur RANDOM : le tempo sans DAW, nouvelles boucles, tout effacer. Les ondes et les glissements partent au fil des valeurs, 400 CC par seconde au plus. La voix elle-même ne change pas : l'OSCar reçoit les valeurs en CC (Live CC), et les projets enregistrés gardent les aléatoires et leurs boucles. SCALE et ROOT mettent Transpose et Osc 2 Interval sur une gamme (majeur, mineur, les modes, mineur harmonique et mélodique, pentatoniques, blues, par tons, hirajoshi, phrygien dominant), leurs aléatoires aussi, et ramènent dans la gamme les notes jouées par MIDI Thru.</p>
         <p><strong>0.5.5 : une plaque de drive plus franche.</strong> La plaque du Filter Drive passe à un orange plus vif avec un liseré sombre, et elle descend maintenant jusque sous l'afficheur de valeur, qu'elle englobe. La LED ambrée du drive est retirée.</p>
         <p><strong>0.5.4 : de la lumière sur le filtre.</strong> Une fine bande LED suit la course du grand potard Frequency : elle s'allume jusqu'à la coupure et brille de plus en plus quand le filtre s'ouvre. Le potard Filter Drive est posé sur une plaque orange, graduations et nom imprimés en défonce, avec une LED ambrée qui s'allume de plus en plus quand on monte le drive.</p>
         <p><strong>0.5.3 : Charger A, Charger B, et une icône.</strong> Sur la page Morphing, choisir une voix pour A ou B ne change plus le mélange : la voix attend que tu appuies sur Charger (sa LED s'allume pendant l'attente), et le fader ne saute plus vers une voix que tu ne faisais que parcourir. Si un mélange est en cours quand tu charges, le son glisse vers le nouveau couple à la position du fader, sur la durée du lissage. Chaque côté affiche la voix chargée. Et OXIde a son icône : un pad de cuivre allumé, dans le Dock, le Finder et sur le site.</p>

@@ -411,6 +411,7 @@ public:
     void setLit (bool b)                            { if (b != lit) { lit = b; repaint(); } }
     bool isLit() const                              { return lit; }
     void setTextColour (juce::Colour c)             { if (textColour != c) { textColour = c; repaint(); } }
+    void clearTextColour()                          { if (textColour) { textColour.reset(); repaint(); } }
     void paintButton (juce::Graphics&, bool highlighted, bool down) override;
 
 private:
@@ -467,6 +468,39 @@ private:
     std::vector<Spot> spots;
     std::vector<juce::Rectangle<float>> plates;
     juce::Image cache;
+};
+
+// The RANDOM layer over a knob, a fader or a rotary switch (it lies exactly over its control).
+// Outside the layer it only shows a small LED when the control has a random (red: a new value at
+// each step; amber: a loop) and lets the mouse through. In the layer, dragging sets the amount
+// (-100..100, a small notch at 0): up or right, a new value at each step, drawn as a solid arc
+// (a bar on a fader); down or left, a loop, drawn in steps. Double-click: none.
+class RandomTouch : public juce::Component, public juce::SettableTooltipClient
+{
+public:
+    RandomTouch();
+    void setRing (juce::Rectangle<float> knob, juce::Rectangle<float> readout, float ledGap);   // a knob or a rotary switch
+    void setBar (juce::Rectangle<float> track, juce::Rectangle<float> readout);                  // a fader
+    void setAmount (int a);                         // no callback
+    int getAmount() const                           { return amount; }
+    void setEditing (bool b);
+    bool isEditing() const                          { return editing; }
+    std::function<void (int)> onChange;
+
+    void paint (juce::Graphics&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseDoubleClick (const juce::MouseEvent&) override;
+    void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
+
+private:
+    static constexpr float notch = 6.0f;            // pixels of drag that stay on 0
+    void moveTo (float position);
+    bool ring = true;
+    juce::Rectangle<float> shape, readout;
+    float ledGap = 10.0f, position = 0.0f, dragFrom = 0.0f;
+    int amount = 0;
+    bool editing = false;
 };
 
 // Wood side cheek (procedural grain, cached per size).

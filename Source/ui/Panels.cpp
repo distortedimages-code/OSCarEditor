@@ -302,9 +302,66 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
         tempoWatch->sendInitialUpdate();
     }
 
+    // With a scale, Transpose and Osc 2 Interval skip the notes outside it: show where they landed.
+    for (auto* id : { "tuneSemi", "osc2Semi" })
+        rotary (id).onChange = [this, id] (int v)
+        {
+            proc.editParam (proc.getSelectedSlot(), def (id), v);
+            rotary (id).setValue (paramValue (id));
+        };
+
+    // the RANDOM layer, over every control that can take a random
+    for (const auto& p : allParams())
+    {
+        const std::string id = p.id;
+        if (! isRandomisable (p) || (knobs.count (id) == 0 && faders.count (id) == 0 && rotaries.count (id) == 0))
+            continue;
+        auto t = std::make_unique<RandomTouch>();
+        t->onChange = [this, id] (int a) { proc.setRandomAmount (def (id.c_str()), a); };
+        t->setTooltip (tr ("RANDOM: drag up or down: how much this control follows SHAPE. Up: S&H and SMOOTH draw new values, the waves move as drawn; down: S&H and SMOOTH loop, the waves move upside down. Double-click: none."));
+        addAndMakeVisible (*t);
+        touches[id] = std::move (t);
+    }
+
     addAndMakeVisible (wear);
     layout();
     setupWear (wearLevel());
+}
+
+void VoicePanel::setRandomEdit (bool on)
+{
+    randomEdit = on;
+    for (auto& [id, t] : touches)
+        t->setEditing (on);
+}
+
+void VoicePanel::placeTouches()
+{
+    // a little larger than its control, for the arc around the big knob
+    constexpr int m = 12;
+    const auto in = [] (juce::Rectangle<float> r) { return r.translated ((float) m, (float) m); };
+    for (auto& [id, t] : touches)
+    {
+        if (const auto k = knobs.find (id); k != knobs.end())
+        {
+            auto& c = *k->second;
+            t->setBounds (c.getBounds().expanded (m));
+            t->setRing (in (c.slider.getBounds().toFloat()), in (c.readoutBounds()), c.getStyle() == KnobStyle::Brass ? 15.0f : 11.0f);
+        }
+        else if (const auto f = faders.find (id); f != faders.end())
+        {
+            auto& c = *f->second;
+            t->setBounds (c.getBounds().expanded (m));
+            t->setBar (in (c.slider.getBounds().toFloat().translated (3.0f, 0.0f)), in (c.readoutBounds()));   // the slot sits right of centre
+        }
+        else if (const auto r = rotaries.find (id); r != rotaries.end())
+        {
+            auto& c = *r->second;
+            t->setBounds (c.getBounds().expanded (m));
+            const auto kb = in (c.knobBounds());   // the amount over the knob itself: its name stays readable
+            t->setRing (kb, juce::Rectangle<float> (36.0f, 18.0f).withCentre (kb.getCentre()), 7.0f);
+        }
+    }
 }
 
 void VoicePanel::setupWear (int level)
@@ -325,7 +382,7 @@ void VoicePanel::setupWear (int level)
     auto circle = [&keep] (juce::Rectangle<float> r) { juce::Path p; p.addEllipse (r); keep.push_back (p); };
     for (auto* c : getChildren())
     {
-        if (c == &wear || c == &lfoStack)
+        if (c == &wear || c == &lfoStack || dynamic_cast<RandomTouch*> (c) != nullptr)
             continue;
         const auto at = c->getPosition().toFloat();
         if (auto* k = dynamic_cast<Knob*> (c))
@@ -373,6 +430,8 @@ void VoicePanel::setupWear (int level)
     wear.setBounds (0, 0, width, height);
     wear.setup (level, background, std::move (keep), std::move (spots), cols);
     wear.toFront (false);
+    for (auto& [id, t] : touches)   // the RANDOM marks and layer over the wear
+        t->toFront (false);
 }
 
 VoicePanel::~VoicePanel()
@@ -449,6 +508,8 @@ void VoicePanel::refresh()
     lfoToOsc1.setLit (getParam (v, def ("lfoToOsc1")) == 0);   // 0 = On
     lfoSync.setLit (getParam (v, def ("lfoSync")) == 1);
     refreshClock();
+    for (auto& [id, t] : touches)
+        t->setAmount (proc.getRandomAmount (def (id.c_str())));
 }
 
 std::pair<int, int> VoicePanel::extent (juce::Component& c) const
@@ -706,6 +767,7 @@ void VoicePanel::layout()
     const float wordW = juce::GlyphArrangement::getStringWidth (Fonts::bold (9.5f).withExtraKerningFactor (0.10f), "DELAY") + 8.0f;
     delayWord = juce::Rectangle<float> (wordW, 10.0f).withCentre ({ delayBracket.getCentreX(), delayBracket.getY() + 4.0f });
     plates.invalidate();
+    placeTouches();
 }
 
 void VoicePanel::resized() {}
@@ -2066,7 +2128,8 @@ SetupPanel::SetupPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
     help.setColour (juce::TextEditor::textColourId, colours::label);
     help.setFont (Fonts::label (14.0f));
     logView.setFont (Fonts::mono (13.0f));
-    help.setText (tr ("CONNECTIONS\nOSCar MIDI OUT -> interface MIDI IN, interface MIDI OUT -> OSCar MIDI IN. Choose both ports on the left.\n\nON THE OSCAR\nProgram change: hold SPACE and press key -9 (LED -9 lit), so the plugin and the OSCar play the same voice. Patch CC dump: hold TUNE/TRANSPOSE and press the 'Enable patch CC dump' key (see the Tauntek keys page). The OSCar then reports each voice it loads and the plugin shows exactly what it plays. If the OSCar stops following after a power cycle, do these two steps again.\n\nRECEIVE: hold INSERT, press VOICE (or SEQ, a WAVEFORM button, or STORE for all three), then SPACE. Everything received is backed up (Banks page).\n\nSEND: the OSCar's MIDI only accepts complete banks, so \"Send voices to synth\" rewrites all 36 voices. What the OSCar held (when known) and what is sent are both backed up.\n\nLIVE CC: edits are sent at once as CC (half resolution: 0-127); Send stores the exact values. Every parameter can also be automated from the DAW.\n\nMIDI THRU: play the OSCar from another keyboard through this track. Notes and pitch bend only; nothing is passed during a transfer; the OSCar's own notes coming back through the DAW are not sent twice.\n\nMIDI CLOCK: set Sync to MIDI clock (Voice page) so the arpeggiator and the sequencer follow the clock the OSCar receives; Division sets the steps. With 'Send the DAW's MIDI clock' on, that clock comes from the DAW's tempo and transport."),
+    help.setText (tr ("CONNECTIONS\nOSCar MIDI OUT -> interface MIDI IN, interface MIDI OUT -> OSCar MIDI IN. Choose both ports on the left.\n\nON THE OSCAR\nProgram change: hold SPACE and press key -9 (LED -9 lit), so the plugin and the OSCar play the same voice. Patch CC dump: hold TUNE/TRANSPOSE and press the 'Enable patch CC dump' key (see the Tauntek keys page). The OSCar then reports each voice it loads and the plugin shows exactly what it plays. If the OSCar stops following after a power cycle, do these two steps again.\n\nRECEIVE: hold INSERT, press VOICE (or SEQ, a WAVEFORM button, or STORE for all three), then SPACE. Everything received is backed up (Banks page).\n\nSEND: the OSCar's MIDI only accepts complete banks, so \"Send voices to synth\" rewrites all 36 voices. What the OSCar held (when known) and what is sent are both backed up.\n\nLIVE CC: edits are sent at once as CC (half resolution: 0-127); Send stores the exact values. Every parameter can also be automated from the DAW.\n\nMIDI THRU: play the OSCar from another keyboard through this track. Notes and pitch bend only; nothing is passed during a transfer; the OSCar's own notes coming back through the DAW are not sent twice.\n\nMIDI CLOCK: set Sync to MIDI clock (Voice page) so the arpeggiator and the sequencer follow the clock the OSCar receives; Division sets the steps. With 'Send the DAW's MIDI clock' on, that clock comes from the DAW's tempo and transport.")
+                  + "\n\n" + tr ("RANDOM (top left): while it is lit, a knob or a fader of the Voice page sets how much it follows SHAPE instead of its value: up or right, S&H and SMOOTH draw new values and the waves move as drawn; down or left, S&H and SMOOTH loop and the waves move upside down. SHAPE: S&H, SMOOTH or one of MIFM1's LFO waves; RATE: the steps or the cycle, on the DAW's tempo and bars; LOOP: the loop's length, 2 to 64 steps; right-click on RANDOM: the tempo without a DAW. The voice itself never changes: the OSCar gets the values as CC (Live CC).\n\nSCALE (top right): Transpose and Osc 2 Interval only take the notes of the scale, counted from ROOT, and so do their randoms; MIDI Thru moves the notes played to the scale."),
                   juce::dontSendNotification);
 
     refreshPorts();

@@ -6,6 +6,7 @@
 #include "MidiLink.h"
 #include "Updater.h"
 #include "core/Generator.h"
+#include "core/Performance.h"
 #include "ui/Lang.h"
 
 class OscarProcessor : public juce::AudioProcessor,
@@ -123,6 +124,42 @@ public:
     void morphKeep();                               // the blend stays; the next move starts again from A and B
     static oscar::VoiceData blend (const oscar::VoiceData& a, const oscar::VoiceData& b, float t);
 
+    //==============================================================================
+    // Random and scale (message thread), as in MIFM1. Every knob and fader, Transpose, Osc 2 Interval
+    // and Osc 2 Octave can get a random amount (-100..100, see core/Performance.h). At each step (on
+    // the DAW's bars while it plays; otherwise at its tempo, or at 'bpm' without a DAW) the OSCar gets
+    // the new values as CC, Live CC on; the voice itself never changes. Back to 0, the control's own
+    // value is sent again (also when the randoms stop: all back to 0, Live CC off).
+    // SHAPE: S&H (the values change at each step), Smooth (they glide from one to the next) or one of
+    // MIFM1's LFO waves, which every control follows, a cycle per RATE; the waves and the glides are
+    // sent as the values change, at most 400 CC a second (about a third of a MIDI cable).
+    // With a scale, Transpose and Osc 2 Interval only take its notes (counted from the root; the
+    // randoms, from the last note played through MIDI Thru), and the notes MIDI Thru passes on move to
+    // the nearest note of the scale. Saved with the session.
+    struct RandomSettings
+    {
+        int shape = oscar::kShapeSampleHold;        // index in oscar::modShapes()
+        int rate = oscar::defaultRandomRate();     // index in oscar::randomRates()
+        int loop = oscar::kDefaultLoopLength;       // steps
+        int bpm = 120;
+        int scale = 0, root = 0;                    // index in oscar::scales(), 0 = C
+    };
+    const RandomSettings& randomSettings() const    { return randomSet; }
+    void setRandomShape (int index);
+    void setRandomRate (int index);
+    void setRandomLoop (int steps);
+    void setRandomBpm (int bpm);
+    void setScale (int index);
+    void setScaleRoot (int root);
+    int  getRandomAmount (const oscar::ParamDef&) const;
+    void setRandomAmount (const oscar::ParamDef&, int amount);   // back to 0: that loop is drawn again next time
+    bool hasRandoms() const;
+    void clearRandoms();
+    void newRandomLoops();                          // every looped random draws another loop
+    int  getRandomSteps() const                     { return randomSteps.load(); }   // steps played so far
+    bool isRandomPlaying() const                    { return randomPlaying.load(); }
+    double getHostTempo() const                     { return hostTempoSeen.load(); } // 0 until a DAW gives one
+
     // Set when the user chose "don't ask again" for sending edits (this session only).
     bool sendConfirmedThisSession = false;
 
@@ -173,7 +210,7 @@ private:
     void pushDifferencesToOscar();
     void queueCc (const std::vector<oscar::CcMessage>& messages);
     void evaluateCcDump();
-    void pumpThru();                            // CC engine thread
+    void pumpThru (std::uint16_t scaleMask, int scaleRoot);   // CC engine thread
     void applyToSelected (const oscar::VoiceData& v, const juce::String& undoKey);
     oscar::Corpus learningCorpus() const;
 
@@ -230,7 +267,9 @@ private:
     double nextClockTick = 0;          // audio thread only: next tick, in 1/24 quarter notes
     bool clockRunning = false;         // audio thread only
     double predictedBlockMs = 0;       // audio thread only: expected start of the next block
-    std::array<bool, 128> thruActive {}, thruEchoed {}, thruPendingOff {};   // CC engine thread only
+    std::array<bool, 128> thruActive {}, thruEchoed {}, thruPendingOff {};   // CC engine thread only: by note received
+    std::array<int, 128> thruMap {}, thruOutCount {};   // CC engine thread only: the note sent for each received (scale)
+    int thruLastNote = -1;                                                  // CC engine thread only: the last sent
     bool thruBent = false;                                                  // CC engine thread only
 
     // Outbox shared by the message thread and the CC engine thread
@@ -267,6 +306,44 @@ private:
     float morphFade = 1.0f;                 // 0..1 through that glide; 1 when there is none
     std::atomic<bool> resyncHost { true };
     std::atomic<int> hostSuspend { 0 };   // > 0 while host values are being restored
+
+    // Random and scale
+    static constexpr int kMaxParams = 64;
+    RandomSettings randomSet;
+    std::array<int, kMaxParams> randomAmounts {};
+    std::array<std::uint32_t, kMaxParams> randomSeeds {};
+    void publishRandom();                       // message thread -> CC engine thread
+    struct RandomShared
+    {
+        RandomSettings settings;
+        std::array<int, kMaxParams> amounts {};
+        std::array<std::uint32_t, kMaxParams> seeds {};
+        oscar::VoiceData base {};               // the selected voice
+        bool live = false;                      // Live CC
+        bool plays = false;                     // the OSCar plays the selected voice (or nothing known)
+    };
+    juce::SpinLock randomLock;
+    RandomShared randomShared;                  // under randomLock
+    // the DAW's tempo and position at the start of the last block (audio thread -> CC engine thread)
+    struct HostTime { double bpm = 0, ppq = 0, at = 0; bool playing = false; };
+    juce::SpinLock hostTimeLock;
+    HostTime hostTime;                          // under hostTimeLock
+    std::atomic<double> hostTempoSeen { 0.0 };
+    // CC engine thread only
+    void randomTick (const RandomShared&, double now);
+    int quantizedHostValue (const RandomShared&, const oscar::ParamDef&, int value) const;
+    double randomBeats = 0, randomLastMs = 0;
+    long long randomLastStep = -1;
+    std::array<bool, kMaxParams> randomLive {};   // sent with a random, not yet put back
+    std::array<int, kMaxParams> randomSentCc {};  // the waves and glides: the last CC value sent (-1: none)
+    std::array<double, kMaxParams> smoothFrom {}, smoothTo {};   // Smooth, new values: the glide of this step
+    std::array<long long, kMaxParams> smoothStep {};
+    double randomTokens = 12.0;                   // CC the waves may send now (400 a second, 12 at once)
+    juce::Random randomDice;
+    std::atomic<int> randomSteps { 0 };
+    std::atomic<bool> randomPlaying { false };
+    void saveRandomState (juce::ValueTree&) const;
+    void loadRandomState (const juce::ValueTree&);
 
     std::unique_ptr<juce::PropertiesFile> settingsFile;
     Updater updater { [this]() -> juce::PropertiesFile& { return globalSettings(); } };

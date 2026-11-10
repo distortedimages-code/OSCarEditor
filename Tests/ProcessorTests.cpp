@@ -1,3 +1,4 @@
+#include <set>
 #include <typeinfo>
 // End-to-end tests of the plugin's MIDI behaviour, through a virtual OSCar port:
 // live CC edits, voice selection, Tauntek CC dumps, host automation, SysEx transfers, state.
@@ -804,6 +805,173 @@ static void testMorph (OscarProcessor& proc, Capture& out)
     out.take();
 }
 
+// RANDOM: values sent at each step, free or looped, put back at 0; SCALE: Transpose steps through
+// it, its randoms land in it, MIDI Thru's notes move to it. (No DAW playing: the steps run on.)
+static std::vector<int> ccValues (const std::vector<juce::MidiMessage>& ms, int cc)
+{
+    std::vector<int> r;
+    for (const auto& [n, v] : ccsOf (ms))
+        if (n == cc) r.push_back (v);
+    return r;
+}
+
+static void testRandom (OscarProcessor& proc, Capture& out)
+{
+    auto& doc = proc.getDocument();
+    const int target = 7;
+    proc.setLiveCc (true);
+    proc.chooseVoice (target);
+    pump (700);
+    out.take();
+    const auto& freq = *findParam ("filterFreq");
+    doc.setParam (target, freq, 127);
+    const int baseCc = ccValueFor (freq.coding, 127);
+    auto hasBase = [&freq, baseCc] (const std::vector<juce::MidiMessage>& ms)
+    {
+        const auto v = ccValues (ms, freq.cc);
+        return std::find (v.begin(), v.end(), baseCc) != v.end();
+    };
+    pump (100);
+    out.take();
+
+    // free: a new value at each step (1/32 at 120 BPM: 16 a second)
+    proc.setRandomBpm (120);
+    proc.setRandomRate (0);
+    proc.setRandomAmount (freq, 100);
+    pump (1000);
+    auto values = ccValues (out.take(), freq.cc);
+    CHECK (values.size() >= 10 && values.size() <= 22);
+    CHECK (std::set<int> (values.begin(), values.end()).size() >= 5);
+    CHECK (proc.isRandomPlaying() && proc.getRandomSteps() > 0);
+    CHECK (getParam (doc.getVoice (target), freq) == 127);   // the voice stays
+
+    // looped: the same four values over and over
+    proc.setRandomLoop (4);
+    proc.setRandomAmount (freq, -50);
+    pump (60);
+    out.take();
+    pump (1200);
+    values = ccValues (out.take(), freq.cc);
+    CHECK (values.size() >= 12);
+    bool loops = values.size() >= 8;
+    for (size_t i = 4; i < values.size(); ++i)
+        loops = loops && values[i] == values[i - 4];
+    CHECK (loops);
+    CHECK (std::set<int> (values.begin(), values.end()).size() >= 2);
+    const auto firstLoop = std::vector<int> (values.begin(), values.begin() + juce::jmin<std::ptrdiff_t> (4, (std::ptrdiff_t) values.size()));
+
+    // back to 0: its own value again, then nothing
+    proc.setRandomAmount (freq, 0);
+    values = ccValues (collect (out, hasBase), freq.cc);
+    CHECK (values.size() <= 2 && ! values.empty() && values.back() == baseCc);
+    pump (300);
+    CHECK (ccsOf (out.take()).empty() && ! proc.isRandomPlaying());
+
+    // turned left again: another loop (the way back to 0 drew it)
+    proc.setRandomAmount (freq, -50);
+    pump (60);
+    out.take();
+    pump (800);
+    values = ccValues (out.take(), freq.cc);
+    bool sameLoop = values.size() >= 8;
+    for (size_t i = 0; i + 4 < values.size() && sameLoop; ++i)
+        sameLoop = std::find (firstLoop.begin(), firstLoop.end(), values[i]) != firstLoop.end();
+    CHECK (! sameLoop);
+
+    // saved with the session, loops included
+    proc.setScale (3);
+    proc.setScaleRoot (2);
+    juce::MemoryBlock state;
+    proc.getStateInformation (state);
+    {
+        OscarProcessor other;
+        other.setStateInformation (state.getData(), (int) state.getSize());
+        pump (50);
+        CHECK (other.getRandomAmount (freq) == -50 && other.randomSettings().loop == 4 && other.randomSettings().rate == 0);
+        CHECK (other.randomSettings().scale == 3 && other.randomSettings().root == 2 && other.hasRandoms());
+    }
+
+    // Live CC off: the OSCar gets the voice back, and nothing more
+    proc.setLiveCc (false);
+    values = ccValues (collect (out, hasBase), freq.cc);
+    CHECK (! values.empty() && values.back() == baseCc);
+    pump (300);
+    CHECK (ccsOf (out.take()).empty());
+    proc.setLiveCc (true);
+    proc.clearRandoms();
+    CHECK (! proc.hasRandoms());
+    pump (300);
+    out.take();
+
+    // a wave: SINE, a cycle a beat (half a second at 120 BPM): the knob sweeps its whole range, paced
+    proc.setRandomShape (2);
+    proc.setRandomRate (6);
+    proc.setRandomAmount (freq, 50);
+    pump (1500);
+    values = ccValues (out.take(), freq.cc);
+    CHECK (values.size() >= 40 && values.size() <= 650);
+    CHECK (! values.empty() && *std::min_element (values.begin(), values.end()) < 15 && *std::max_element (values.begin(), values.end()) > 112);
+    // SMOOTH: from one random value to the next, without jumps
+    proc.setRandomShape (1);
+    proc.setRandomRate (4);
+    pump (100);
+    out.take();
+    pump (1000);
+    values = ccValues (out.take(), freq.cc);
+    CHECK (values.size() >= 20);
+    int jump = 0;
+    for (size_t i = 1; i < values.size(); ++i)
+        jump = juce::jmax (jump, std::abs (values[i] - values[i - 1]));
+    CHECK (jump <= 12);
+    proc.setRandomAmount (freq, 0);
+    proc.setRandomShape (0);
+    proc.setRandomRate (0);
+    pump (300);
+    out.take();
+
+    // SCALE (C major): Transpose steps from note to note of it, both ways
+    const auto& tune = *findParam ("tuneSemi");
+    proc.setScale (1);
+    proc.setScaleRoot (0);
+    proc.editParam (target, tune, valueOfSemis (0));
+    proc.editParam (target, tune, valueOfSemis (1));
+    CHECK (semisOfValue (getParam (doc.getVoice (target), tune)) == 2);
+    proc.editParam (target, tune, valueOfSemis (1));
+    CHECK (semisOfValue (getParam (doc.getVoice (target), tune)) == 0);
+    pump (200);
+    out.take();
+    // its random lands on the scale too
+    proc.setRandomAmount (tune, 100);
+    pump (1000);
+    proc.setRandomAmount (tune, 0);
+    pump (200);
+    values = ccValues (out.take(), tune.cc);
+    CHECK (values.size() >= 8);
+    bool inMajor = true;
+    for (auto v : values)
+        inMajor = inMajor && inScale (semisOfValue (firmwareValueFromCc (tune.coding, v)), scales()[1].mask, 0);
+    CHECK (inMajor);
+
+    // MIDI Thru: notes move to the scale; two keys on one note release it once
+    proc.setMidiThru (true);
+    processMidi (proc, { juce::MidiMessage::noteOn (1, 61, (juce::uint8) 100) });
+    auto notes = notesOf (collect (out, [] (const std::vector<juce::MidiMessage>& ms) { return ! notesOf (ms).empty(); }));
+    CHECK (notes.size() == 1 && notes[0].isNoteOn() && notes[0].getNoteNumber() == 60);
+    processMidi (proc, { juce::MidiMessage::noteOn (1, 60, (juce::uint8) 100) });
+    pump (60);
+    processMidi (proc, { juce::MidiMessage::noteOff (1, 61) });
+    pump (60);
+    notes = notesOf (out.take());
+    CHECK (notes.size() == 1 && notes[0].isNoteOn() && notes[0].getNoteNumber() == 60);
+    processMidi (proc, { juce::MidiMessage::noteOff (1, 60) });
+    notes = notesOf (collect (out, [] (const std::vector<juce::MidiMessage>& ms) { return ! notesOf (ms).empty(); }));
+    CHECK (notes.size() == 1 && notes[0].isNoteOff() && notes[0].getNoteNumber() == 60);
+    proc.setMidiThru (false);
+    proc.setScale (0);
+    pump (200);
+    out.take();
+}
+
 int main()
 {
     // Never run against the user's real settings, MIDI ports or backup folder.
@@ -903,15 +1071,36 @@ int main()
         ed->setSize (1400, 900);
         const float scale = juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_SCALE", "1").getFloatValue();
         juce::File (shots).createDirectory();
+        auto shoot = [&] (const juce::String& name)
+        {
+            auto img = ed->createComponentSnapshot (ed->getLocalBounds(), true, scale);
+            juce::FileOutputStream os (juce::File (shots).getChildFile (name + ".png"));
+            os.setPosition (0);
+            os.truncate();
+            juce::PNGImageFormat().writeImageToStream (img, os);
+        };
         for (int page = 0; page < 7; ++page)
         {
             dynamic_cast<OscarEditor*> (ed.get())->showPage (page);
             pump (50);
-            auto img = ed->createComponentSnapshot (ed->getLocalBounds(), true, scale);
-            juce::FileOutputStream os (juce::File (shots).getChildFile ("page" + juce::String (page) + ".png"));
-            os.setPosition (0);
-            os.truncate();
-            juce::PNGImageFormat().writeImageToStream (img, os);
+            shoot ("page" + juce::String (page));
+        }
+        // OSCAR_SHOTS_RANDOM=1: the Voice page again with a few randoms and a scale, then in the RANDOM layer
+        if (juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_RANDOM", {}).isNotEmpty())
+        {
+            for (const auto& [id, amount] : { std::pair<const char*, int> { "filterFreq", 60 }, { "resonance", -40 }, { "tuneSemi", 50 },
+                                              { "filtDecay", -70 }, { "lfoRate", 30 }, { "osc2Semi", -35 } })
+                proc.setRandomAmount (*findParam (id), amount);
+            proc.setScale (2);
+            proc.setScaleRoot (9);
+            auto* oe = dynamic_cast<OscarEditor*> (ed.get());
+            oe->showPage (0);
+            proc.addLog ("RANDOM");   // the editor refreshes
+            pump (300);
+            shoot ("random-marks");
+            oe->toggleRandomEdit();
+            pump (100);
+            shoot ("random-layer");
         }
         ed.reset();
         proc.getMidi().setTestOutput (nullptr);
@@ -935,6 +1124,7 @@ int main()
         testMidiThru (proc, out);
         testMidiClock (proc, out);
         testMorph (proc, out);
+        testRandom (proc, out);
 
         proc.getMidi().setTestOutput (nullptr);
     }

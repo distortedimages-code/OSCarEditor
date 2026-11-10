@@ -2098,4 +2098,196 @@ void Pad::paintButton (juce::Graphics& g, bool highlighted, bool down)
     g.drawText (lang::upper (getButtonText()), r.withTrimmedTop (6.0f), juce::Justification::centredTop);
 }
 
+//==============================================================================
+// RANDOM layer
+//==============================================================================
+namespace
+{
+    const juce::Colour freeColour { 0xffff6a2a }, loopColour { 0xffffc247 };
+
+    void drawAmberLed (juce::Graphics& g, juce::Point<float> c, float d)
+    {
+        auto r = juce::Rectangle<float> (d, d).withCentre (c);
+        auto glow = r.expanded (d * 0.9f);
+        g.setGradientFill (juce::ColourGradient (loopColour.withAlpha (0.5f), c.x, c.y, loopColour.withAlpha (0.0f), c.x, glow.getY(), true));
+        g.fillEllipse (glow);
+        g.setGradientFill (juce::ColourGradient (juce::Colour (0xfffff0c4), c.x - d * 0.15f, c.y - d * 0.2f,
+                                                 juce::Colour (0xffd98a12), c.x, r.getBottom(), true));
+        g.fillEllipse (r);
+    }
+}
+
+RandomTouch::RandomTouch()
+{
+    setInterceptsMouseClicks (false, false);
+}
+
+void RandomTouch::setRing (juce::Rectangle<float> knob, juce::Rectangle<float> r, float gap)
+{
+    ring = true;
+    shape = knob;
+    readout = r;
+    ledGap = gap;
+    repaint();
+}
+
+void RandomTouch::setBar (juce::Rectangle<float> track, juce::Rectangle<float> r)
+{
+    ring = false;
+    shape = track;
+    readout = r;
+    repaint();
+}
+
+void RandomTouch::setAmount (int a)
+{
+    a = juce::jlimit (-100, 100, a);
+    if (a == amount)
+        return;
+    amount = a;
+    position = a == 0 ? 0.0f : (float) a + (a > 0 ? notch : -notch);
+    repaint();
+}
+
+void RandomTouch::setEditing (bool b)
+{
+    if (b == editing)
+        return;
+    editing = b;
+    setInterceptsMouseClicks (b, false);
+    setMouseCursor (b ? juce::MouseCursor::UpDownResizeCursor : juce::MouseCursor::NormalCursor);
+    repaint();
+}
+
+void RandomTouch::moveTo (float p)
+{
+    position = juce::jlimit (-100.0f - notch, 100.0f + notch, p);
+    const float beyond = std::abs (position) - notch;
+    const int a = beyond <= 0.0f ? 0 : juce::roundToInt (std::copysign (beyond, position));
+    if (a != amount)
+    {
+        amount = a;
+        repaint();
+        if (onChange)
+            onChange (amount);
+    }
+}
+
+void RandomTouch::mouseDown (const juce::MouseEvent&)
+{
+    dragFrom = position;
+}
+
+void RandomTouch::mouseDrag (const juce::MouseEvent& e)
+{
+    // up or right: a new value at each step; down or left: a loop (shift: finer)
+    const float moved = (float) (e.getDistanceFromDragStartX() - e.getDistanceFromDragStartY());
+    moveTo (dragFrom + moved * (e.mods.isShiftDown() ? 0.25f : 1.0f));
+}
+
+void RandomTouch::mouseDoubleClick (const juce::MouseEvent&)
+{
+    moveTo (0.0f);
+}
+
+void RandomTouch::mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& d)
+{
+    if (! editing || std::abs (d.deltaY) <= 0.0f)
+        return;
+    const float step = d.deltaY > 0 ? 5.0f : -5.0f;
+    // through the notch in one move
+    float p = position + step;
+    if (amount == 0)
+        p = step > 0 ? notch + 5.0f : -notch - 5.0f;
+    else if ((amount > 0 && p < notch) || (amount < 0 && p > -notch))
+        p = 0.0f;
+    moveTo (p);
+}
+
+void RandomTouch::paint (juce::Graphics& g)
+{
+    const float a = (float) amount / 100.0f;
+    const auto colour = amount < 0 ? loopColour : freeColour;
+
+    if (! editing)
+    {
+        if (amount == 0)
+            return;
+        // the mark: a small LED at the top right of the knob, at the top of a fader's slot
+        const auto c = ring ? polar (shape.getCentre(), shape.getWidth() * 0.5f + ledGap, juce::degreesToRadians (45.0f))
+                            : juce::Point<float> (shape.getCentreX() + 9.0f, shape.getY() + 4.0f);
+        if (amount > 0)
+            drawLed (g, c, 6.0f, true);
+        else
+            drawAmberLed (g, c, 6.0f);
+        return;
+    }
+
+    if (ring)
+    {
+        const auto c = shape.getCentre();
+        const float R = shape.getWidth() * 0.5f;
+        // the layer: the knob a little darker, a dark groove over its scale, a notch at the top for 0
+        g.setColour (juce::Colours::black.withAlpha (0.32f));
+        g.fillEllipse (shape);
+        const float r = R + 5.0f, w = juce::jlimit (3.0f, 4.0f, R * 0.09f);
+        juce::Path groove;
+        groove.addCentredArc (c.x, c.y, r, r, 0.0f, knobAngle (0.0f), knobAngle (1.0f), true);
+        g.setColour (juce::Colours::black.withAlpha (0.6f));
+        g.strokePath (groove, juce::PathStrokeType (w + 2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        g.setColour (juce::Colours::white.withAlpha (0.55f));
+        g.drawLine (juce::Line<float> (polar (c, r - w, 0.0f), polar (c, r + w, 0.0f)), 1.2f);
+        if (amount != 0)
+        {
+            const float end = juce::degreesToRadians (135.0f) * a;
+            juce::Path arc;
+            arc.addCentredArc (c.x, c.y, r, r, 0.0f, 0.0f, end, true);
+            if (amount > 0)
+            {
+                g.setColour (colour.withAlpha (0.28f));   // its glow
+                g.strokePath (arc, juce::PathStrokeType (w + 4.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+                g.setColour (colour);
+                g.strokePath (arc, juce::PathStrokeType (w, juce::PathStrokeType::curved, juce::PathStrokeType::butt));
+            }
+            else
+            {
+                // a loop: the arc cut in steps
+                juce::Path dashed;
+                const float dashes[] = { w * 1.4f, w * 0.8f };
+                juce::PathStrokeType (w, juce::PathStrokeType::curved, juce::PathStrokeType::butt).createDashedStroke (dashed, arc, dashes, 2);
+                g.setColour (colour.withAlpha (0.25f));
+                g.strokePath (arc, juce::PathStrokeType (w + 4.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+                g.setColour (colour);
+                g.fillPath (dashed);
+            }
+        }
+    }
+    else
+    {
+        // a fader: the slot darker, a bar from its middle, up for a new value at each step, down for a loop
+        g.setColour (juce::Colours::black.withAlpha (0.45f));
+        g.fillRoundedRectangle (shape.withSizeKeepingCentre (juce::jmin (shape.getWidth(), 26.0f), shape.getHeight()), 3.0f);
+        const float mid = shape.getCentreY(), half = shape.getHeight() * 0.5f - 6.0f, x = shape.getCentreX();
+        g.setColour (juce::Colours::white.withAlpha (0.55f));
+        g.drawHorizontalLine (juce::roundToInt (mid), x - 7.0f, x + 7.0f);
+        if (amount != 0)
+        {
+            const float len = half * std::abs (a);
+            const auto bar = amount > 0 ? juce::Rectangle<float> (x - 2.5f, mid - len, 5.0f, len)
+                                        : juce::Rectangle<float> (x - 2.5f, mid, 5.0f, len);
+            g.setColour (colour.withAlpha (0.28f));
+            g.fillRoundedRectangle (bar.expanded (2.0f), 3.0f);
+            g.setColour (colour);
+            if (amount > 0)
+                g.fillRect (bar);
+            else
+                for (float y = bar.getY(); y < bar.getBottom(); y += 7.0f)   // in steps
+                    g.fillRect (juce::Rectangle<float> (bar.getX(), y, bar.getWidth(), juce::jmin (4.5f, bar.getBottom() - y)));
+        }
+    }
+
+    if (! readout.isEmpty())
+        drawSegmentReadout (g, readout, juce::String (amount), 3, true);
+}
+
 } // namespace atelier

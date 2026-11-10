@@ -46,6 +46,7 @@ public:
     void exportBankSyx();
     void showUpdateDialog();
     void showPage (int index);
+    void toggleRandomEdit();   // the RANDOM button: its layer on the Voice page, on or off
     static constexpr int banksPageIndex = 3, setupPageIndex = 6;   // Voice, Generator, Morph, Banks, Waveforms, Tauntek keys, Setup
 
 private:
@@ -98,6 +99,31 @@ private:
     int page = 0;
 
     juce::OwnedArray<atelier::LedButton> memory;
+
+    // RANDOM (left of the logo) and SCALE (right of it), in the header: on every page
+    struct RandomButton : atelier::LedButton
+    {
+        RandomButton() : atelier::LedButton ("Random") {}
+        std::function<void()> onToggle, onMenu;   // a click; a right-click
+        void clicked (const juce::ModifierKeys& m) override
+        {
+            if (m.isPopupMenu()) { if (onMenu) onMenu(); }
+            else if (onToggle) onToggle();
+        }
+    };
+    RandomButton randomButton;
+    atelier::Selector shapeSelector { "Shape" }, rateSelector { "Rate" }, loopSelector { "Loop" },
+                      scaleSelector { "Scale" }, rootSelector { "Root" };
+    struct Blinker : juce::Timer
+    {
+        std::function<void()> tick;
+        void timerCallback() override { tick(); }
+    } blinker;
+    int shownSteps = -1;
+    double flashUntil = 0;
+    void refreshRandom();       // the settings, as the processor has them
+    void blinkRandom();         // the RANDOM light: a flash at each step; steady while its layer is on
+    void showRandomMenu();      // right-click on RANDOM: the tempo without a DAW, new loops, clear all
 
     atelier::LedButton undoButton { {} }, redoButton { {} }, selectAfterButton { {} }, liveButton { "Live CC" }, thruButton { "MIDI Thru" };
     atelier::CopperButton sendButton { {} };

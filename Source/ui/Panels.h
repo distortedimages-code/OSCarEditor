@@ -33,6 +33,11 @@ public:
     void paint (juce::Graphics&) override;
     void resized() override;
 
+    // The RANDOM layer: while it is on, the knobs and faders, Transpose, Osc 2 Interval and Osc 2
+    // Octave set their random amounts instead of their values.
+    void setRandomEdit (bool on);
+    bool isRandomEdit() const                       { return randomEdit; }
+
 private:
     struct Group { juce::Rectangle<float> area; juce::String label; };
     atelier::Knob& knob (const char* id);
@@ -95,6 +100,10 @@ private:
 
     atelier::WearLayer wear;                           // on top of everything, controls cut out
     void setupWear (int level);
+
+    std::map<std::string, std::unique_ptr<atelier::RandomTouch>> touches;   // above the wear
+    bool randomEdit = false;
+    void placeTouches();
 };
 
 //==============================================================================
