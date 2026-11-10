@@ -338,7 +338,7 @@ void VoicePanel::setRandomEdit (bool on)
 void VoicePanel::placeTouches()
 {
     // a little larger than its control, for the arc around the big knob
-    constexpr int m = 12;
+    static constexpr int m = 12;   // (static: MSVC wants no capture for it)
     const auto in = [] (juce::Rectangle<float> r) { return r.translated ((float) m, (float) m); };
     for (auto& [id, t] : touches)
     {
