@@ -145,6 +145,9 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
     addKnob ("filterFreq", KnobStyle::Brass);
     for (auto* id : { "filterFreq", "resonance", "filterSep", "detune", "lfoRate" })   // the main controls: their names framed
         knob (id).setLabelStyle (LabelStyle::Boxed);
+    knob ("filterDrive").setPlate (true);   // the drive stands out: the whole knob on an orange plate, printed in reverse
+    knob ("filterDrive").setLevelLed (true);   // and an amber LED that glows with the drive
+    knob ("filterFreq").setLedArc (true);      // an LED band along the cutoff's travel, brighter as it opens
     knob ("oscBalance").setScale ("1", "2", "=");   // equal mix in the middle, as printed on the panel
     knob ("noiseBalance").setScale ("OSC", "NOISE", "=");
     // bipolar, as on the OSCar's panel: zero in the middle (stored 128), shown signed
@@ -330,6 +333,8 @@ void VoicePanel::setupWear (int level)
         {
             circle (k->slider.getBounds().toFloat().translated (at.x, at.y).expanded (k->getStyle() == KnobStyle::Brass ? 0.0f : 2.0f));
             rect (k->readoutBounds().translated (at.x, at.y).expanded (1.0f));
+            if (k->hasPlate())   // the orange plate stays clean
+                rect (k->plateBounds().translated (at.x, at.y).expanded (1.0f));
         }
         else if (auto* f = dynamic_cast<Fader*> (c))
         {

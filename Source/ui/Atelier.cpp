@@ -835,7 +835,33 @@ void drawCopper (juce::Graphics& g, juce::Rectangle<float> a, float corner, bool
     g.drawRoundedRectangle (a.reduced (0.5f), corner, 1.0f);
 }
 
-void drawKnob (juce::Graphics& g, juce::Rectangle<float> area, float proportion, KnobStyle style, float hotFrom)
+void drawAnalogLed (juce::Graphics& g, juce::Point<float> c, float d, float level)
+{
+    level = juce::jlimit (0.0f, 1.0f, level);
+    const auto lens = juce::Rectangle<float> (d, d).withCentre (c);
+    if (level > 0.0f)   // the light spilling around it, warmer and lighter than any panel colour
+    {
+        const float r = d * (1.3f + 1.9f * level);
+        g.setGradientFill (juce::ColourGradient (juce::Colour (0xffffe2a8).withAlpha (0.95f * level), c.x, c.y,
+                                                 juce::Colour (0xffffb050).withAlpha (0.0f), c.x + r, c.y, true));
+        g.fillEllipse (juce::Rectangle<float> (2.0f * r, 2.0f * r).withCentre (c));
+    }
+    g.setColour (juce::Colour (0xff120804));   // the bezel, a dark ring the lens sits in
+    g.fillEllipse (lens.expanded (d * 0.2f));
+    // the lens: dark amber when off; lit, a hot pale core fading to deep orange at the rim
+    const auto core = juce::Colour (0xff3a1608).interpolatedWith (juce::Colour (0xfffff1c2), level);
+    const auto mid  = juce::Colour (0xff2c1006).interpolatedWith (juce::Colour (0xffffa63c), level);
+    const auto rim  = juce::Colour (0xff1c0a04).interpolatedWith (juce::Colour (0xffd8481a), level);
+    juce::ColourGradient lensFill (core, c.x, c.y - d * 0.05f, rim, c.x + d * 0.5f, c.y, true);
+    lensFill.addColour (0.30, core);
+    lensFill.addColour (0.68, mid);
+    g.setGradientFill (lensFill);
+    g.fillEllipse (lens);
+    g.setColour (juce::Colours::white.withAlpha (0.5f));   // the lens catching the light
+    g.fillEllipse (juce::Rectangle<float> (d * 0.3f, d * 0.18f).withCentre (c.translated (-d * 0.18f, -d * 0.25f)));
+}
+
+void drawKnob (juce::Graphics& g, juce::Rectangle<float> area, float proportion, KnobStyle style, float hotFrom, bool ledArc)
 {
     const auto c = area.getCentre();
     const float R = juce::jmin (area.getWidth(), area.getHeight()) * 0.5f;
@@ -910,6 +936,31 @@ void drawKnob (juce::Graphics& g, juce::Rectangle<float> area, float proportion,
         else
         {
             ticks (g, c, R - 1.0f, R * 0.08f, R * 0.11f, juce::Colour (0xffc9cbcf), 1.6f);
+        }
+        if (ledArc)
+        {
+            // a thin LED band in a dark groove along the travel, lit from the start up to the value
+            const float r = R * 0.845f, w = juce::jmax (1.6f, R * 0.035f);
+            const float a0 = knobAngle (0.0f), a1 = knobAngle (1.0f), av = knobAngle (proportion);
+            juce::Path groove;
+            groove.addCentredArc (c.x, c.y, r, r, 0.0f, a0, a1, true);
+            g.setColour (juce::Colour (0xff070708));
+            g.strokePath (groove, juce::PathStrokeType (w + 2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+            g.setColour (juce::Colour (0xff3a1a0c));
+            g.strokePath (groove, juce::PathStrokeType (w, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+            if (proportion > 0.005f)
+            {
+                juce::Path lit;
+                lit.addCentredArc (c.x, c.y, r, r, 0.0f, a0, av, true);
+                const float level = 0.35f + 0.65f * proportion;   // the more open, the brighter
+                for (const auto& [width, alpha] : { std::pair<float, float> { w * 5.0f, 0.10f }, { w * 3.0f, 0.18f }, { w * 1.8f, 0.30f } })
+                {
+                    g.setColour (juce::Colour (0xffff7a32).withAlpha (alpha * level));
+                    g.strokePath (lit, juce::PathStrokeType (width, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+                }
+                g.setColour (juce::Colour (0xffff9a52).interpolatedWith (juce::Colour (0xffffe0bc), proportion * 0.6f).withAlpha (0.55f + 0.45f * level));
+                g.strokePath (lit, juce::PathStrokeType (w, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+            }
         }
         auto ring = juce::Rectangle<float> (R * 1.6f, R * 1.6f).withCentre (c);
         dropShadow (g, ring, R * 0.12f, 0.8f);
@@ -1035,7 +1086,7 @@ void Look::drawRotarySlider (juce::Graphics& g, int x, int y, int w, int h, floa
         return;   // VfdNumber paints its own window
     const auto style = (KnobStyle) (int) s.getProperties().getWithDefault ("knobStyle", 0);
     drawKnob (g, juce::Rectangle<float> ((float) x, (float) y, (float) w, (float) h), pos, style,
-              (float) s.getProperties().getWithDefault ("hotFrom", -1.0f));
+              (float) s.getProperties().getWithDefault ("hotFrom", -1.0f), (bool) s.getProperties().getWithDefault ("ledArc", false));
 }
 
 void Look::drawLinearSlider (juce::Graphics& g, int x, int y, int w, int h, float pos, float, float,
@@ -1214,10 +1265,32 @@ void Knob::resized()
     slider.setBounds (getLocalBounds().withTrimmedTop (topRoom (style)).removeFromTop (k).withSizeKeepingCentre (k, k));
 }
 
+juce::Rectangle<float> Knob::plateBounds() const
+{
+    // scale, knob and name; the value window stays below, in line with the others of the row
+    return getLocalBounds().toFloat().reduced (5.0f, 0.0f).withBottom (readoutBounds().getY() - 3.0f);
+}
+
 void Knob::paint (juce::Graphics& g)
 {
     const int k = knobDiameter();
     const bool big = style == KnobStyle::Brass;
+    const auto ink = juce::Colour (0xff2a1206);   // printing on the orange plate
+    if (plate)
+    {
+        const auto r = plateBounds();
+        g.setGradientFill (juce::ColourGradient (colours::copperLight, r.getCentreX(), r.getY(), colours::copper.darker (0.15f), r.getCentreX(), r.getBottom(), false));
+        g.fillRoundedRectangle (r, 14.0f);
+        g.setColour (juce::Colours::white.withAlpha (0.35f));
+        g.drawHorizontalLine (juce::roundToInt (r.getY() + 1.0f), r.getX() + 14.0f, r.getRight() - 14.0f);
+        g.setColour (juce::Colours::black.withAlpha (0.55f));
+        g.drawRoundedRectangle (r.reduced (0.5f), 14.0f, 1.0f);
+    }
+    if (levelLed)   // top right of the plate (or of the control), brighter with the value
+    {
+        const auto r = plate ? plateBounds() : getLocalBounds().toFloat();
+        drawAnalogLed (g, { r.getRight() - 16.0f, r.getY() + 16.0f }, 11.0f, (float) slider.getValue() / (float) slider.getMaximum());
+    }
     if (! big)
     {
         // printed scale: a tick every tenth, longer at both ends and in the middle, numbers at the ends
@@ -1229,11 +1302,11 @@ void Knob::paint (juce::Graphics& g)
                 continue;   // the "0" takes the top tick's place
             const float a = knobAngle ((float) i / 10.0f);
             const bool major = i == 0 || i == 5 || i == 10;
-            g.setColour (major ? colours::silk : colours::silkDim);
+            g.setColour (plate ? ink.withAlpha (major ? 1.0f : 0.7f) : (major ? colours::silk : colours::silkDim));
             g.drawLine (juce::Line<float> (polar (c, R + 2.5f, a), polar (c, R + (major ? 7.5f : 5.5f), a)), major ? 1.3f : 1.0f);
         }
         g.setFont (Fonts::bold (10.5f).withExtraKerningFactor (0.04f));
-        g.setColour (colours::silk);
+        g.setColour (plate ? ink : colours::silk);
         for (const auto& [text, side] : { std::pair<juce::String, float> { scaleLow, -1.0f }, { scaleHigh, 1.0f } })
         {
             const auto p = polar (c, R + 11.0f, knobAngle (side > 0 ? 1.0f : 0.0f));
@@ -1278,8 +1351,8 @@ void Knob::paint (juce::Graphics& g)
     const auto font = big ? Fonts::bold (13.5f).withExtraKerningFactor (0.08f) : Fonts::label (12.0f).withExtraKerningFactor (0.04f);
     const bool twoLines = ! big && labelStyle == LabelStyle::Plain && area.getHeight() >= 26 + 14 + 10;
     const int labelH = big ? 17 : (twoLines ? 26 : 16);
-    drawControlLabel (g, area.removeFromTop (labelH), lang::upper (labelText), font, labelStyle,
-                      big ? juce::Colour (0xffdcdee1) : colours::label, twoLines ? 2 : 1);
+    drawControlLabel (g, area.removeFromTop (labelH), lang::upper (labelText), plate ? Fonts::bold (12.0f).withExtraKerningFactor (0.06f) : font,
+                      labelStyle, plate ? ink : (big ? juce::Colour (0xffdcdee1) : colours::label), twoLines ? 2 : 1);
     // the value in a small segment readout, brighter while the knob is under the mouse or turned
     const int v = (int) slider.getValue();
     drawSegmentReadout (g, readoutBounds(), valueText ? valueText (v) : juce::String (v), 3, slider.isMouseOverOrDragging());

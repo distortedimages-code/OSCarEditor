@@ -95,8 +95,11 @@ enum class KnobStyle { Knurled, Chrome, Brass };
 enum class LabelStyle { Plain, Boxed };
 void drawControlLabel (juce::Graphics&, juce::Rectangle<int> area, const juce::String& text, const juce::Font&,
                        LabelStyle, juce::Colour plainColour, int maxLines = 1);
-// hotFrom (0..1, brass only): the ticks from there to the end printed orange, with a mark where it starts
-void drawKnob (juce::Graphics&, juce::Rectangle<float> area, float proportion, KnobStyle, float hotFrom = -1.0f);
+// hotFrom (0..1, brass only): the ticks from there to the end printed orange, with a mark where it starts.
+// ledArc (brass only): a thin LED band along the knob's travel, lit up to the value, brighter the further it goes.
+void drawKnob (juce::Graphics&, juce::Rectangle<float> area, float proportion, KnobStyle, float hotFrom = -1.0f, bool ledArc = false);
+// A round amber indicator LED behind its lens, glowing with 'level' (0 dark .. 1 full).
+void drawAnalogLed (juce::Graphics&, juce::Point<float> centre, float diameter, float level);
 void drawSwitchKnob (juce::Graphics&, juce::Point<float> centre, float radius, float angleFromTop);   // pointer knob of a rotary switch
 
 //==============================================================================
@@ -147,6 +150,13 @@ public:
     }
     void setLabelStyle (LabelStyle s)               { labelStyle = s; repaint(); }
     void setKnobSize (int px)                       { customSize = px; resized(); repaint(); }   // instead of the style's size
+    // An orange plate behind the whole control (scale, knob, name, value), its printing in reverse:
+    // the knob that stands out on a panel.
+    void setPlate (bool b)                          { plate = b; repaint(); }
+    void setLedArc (bool b)                         { slider.getProperties().set ("ledArc", b); repaint(); }   // big knob: LED band along its travel
+    void setLevelLed (bool b)                       { levelLed = b; repaint(); }   // an amber LED on the plate, brighter with the value
+    bool hasPlate() const                           { return plate; }
+    juce::Rectangle<float> plateBounds() const;
     void setHotZone (float from)                    { slider.getProperties().set ("hotFrom", from); repaint(); }
     // the name and the value side by side under the knob, the value in a small VFD window (big knob)
     void setValueBeside (bool b)                    { valueBeside = b; repaint(); }
@@ -174,7 +184,7 @@ private:
     std::function<juce::String (int)> valueText;
     bool updating = false;
     int customSize = 0;
-    bool valueBeside = false;
+    bool valueBeside = false, plate = false, levelLed = false;
 };
 
 // Vertical fader (envelopes). Its name and value sit at its bottom, as under a knob: placed with its
