@@ -98,8 +98,6 @@ void drawControlLabel (juce::Graphics&, juce::Rectangle<int> area, const juce::S
 // hotFrom (0..1, brass only): the ticks from there to the end printed orange, with a mark where it starts.
 // ledArc (brass only): a thin LED band along the knob's travel, lit up to the value, brighter the further it goes.
 void drawKnob (juce::Graphics&, juce::Rectangle<float> area, float proportion, KnobStyle, float hotFrom = -1.0f, bool ledArc = false);
-// A round amber indicator LED behind its lens, glowing with 'level' (0 dark .. 1 full).
-void drawAnalogLed (juce::Graphics&, juce::Point<float> centre, float diameter, float level);
 void drawSwitchKnob (juce::Graphics&, juce::Point<float> centre, float radius, float angleFromTop);   // pointer knob of a rotary switch
 
 //==============================================================================
@@ -154,14 +152,19 @@ public:
     // the knob that stands out on a panel.
     void setPlate (bool b)                          { plate = b; repaint(); }
     void setLedArc (bool b)                         { slider.getProperties().set ("ledArc", b); repaint(); }   // big knob: LED band along its travel
-    void setLevelLed (bool b)                       { levelLed = b; repaint(); }   // an amber LED on the plate, brighter with the value
     bool hasPlate() const                           { return plate; }
     juce::Rectangle<float> plateBounds() const;
     void setHotZone (float from)                    { slider.getProperties().set ("hotFrom", from); repaint(); }
     // the name and the value side by side under the knob, the value in a small VFD window (big knob)
     void setValueBeside (bool b)                    { valueBeside = b; repaint(); }
     int knobDiameter() const                        { return customSize > 0 ? customSize : knobSize (style); }
-    int preferredHeight() const                     { return valueBeside ? topRoom (style) + knobDiameter() + 8 + 26 : height (style); }
+    // with a plate, the control grows a little above and below so the plate frames the value too
+    int plateTop() const                            { return plate ? 6 : 0; }
+    int plateBottom() const                         { return plate ? 10 : 0; }
+    int topOffset() const                           { return topRoom (style) + plateTop(); }   // where the knob starts
+    int centreLine() const                          { return topOffset() + knobDiameter() / 2; }
+    int preferredHeight() const                     { return valueBeside ? topRoom (style) + knobDiameter() + 8 + 26
+                                                                         : height (style) + plateTop() + plateBottom(); }
     void mouseEnter (const juce::MouseEvent&) override { repaint(); }   // the value lights up under the mouse
     void mouseExit (const juce::MouseEvent&) override  { repaint(); }
 
@@ -184,7 +187,7 @@ private:
     std::function<juce::String (int)> valueText;
     bool updating = false;
     int customSize = 0;
-    bool valueBeside = false, plate = false, levelLed = false;
+    bool valueBeside = false, plate = false;
 };
 
 // Vertical fader (envelopes). Its name and value sit at its bottom, as under a knob: placed with its

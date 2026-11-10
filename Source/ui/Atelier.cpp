@@ -835,32 +835,6 @@ void drawCopper (juce::Graphics& g, juce::Rectangle<float> a, float corner, bool
     g.drawRoundedRectangle (a.reduced (0.5f), corner, 1.0f);
 }
 
-void drawAnalogLed (juce::Graphics& g, juce::Point<float> c, float d, float level)
-{
-    level = juce::jlimit (0.0f, 1.0f, level);
-    const auto lens = juce::Rectangle<float> (d, d).withCentre (c);
-    if (level > 0.0f)   // the light spilling around it, warmer and lighter than any panel colour
-    {
-        const float r = d * (1.3f + 1.9f * level);
-        g.setGradientFill (juce::ColourGradient (juce::Colour (0xffffe2a8).withAlpha (0.95f * level), c.x, c.y,
-                                                 juce::Colour (0xffffb050).withAlpha (0.0f), c.x + r, c.y, true));
-        g.fillEllipse (juce::Rectangle<float> (2.0f * r, 2.0f * r).withCentre (c));
-    }
-    g.setColour (juce::Colour (0xff120804));   // the bezel, a dark ring the lens sits in
-    g.fillEllipse (lens.expanded (d * 0.2f));
-    // the lens: dark amber when off; lit, a hot pale core fading to deep orange at the rim
-    const auto core = juce::Colour (0xff3a1608).interpolatedWith (juce::Colour (0xfffff1c2), level);
-    const auto mid  = juce::Colour (0xff2c1006).interpolatedWith (juce::Colour (0xffffa63c), level);
-    const auto rim  = juce::Colour (0xff1c0a04).interpolatedWith (juce::Colour (0xffd8481a), level);
-    juce::ColourGradient lensFill (core, c.x, c.y - d * 0.05f, rim, c.x + d * 0.5f, c.y, true);
-    lensFill.addColour (0.30, core);
-    lensFill.addColour (0.68, mid);
-    g.setGradientFill (lensFill);
-    g.fillEllipse (lens);
-    g.setColour (juce::Colours::white.withAlpha (0.5f));   // the lens catching the light
-    g.fillEllipse (juce::Rectangle<float> (d * 0.3f, d * 0.18f).withCentre (c.translated (-d * 0.18f, -d * 0.25f)));
-}
-
 void drawKnob (juce::Graphics& g, juce::Rectangle<float> area, float proportion, KnobStyle style, float hotFrom, bool ledArc)
 {
     const auto c = area.getCentre();
@@ -1262,34 +1236,31 @@ void Knob::setValue (int v)
 void Knob::resized()
 {
     const int k = knobDiameter();
-    slider.setBounds (getLocalBounds().withTrimmedTop (topRoom (style)).removeFromTop (k).withSizeKeepingCentre (k, k));
+    slider.setBounds (getLocalBounds().withTrimmedTop (topOffset()).removeFromTop (k).withSizeKeepingCentre (k, k));
 }
 
 juce::Rectangle<float> Knob::plateBounds() const
 {
-    // scale, knob and name; the value window stays below, in line with the others of the row
-    return getLocalBounds().toFloat().reduced (5.0f, 0.0f).withBottom (readoutBounds().getY() - 3.0f);
+    // scale, knob, name and value window, a little narrower than the column
+    const auto r = getLocalBounds().toFloat();
+    return r.withSizeKeepingCentre (juce::jmin (r.getWidth() - 4.0f, 88.0f), r.getHeight());
 }
 
 void Knob::paint (juce::Graphics& g)
 {
     const int k = knobDiameter();
     const bool big = style == KnobStyle::Brass;
-    const auto ink = juce::Colour (0xff2a1206);   // printing on the orange plate
+    const auto ink = juce::Colour (0xff1a0802);   // printing on the orange plate
     if (plate)
     {
-        const auto r = plateBounds();
-        g.setGradientFill (juce::ColourGradient (colours::copperLight, r.getCentreX(), r.getY(), colours::copper.darker (0.15f), r.getCentreX(), r.getBottom(), false));
-        g.fillRoundedRectangle (r, 14.0f);
-        g.setColour (juce::Colours::white.withAlpha (0.35f));
-        g.drawHorizontalLine (juce::roundToInt (r.getY() + 1.0f), r.getX() + 14.0f, r.getRight() - 14.0f);
-        g.setColour (juce::Colours::black.withAlpha (0.55f));
-        g.drawRoundedRectangle (r.reduced (0.5f), 14.0f, 1.0f);
-    }
-    if (levelLed)   // top right of the plate (or of the control), brighter with the value
-    {
-        const auto r = plate ? plateBounds() : getLocalBounds().toFloat();
-        drawAnalogLed (g, { r.getRight() - 16.0f, r.getY() + 16.0f }, 11.0f, (float) slider.getValue() / (float) slider.getMaximum());
+        // a frank signal orange, nearly flat, with a crisp dark edge: printed-panel graphics
+        const auto r = plateBounds().reduced (0.5f);
+        g.setGradientFill (juce::ColourGradient (juce::Colour (0xffff6a1f), r.getCentreX(), r.getY(), juce::Colour (0xffe9520f), r.getCentreX(), r.getBottom(), false));
+        g.fillRoundedRectangle (r, 9.0f);
+        g.setColour (juce::Colours::white.withAlpha (0.28f));
+        g.drawHorizontalLine (juce::roundToInt (r.getY() + 1.5f), r.getX() + 9.0f, r.getRight() - 9.0f);
+        g.setColour (juce::Colour (0xff6e1d03));
+        g.drawRoundedRectangle (r, 9.0f, 1.2f);
     }
     if (! big)
     {
@@ -1347,7 +1318,7 @@ void Knob::paint (juce::Graphics& g)
         return;
     }
 
-    auto area = getLocalBounds().withTrimmedTop (topRoom (style) + k + (big ? 4 : 10));
+    auto area = getLocalBounds().withTrimmedTop (topOffset() + k + (big ? 4 : 10)).withTrimmedBottom (plateBottom());
     const auto font = big ? Fonts::bold (13.5f).withExtraKerningFactor (0.08f) : Fonts::label (12.0f).withExtraKerningFactor (0.04f);
     const bool twoLines = ! big && labelStyle == LabelStyle::Plain && area.getHeight() >= 26 + 14 + 10;
     const int labelH = big ? 17 : (twoLines ? 26 : 16);
@@ -1369,8 +1340,8 @@ juce::Rectangle<float> Knob::readoutBounds() const
         const float y = (float) (topRoom (style) + knobDiameter() + 8);
         return { (float) getWidth() * 0.5f - total * 0.5f + lw + 10.0f, y, ww, 26.0f };
     }
-    const int top = topRoom (style) + knobDiameter() + (big ? 4 : 10);
-    const bool twoLines = ! big && labelStyle == LabelStyle::Plain && getHeight() - top >= 26 + 14 + 10;
+    const int top = topOffset() + knobDiameter() + (big ? 4 : 10);
+    const bool twoLines = ! big && labelStyle == LabelStyle::Plain && getHeight() - plateBottom() - top >= 26 + 14 + 10;
     const float y = (float) (top + (big ? 17 : (twoLines ? 26 : 16)) + (big ? 2 : 1));
     const float rh = big ? 24.0f : 18.0f, rw = big ? 56.0f : 40.0f;
     return juce::Rectangle<float> (rw, rh).withCentre ({ (float) getWidth() * 0.5f, y + rh * 0.5f });

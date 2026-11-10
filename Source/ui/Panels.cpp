@@ -146,7 +146,6 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
     for (auto* id : { "filterFreq", "resonance", "filterSep", "detune", "lfoRate" })   // the main controls: their names framed
         knob (id).setLabelStyle (LabelStyle::Boxed);
     knob ("filterDrive").setPlate (true);   // the drive stands out: the whole knob on an orange plate, printed in reverse
-    knob ("filterDrive").setLevelLed (true);   // and an amber LED that glows with the drive
     knob ("filterFreq").setLedArc (true);      // an LED band along the cutoff's travel, brighter as it opens
     knob ("oscBalance").setScale ("1", "2", "=");   // equal mix in the middle, as printed on the panel
     knob ("noiseBalance").setScale ("OSC", "NOISE", "=");
@@ -454,7 +453,7 @@ void VoicePanel::refresh()
 
 std::pair<int, int> VoicePanel::extent (juce::Component& c) const
 {
-    if (auto* k = dynamic_cast<Knob*> (&c))                 return { Knob::centreY (k->getStyle()), Knob::height (k->getStyle()) };
+    if (auto* k = dynamic_cast<Knob*> (&c))                 return { k->centreLine(), k->preferredHeight() };
     // every control's name sits 37 under its centre line (as under a knob), so a row's names line up
     if (auto* r = dynamic_cast<RotarySwitch*> (&c))         return { RotarySwitch::centreY + r->getExtraTop(), RotarySwitch::height + r->getExtraTop() };
     if (auto* l = dynamic_cast<LedSelector*> (&c))          return { l->blockHeight() / 2, l->preferredHeight() };

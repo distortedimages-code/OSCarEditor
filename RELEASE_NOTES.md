@@ -1,5 +1,7 @@
 ## English
 
+**0.5.5: a bolder drive plate.** The Filter Drive plate is a deeper, livelier orange with a dark rim, and it now runs from above the knob to below its value window, which sits inside it. The amber drive LED is gone.
+
 **0.5.4: lights on the filter.** A thin LED band runs along the travel of the big Frequency knob: it lights up to the cutoff and glows brighter as the filter opens. The Filter Drive knob sits on an orange plate, its scale and name printed in reverse, with an amber LED that glows harder as you add drive.
 
 **0.5.3: Load A, Load B, and an icon.** On the Morph page, choosing a voice for A or B no longer changes the blend: the voice waits until you press Load (its LED lights while it waits), so the fader never jumps to a voice you were only browsing. If a blend is going on when you load, the sound glides to the new pair at the fader's position, over the smoothing time. Each side shows which voice is loaded. And OXIde has its own icon: a glowing copper pad, in the Dock, the Finder and on the web page.
@@ -30,6 +32,8 @@
 - **A panel with a past**: the printed ink is lightly worn in places; the controls stay clean.
 
 ## Français
+
+**0.5.5 : une plaque de drive plus franche.** La plaque du Filter Drive passe à un orange plus vif avec un liseré sombre, et elle descend maintenant jusque sous l'afficheur de valeur, qu'elle englobe. La LED ambrée du drive est retirée.
 
 **0.5.4 : de la lumière sur le filtre.** Une fine bande LED suit la course du grand potard Frequency : elle s'allume jusqu'à la coupure et brille de plus en plus quand le filtre s'ouvre. Le potard Filter Drive est posé sur une plaque orange, graduations et nom imprimés en défonce, avec une LED ambrée qui s'allume de plus en plus quand on monte le drive.
 
