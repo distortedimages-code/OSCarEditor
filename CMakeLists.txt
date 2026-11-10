@@ -5,7 +5,7 @@ if(APPLE)
     set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Universal binary")
 endif()
 
-project(OSCarEditor VERSION 0.5.2 LANGUAGES C CXX)
+project(OSCarEditor VERSION 0.5.3 LANGUAGES C CXX)
 
 # GitHub repository whose releases the plugin checks for updates (public releases).
 set(OSCAR_UPDATE_REPO "distortedimages-code/OSCarEditor" CACHE STRING "owner/repo checked for updates (empty = no update check)")
@@ -49,6 +49,7 @@ juce_add_plugin(OSCarEditor
     PLUGIN_CODE Oscr
     AU_MAIN_TYPE kAudioUnitType_MusicDevice
     VST3_CATEGORIES Instrument Tools
+    ICON_BIG Resources/Icon/OXIde-1024.png   # the app icon (tools/icon/make_icon.py); JUCE makes the .icns / .ico
     FORMATS AU VST3 Standalone)
 
 juce_generate_juce_header(OSCarEditor)

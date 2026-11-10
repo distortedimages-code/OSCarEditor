@@ -776,6 +776,32 @@ static void testMorph (OscarProcessor& proc, Capture& out)
     doc.undo();
     pump (200);
     out.take();
+
+    // Loading a voice at one end: with no blend going on, the sound doesn't move...
+    const int slotC = 5;
+    VoiceData vc = va;   // knobs at the bottom like A, another wave
+    setParam (vc, *findParam ("wave1"), 3);
+    doc.setVoice (slotC, vc);
+    pump (100);
+    proc.morphKeep();
+    const auto before = doc.getVoice (target);
+    proc.loadMorphSource (true, slotC);
+    pump (300);
+    CHECK (doc.getVoice (target) == before);
+    CHECK (proc.morphSettings().slotB == slotC);
+    // ...during a blend, it glides to the new pair at the fader's position
+    proc.loadMorphSource (true, slotB);
+    morph->setValueNotifyingHost (0.5f);
+    pump (600);
+    CHECK (getParam (doc.getVoice (target), filterFreq) == kKnobMaxEditable / 2);
+    proc.loadMorphSource (true, slotC);
+    pump (600);
+    CHECK (getParam (doc.getVoice (target), filterFreq) == 0);                    // A and C both at the bottom
+    CHECK (getParam (doc.getVoice (target), *findParam ("wave1")) == 3);           // half way: C's wave
+    proc.morphKeep();
+    doc.undo();
+    pump (200);
+    out.take();
 }
 
 int main()

@@ -135,11 +135,15 @@ public:
 
 private:
     void timerCallback() override;   // follows the gliding blend
-    void sourcesChanged();
+    void refreshLoad();              // Load lit while a chosen voice waits to be loaded
     OscarProcessor& proc;
+    // Choosing a voice in the list (or Selected voice) only prepares it; Load puts it at that end.
+    // Until then the blend keeps the voices A and B already loaded.
     atelier::Selector voiceA { TRANS ("Voice A") }, voiceB { TRANS ("Voice B") };
+    int pendingA = -1, pendingB = -1;   // chosen, not loaded yet (-1: nothing waiting)
     atelier::LedButton takeA { TRANS ("Selected voice"), atelier::LedButton::LedPlace::None },
                        takeB { TRANS ("Selected voice"), atelier::LedButton::LedPlace::None };
+    atelier::LedButton loadA { TRANS ("Load") }, loadB { TRANS ("Load") };
     juce::Slider fader;   // the crossfader: host parameter "morph"
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> faderAttachment;
     atelier::Knob smoothing { TRANS ("Smoothing"), atelier::KnobStyle::Chrome, 200 };

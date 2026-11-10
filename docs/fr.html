@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OXIde</title>
+<link rel="icon" type="image/png" href="img/icon-64.png">
+<link rel="apple-touch-icon" href="img/icon-180.png">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Éditeur et librarian gratuit pour le synthé OSCar avec la carte MIDI Tauntek. AU pour Logic Pro, VST3 et application pour Mac.">
 <link rel="alternate" hreflang="en" href="index.html">
@@ -424,7 +426,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Version actuelle">
   <a class="arrow" href="#news" aria-label="Nouveautés">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.5.2</span><span class="name">OXIDE</span><span class="state">GRATUIT</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.5.3</span><span class="name">OXIDE</span><span class="state">GRATUIT</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -454,7 +456,7 @@ footer a { color: var(--muted); }
         Télécharger pour Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.5.2</dd>
+        <dt>Version</dt><dd id="spec-version">0.5.3</dd>
         <dt>Formats</dt><dd>AU pour Logic Pro, VST3 et application autonome</dd>
         <dt>Système</dt><dd>macOS 11 ou plus récent, Apple Silicon et Intel</dd>
         <dt>Synthé</dt><dd>OSCar avec la carte MIDI Tauntek. Avec le MIDI d'origine, tout marche sauf l'édition en direct.</dd>
@@ -489,8 +491,9 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Les dernières versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.5.2</span><div class="cap when">dernière version</div></div>
+      <div><span class="vchip">0.5.3</span><div class="cap when">dernière version</div></div>
       <div class="notes">
+        <p><strong>0.5.3 : Charger A, Charger B, et une icône.</strong> Sur la page Morphing, choisir une voix pour A ou B ne change plus le mélange : la voix attend que tu appuies sur Charger (sa LED s'allume pendant l'attente), et le fader ne saute plus vers une voix que tu ne faisais que parcourir. Si un mélange est en cours quand tu charges, le son glisse vers le nouveau couple à la position du fader, sur la durée du lissage. Chaque côté affiche la voix chargée. Et OXIde a son icône : un pad de cuivre allumé, dans le Dock, le Finder et sur le site.</p>
         <p><strong>0.5.2 : mises à jour dans les dossiers protégés.</strong> Quand le plugin a été installé avec ton mot de passe (l'AU dans /Library/Audio/Plug-Ins/Components, depuis l'image disque), la mise à jour demande maintenant ce mot de passe une fois, dans la fenêtre habituelle de macOS, et installe là aussi. Avant, l'AU restait sur l'ancienne version avec « pas le droit d'écrire ».</p>
         <p><strong>0.5.1 : un affichage fluide.</strong> Toucher un bouton ou tourner un potard ne redessine plus toute la fenêtre : seul ce qui a changé est redessiné, et les polices sont chargées une seule fois au lieu de l'être à chaque affichage. Fini le clignotement et les textes qui disparaissaient sur certains Mac, et l'interface suit la souris de beaucoup plus près.</p>
         <p><strong>Un cuivre plus doux.</strong> Les boutons et pads orange s'allument avec un dégradé tout en douceur et un petit halo, dans un cadre sombre. Sur la page Générateur, le grand potard affiche sa valeur en entier à côté de son nom, la plage au-delà de 75 % est imprimée en orange, Générer et les boutons d'historique sont plus bas, et Précédent et Suivant ont des flèches.</p>

@@ -483,6 +483,17 @@ void OscarProcessor::setMorphSources (int slotA, int slotB)
     morphSession = false;   // the next move blends the new pair
 }
 
+void OscarProcessor::loadMorphSource (bool toB, int slot)
+{
+    slot = juce::jlimit (0, kNumVoices - 1, slot);
+    (toB ? morph.slotB : morph.slotA) = slot;
+    if (! morphSession || morphSlot != selectedSlot)
+        return;   // nothing blended yet: the next move of the fader starts from the new pair
+    (toB ? morphB : morphA) = document.getVoice (slot);
+    morphFrom = document.getVoice (morphSlot);   // what is heard now
+    morphFade = 0.0f;
+}
+
 void OscarProcessor::morphKeep()
 {
     if (morphSession)
@@ -498,6 +509,7 @@ void OscarProcessor::startMorphSession()
     morphA = morph.slotA == morphSlot ? current : document.getVoice (morph.slotA);
     morphB = morph.slotB == morphSlot ? current : document.getVoice (morph.slotB);
     morphSent = (oscarSound && oscarSlot == morphSlot) ? *oscarSound : current;   // what the OSCar plays
+    morphFade = 1.0f;
     morphSession = true;
     document.endUndoGroup();   // a new blend is a new undo step
 }
@@ -518,7 +530,8 @@ void OscarProcessor::morphTick()
         morphTarget = target;
         morphMoving = true;
     }
-    if (! morphMoving)
+    const bool fading = morphSession && morphSlot == selectedSlot && morphFade < 1.0f;
+    if (! morphMoving && ! fading)
     {
         if (morphPending)
             morphPending = flushMorphCc();
@@ -528,13 +541,22 @@ void OscarProcessor::morphTick()
     if (! morphSession || morphSlot != selectedSlot)
         startMorphSession();
     const float maxStep = morph.smoothing <= 0.01f ? 1.0f : (1.0f / 30.0f) / morph.smoothing;
-    morphPos += juce::jlimit (-maxStep, maxStep, morphTarget - morphPos);
-    if (std::abs (morphTarget - morphPos) < 1.0e-4f)
+    if (morphMoving)
     {
-        morphPos = morphTarget;
-        morphMoving = false;
+        morphPos += juce::jlimit (-maxStep, maxStep, morphTarget - morphPos);
+        if (std::abs (morphTarget - morphPos) < 1.0e-4f)
+        {
+            morphPos = morphTarget;
+            morphMoving = false;
+        }
     }
-    applyMorph (blend (morphA, morphB, morphPos));
+    auto v = blend (morphA, morphB, morphPos);
+    if (morphFade < 1.0f)   // a voice just loaded at one end: glide there from what was heard
+    {
+        morphFade = juce::jmin (1.0f, morphFade + maxStep);
+        v = blend (morphFrom, v, morphFade);
+    }
+    applyMorph (v);
 }
 
 void OscarProcessor::applyMorph (const VoiceData& v)

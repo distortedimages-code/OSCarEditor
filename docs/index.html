@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>OXIde</title>
+<link rel="icon" type="image/png" href="img/icon-64.png">
+<link rel="apple-touch-icon" href="img/icon-180.png">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Free editor and librarian for the OSCar synth with the Tauntek MIDI board. AU for Logic Pro, VST3 and app for Mac.">
 <link rel="alternate" hreflang="en" href="index.html">
@@ -424,7 +426,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Current version">
   <a class="arrow" href="#news" aria-label="What's new">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.5.2</span><span class="name">OXIDE</span><span class="state">FREE</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.5.3</span><span class="name">OXIDE</span><span class="state">FREE</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -454,7 +456,7 @@ footer a { color: var(--muted); }
         Download for Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.5.2</dd>
+        <dt>Version</dt><dd id="spec-version">0.5.3</dd>
         <dt>Formats</dt><dd>AU for Logic Pro, VST3 and standalone app</dd>
         <dt>System</dt><dd>macOS 11 or later, Apple silicon and Intel</dd>
         <dt>Synth</dt><dd>OSCar with the Tauntek MIDI board. With the original MIDI, everything works except live editing.</dd>
@@ -489,8 +491,9 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Latest versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.5.2</span><div class="cap when">latest version</div></div>
+      <div><span class="vchip">0.5.3</span><div class="cap when">latest version</div></div>
       <div class="notes">
+        <p><strong>0.5.3: Load A, Load B, and an icon.</strong> On the Morph page, choosing a voice for A or B no longer changes the blend: the voice waits until you press Load (its LED lights while it waits), so the fader never jumps to a voice you were only browsing. If a blend is going on when you load, the sound glides to the new pair at the fader's position, over the smoothing time. Each side shows which voice is loaded. And OXIde has its own icon: a glowing copper pad, in the Dock, the Finder and on the web page.</p>
         <p><strong>0.5.2: updates into protected folders.</strong> When the plug-in was installed with your password (the AU in /Library/Audio/Plug-Ins/Components, from the disk image), the update now asks macOS for that password once, in its usual window, and installs there too. Before, the AU was left on the old version with "no permission to write".</p>
         <p><strong>0.5.1: a smooth display.</strong> Touching a button or turning a knob no longer redraws the whole window: only what changed is drawn again, and the fonts are loaded once instead of on every redraw. That ends the flicker and the labels that vanished on some Macs, and the interface follows the mouse much more closely.</p>
         <p><strong>Softer copper.</strong> The orange buttons and pads glow with a gentle gradient and a small halo, set in a dark bezel. On the Generator page, the big knob now shows its value in full beside its name, prints the range above 75 % in orange, and Generate and the history buttons sit lower down; Previous and Next carry printed arrows.</p>

@@ -113,6 +113,11 @@ public:
     struct MorphSettings { int slotA = 0, slotB = 12; float smoothing = 0.3f; };
     const MorphSettings& morphSettings() const      { return morph; }
     void setMorphSources (int slotA, int slotB);
+    // Puts voice 'slot' at end A (toB false) or B. The page only does this when the user loads a voice:
+    // choosing one in the list changes nothing. While a blend is going on in the selected voice, the
+    // voice glides (over the smoothing time) to the new pair at the fader's position; otherwise the
+    // next move of the fader starts from the new pair.
+    void loadMorphSource (bool toB, int slot);
     void setMorphSmoothing (float seconds)          { morph.smoothing = juce::jlimit (0.0f, 2.0f, seconds); }
     float getMorphPosition() const                  { return morphPos; }
     void morphKeep();                               // the blend stays; the next move starts again from A and B
@@ -258,6 +263,8 @@ private:
     bool morphSeen = false, morphMoving = false, morphSession = false, morphPending = false;
     int morphSlot = -1;
     oscar::VoiceData morphA {}, morphB {}, morphSent {};
+    oscar::VoiceData morphFrom {};          // a newly loaded A or B: the voice glides from this one
+    float morphFade = 1.0f;                 // 0..1 through that glide; 1 when there is none
     std::atomic<bool> resyncHost { true };
     std::atomic<int> hostSuspend { 0 };   // > 0 while host values are being restored
 
