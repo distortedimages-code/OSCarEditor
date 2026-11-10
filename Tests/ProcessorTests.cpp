@@ -619,6 +619,52 @@ static void testEditor (OscarProcessor& proc, Capture& out)
     CHECK (img.isValid());
     pump (100);
 
+    // the Waveforms page: one quick stroke across the bands draws every band it crosses
+    if (! proc.getDocument().getWaves())
+    {
+        DumpContents d;
+        d.waves = WaveBank {};
+        proc.getDocument().receiveDump (d);
+    }
+    editor->showPage (4);
+    panels::WavesPanel* waves = nullptr;
+    std::function<void (juce::Component&)> find = [&] (juce::Component& c)
+    {
+        for (auto* child : c.getChildren())
+        {
+            if (auto* w = dynamic_cast<panels::WavesPanel*> (child)) waves = w;
+            else find (*child);
+        }
+    };
+    find (*ed);
+    CHECK (waves != nullptr && proc.getDocument().getWaves().has_value());
+    if (waves != nullptr && proc.getDocument().getWaves())
+    {
+        const auto b = waves->barsArea();
+        const float band = b.getWidth() / (float) kNumHarmonics;
+        auto src = juce::Desktop::getInstance().getMainMouseSource();
+        auto event = [&] (juce::Point<float> p, juce::Point<float> down)
+        {
+            return juce::MouseEvent (src, p, {}, juce::MouseInputSource::defaultPressure, juce::MouseInputSource::defaultOrientation,
+                                     juce::MouseInputSource::defaultRotation, juce::MouseInputSource::defaultTiltX, juce::MouseInputSource::defaultTiltY,
+                                     waves, waves, juce::Time::getCurrentTime(), down, juce::Time::getCurrentTime(), 1, true);
+        };
+        const juce::Point<float> from { b.getX() + band * 2.5f, b.getBottom() - 2.0f },   // band 2 at the bottom
+                                 to { b.getX() + band * 10.5f, b.getY() + 2.0f };          // band 10 at the top
+        waves->mouseDown (event (from, from));
+        waves->mouseDrag (event (to, from));
+        const auto& w = *proc.getDocument().getWaves();
+        const int t = waves->currentTable();
+        CHECK (w.getHarmonic (t, 2) == 0 && w.getHarmonic (t, 10) == 255);
+        bool rising = true;
+        for (int h = 3; h <= 10; ++h)
+            rising = rising && w.getHarmonic (t, h) > w.getHarmonic (t, h - 1);
+        CHECK (rising);   // bands 3 to 9 on the line between
+        // past the last band: the stroke goes on to it
+        waves->mouseDrag (event ({ b.getRight() + 40.0f, b.getCentreY() }, from));
+        CHECK (proc.getDocument().getWaves()->getHarmonic (t, kNumHarmonics - 1) > 100);
+    }
+
     ed.reset();
     pump (100);
     CHECK (countPrograms (out.take(), -1) == 0);
@@ -1153,6 +1199,9 @@ int main()
         proc.getMidi().injectForTest (juce::MidiMessage::controllerEvent (5, 7, 0));
         CHECK (waitForLog (proc, "channel 5"));
         CHECK (proc.channelMismatch() && proc.getOscarChannel() == 5);
+        proc.setChannel (proc.getOscarChannel());   // what "Use channel 5" does
+        CHECK (! proc.channelMismatch() && proc.getChannel() == 5);
+        proc.setChannel (1);
         proc.getMidi().injectForTest (juce::MidiMessage::controllerEvent (1, 7, 0));
         pump (100);
         CHECK (! proc.channelMismatch());

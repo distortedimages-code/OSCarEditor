@@ -86,6 +86,7 @@ private:
     Display display;
     atelier::LedButton prevVoice { "<", atelier::LedButton::LedPlace::None }, nextVoice { ">", atelier::LedButton::LedPlace::None };
     atelier::LedButton updateButton { {} };
+    atelier::LedButton channelButton { {} };   // the OSCar on another channel: the plugin takes it
 
     juce::OwnedArray<atelier::LedButton> tabs;
     std::unique_ptr<panels::VoicePanel> voicePage;

@@ -1,5 +1,7 @@
 ## English
 
+**0.6.3: Use channel, and strokes across the harmonics.** When the OSCar sends on another MIDI channel, a Use channel button appears left of the voice display: one click and the plugin takes the OSCar's channel. (The OSCar's own channel can only be set on the OSCar, SPACE + a key from 1 to 16: its firmware takes no MIDI message for it.) On the Waveforms page, a quick stroke across the bands now draws every band it crosses, on the line between, and carries on to the first and last band when the mouse runs past them.
+
 **0.6.2: a safer, simpler Morph.** The Morph page has a MORPH switch, off at start: off, the crossfader and its DAW automation do nothing. On, the OSCar plays the blend of A and B (as CC, Live CC on) and no voice changes any more: Keep the blend writes it into the selected voice, in one undo step. Edits of A or B are heard in the blend at once. Turning MORPH off, choosing another voice or generating one gives the OSCar the selected voice back; the display shows MORPH ON meanwhile. Each end has a single window: a click opens the list, with the selected voice first, and the voice chosen there is loaded (with MORPH on, the sound glides to it). The arrows, Selected voice and Load buttons are gone.
 
 **0.6.1: the OSCar on another channel.** When the OSCar sends on a MIDI channel other than the plugin's (SPACE + a key from 1 to 16 on the OSCar changes it, easily by mistake, and the Tauntek board keeps it after power-off), the display shows OSCAR ON CH and its number, and a message says how to put it back. Unless it is in omni mode, the OSCar doesn't hear the plugin then.
@@ -38,6 +40,8 @@
 - **A panel with a past**: the printed ink is lightly worn in places; the controls stay clean.
 
 ## Français
+
+**0.6.3 : Passer sur le canal, et des traits à travers les harmoniques.** Quand l'OSCar émet sur un autre canal MIDI, un bouton Passer sur le canal apparaît à gauche de l'afficheur : un clic et le plugin prend le canal de l'OSCar. (Le canal de l'OSCar lui-même ne se règle que sur l'OSCar, SPACE + une touche de 1 à 16 : son firmware n'accepte aucun message MIDI pour ça.) Dans la page Formes d'onde, un trait rapide à travers les bandes dessine maintenant toutes celles qu'il traverse, sur la ligne entre les deux, et va jusqu'à la première et la dernière bande quand la souris les dépasse.
 
 **0.6.2 : un morphing plus sûr et plus simple.** La page Morphing a un interrupteur MORPH, éteint au démarrage : éteint, le crossfader et son automation dans le DAW ne font rien. Allumé, l'OSCar joue le mélange de A et B (en CC, avec Live CC) et plus aucune voix ne change : Garder le mélange l'écrit dans la voix choisie, en une seule étape d'annulation. Les retouches de A ou de B s'entendent tout de suite dans le mélange. Éteindre MORPH, choisir une autre voix ou en générer une rend à l'OSCar la voix choisie ; l'afficheur indique MORPH EN COURS entre-temps. Chaque côté n'a plus qu'un afficheur : un clic ouvre la liste, la voix choisie en tête, et la voix prise dans la liste est chargée (MORPH allumé, le son glisse vers elle). Plus de flèches, ni de boutons Voix choisie et Charger.
 

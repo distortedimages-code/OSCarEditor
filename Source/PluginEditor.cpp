@@ -92,6 +92,20 @@ OscarEditor::OscarEditor (OscarProcessor& p)
     updateButton.onClick = [this] { showUpdateDialog(); };
     root.addChildComponent (updateButton);
 
+    // The OSCar's channel can only be set on the OSCar (SPACE + a key): no MIDI message changes it in
+    // the Tauntek firmware (keypad routine at 0x1F11). So the plugin goes to the OSCar's channel.
+    channelButton.setLit (true);
+    channelButton.setTextColour (colours::warn);
+    channelButton.onClick = [this]
+    {
+        const int ch = proc.getOscarChannel();
+        if (ch < 1)
+            return;
+        proc.setChannel (ch);
+        proc.addLog (tr ("The plugin now uses MIDI channel %1, the OSCar's (Setup page).", { juce::String (ch) }));
+    };
+    root.addChildComponent (channelButton);
+
     for (int i = 0; i < 7; ++i)
     {
         auto* t = tabs.add (new LedButton ({}));
@@ -205,6 +219,7 @@ void OscarEditor::layout()
     prevVoice.setBounds (466, displayY, 44, displayH + 3);
     nextVoice.setBounds (890, displayY, 44, displayH + 3);
     updateButton.setBounds (950, displayY + 4, 180, 36);
+    channelButton.setBounds (236, displayY + 4, 220, 36);   // left of the voice display, after MIDI IN
 
     // RANDOM and everything it follows, left of the logo; SCALE right of it, up to the vents
     const int topY = 16;
@@ -405,6 +420,13 @@ void OscarEditor::refreshAll()
     auto& up = proc.getUpdater();
     const bool showUpdate = up.getState() == Updater::State::Available || up.getState() == Updater::State::Installed;
     updateButton.setVisible (showUpdate);
+    channelButton.setVisible (proc.channelMismatch());
+    if (proc.channelMismatch())
+    {
+        channelButton.setButtonText (tr ("Use channel %1", { juce::String (proc.getOscarChannel()) }));
+        channelButton.setTooltip (tr ("The OSCar sends on MIDI channel %1 and the plugin on %2: the OSCar doesn't take the plugin's edits (nor its notes, outside omni mode). Click: the plugin uses channel %1 (Setup page). The OSCar's own channel can only be changed on the OSCar: hold SPACE and press a key from 1 to 16; no MIDI message can do it.",
+                                      { juce::String (proc.getOscarChannel()), juce::String (proc.getChannel()) }));
+    }
     updateButton.setButtonText (up.getState() == Updater::State::Installed ? tr ("Restart the DAW")
                                                                           : tr ("Update %1", { up.getRelease().version }));
 

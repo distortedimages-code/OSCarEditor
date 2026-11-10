@@ -1115,7 +1115,7 @@ void OscarProcessor::timerCallback()
     {
         oscarChannel = ch;
         if (ch != channel)
-            addLog (tr ("The OSCar sends on MIDI channel %1 and the plugin on channel %2: unless it is in omni mode, the OSCar doesn't hear the plugin. On the OSCar, hold SPACE and press key %2; or choose channel %1 on the Setup page.",
+            addLog (tr ("The OSCar sends on MIDI channel %1 and the plugin on channel %2: the OSCar doesn't take the plugin's edits (nor its notes, outside omni mode). Click Use channel %1 (top left), or on the OSCar hold SPACE and press key %2.",
                         { juce::String (ch), juce::String (channel.load()) }));
         statusBroadcaster.sendChangeMessage();
     }

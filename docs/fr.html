@@ -426,7 +426,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Version actuelle">
   <a class="arrow" href="#news" aria-label="Nouveautés">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.6.2</span><span class="name">OXIDE</span><span class="state">GRATUIT</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.6.3</span><span class="name">OXIDE</span><span class="state">GRATUIT</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -456,7 +456,7 @@ footer a { color: var(--muted); }
         Télécharger pour Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.6.2</dd>
+        <dt>Version</dt><dd id="spec-version">0.6.3</dd>
         <dt>Formats</dt><dd>AU pour Logic Pro, VST3 et application autonome</dd>
         <dt>Système</dt><dd>macOS 11 ou plus récent, Apple Silicon et Intel</dd>
         <dt>Synthé</dt><dd>OSCar avec la carte MIDI Tauntek. Avec le MIDI d'origine, tout marche sauf l'édition en direct.</dd>
@@ -491,8 +491,9 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Les dernières versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.6.2</span><div class="cap when">dernière version</div></div>
+      <div><span class="vchip">0.6.3</span><div class="cap when">dernière version</div></div>
       <div class="notes">
+        <p><strong>0.6.3 : Passer sur le canal, et des traits à travers les harmoniques.</strong> Quand l'OSCar émet sur un autre canal MIDI, un bouton Passer sur le canal apparaît à gauche de l'afficheur : un clic et le plugin prend le canal de l'OSCar. (Le canal de l'OSCar lui-même ne se règle que sur l'OSCar, SPACE + une touche de 1 à 16 : son firmware n'accepte aucun message MIDI pour ça.) Dans la page Formes d'onde, un trait rapide à travers les bandes dessine maintenant toutes celles qu'il traverse, sur la ligne entre les deux, et va jusqu'à la première et la dernière bande quand la souris les dépasse.</p>
         <p><strong>0.6.2 : un morphing plus sûr et plus simple.</strong> La page Morphing a un interrupteur MORPH, éteint au démarrage : éteint, le crossfader et son automation dans le DAW ne font rien. Allumé, l'OSCar joue le mélange de A et B (en CC, avec Live CC) et plus aucune voix ne change : Garder le mélange l'écrit dans la voix choisie, en une seule étape d'annulation. Les retouches de A ou de B s'entendent tout de suite dans le mélange. Éteindre MORPH, choisir une autre voix ou en générer une rend à l'OSCar la voix choisie ; l'afficheur indique MORPH EN COURS entre-temps. Chaque côté n'a plus qu'un afficheur : un clic ouvre la liste, la voix choisie en tête, et la voix prise dans la liste est chargée (MORPH allumé, le son glisse vers elle). Plus de flèches, ni de boutons Voix choisie et Charger.</p>
         <p><strong>0.6.1 : l'OSCar sur un autre canal.</strong> Quand l'OSCar émet sur un autre canal MIDI que le plugin (SPACE + une touche de 1 à 16 sur l'OSCar le change, facilement sans le vouloir, et la carte Tauntek le garde après extinction), l'afficheur indique OSCAR CANAL et son numéro, et un message explique comment le remettre. Sauf en omni, l'OSCar n'entend alors pas le plugin.</p>
         <p><strong>0.6.0 : RANDOM et SCALE.</strong> Deux nouvelles fonctions en haut de la fenêtre, comme dans MIFM1. RANDOM allumé, tourner un potard ou une tirette de la page Voix règle combien il bouge au lieu de sa valeur (Transpose, Osc 2 Interval et Octave Shift aussi). Ce qu'il suit se choisit juste à côté, tout au même endroit : SHAPE, S&amp;H (une nouvelle valeur à chaque pas : vers le haut, de nouvelles valeurs ; vers le bas, des valeurs qui reviennent les mêmes à chaque boucle), SMOOTH (un glissement d'une valeur au hasard à la suivante, en boucle aussi vers le bas) ou une des ondes des LFO de MIFM1 (sinus, triangle, dent de scie, rampe, carré, pump, escalier, rebond, clave, montées, descentes, zigzag : un seul LFO pour toutes les commandes, à l'envers vers le bas) ; RATE, de 1/32 à 16 mesures, sur le tempo et les mesures du DAW ; LOOP, n'importe quelle longueur de 2 à 64 pas. Plus loin, plus large ; au milieu (ou double-clic), rien, et la commande retrouve sa valeur. RANDOM à nouveau, les potards se tournent comme d'habitude : une petite LED marque chaque commande qui bouge (rouge : vers le haut, ambre : vers le bas). Clic droit sur RANDOM : le tempo sans DAW, nouvelles boucles, tout effacer. Les ondes et les glissements partent au fil des valeurs, 400 CC par seconde au plus. La voix elle-même ne change pas : l'OSCar reçoit les valeurs en CC (Live CC), et les projets enregistrés gardent les aléatoires et leurs boucles. SCALE et ROOT mettent Transpose et Osc 2 Interval sur une gamme (majeur, mineur, les modes, mineur harmonique et mélodique, pentatoniques, blues, par tons, hirajoshi, phrygien dominant), leurs aléatoires aussi, et ramènent dans la gamme les notes jouées par MIDI Thru.</p>

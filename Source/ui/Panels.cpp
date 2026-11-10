@@ -1875,17 +1875,37 @@ void WavesPanel::paint (juce::Graphics& g)
     g.drawText (lang::upper (tr ("Preview (sum of sines)")), scope.withY (scope.getBottom() + 6.0f).withHeight (16.0f), juce::Justification::centred);
 }
 
-void WavesPanel::mouseDown (const juce::MouseEvent& e) { draw (e); }
+void WavesPanel::mouseDown (const juce::MouseEvent& e)
+{
+    lastHarmonic = -1;
+    draw (e);
+}
+
 void WavesPanel::mouseDrag (const juce::MouseEvent& e) { draw (e); }
 
 void WavesPanel::draw (const juce::MouseEvent& e)
 {
-    if (! proc.getDocument().getWaves() || e.position.x < bars.getX() || e.position.x >= bars.getRight()
-        || e.position.y < bars.getY() - 30.0f || e.position.y > bars.getBottom() + 10.0f)
+    // a stroke starts on the bands; once started, it goes on to the first and last band and to
+    // the top and bottom even when the mouse runs past them
+    const bool started = lastHarmonic >= 0;
+    if (! proc.getDocument().getWaves())
         return;
-    const int h = juce::jlimit (0, kNumHarmonics - 1, (int) ((e.position.x - bars.getX()) / (bars.getWidth() / (float) kNumHarmonics)));
+    if (! started && (e.position.x < bars.getX() || e.position.x >= bars.getRight()
+                      || e.position.y < bars.getY() - 30.0f || e.position.y > bars.getBottom() + 10.0f))
+        return;
+    const int h = juce::jlimit (0, kNumHarmonics - 1, (int) std::floor ((e.position.x - bars.getX()) / (bars.getWidth() / (float) kNumHarmonics)));
     const int v = juce::jlimit (0, 255, juce::roundToInt ((bars.getBottom() - 2.0f - e.position.y) / (bars.getHeight() - 4.0f) * 255.0f));
-    proc.getDocument().setHarmonic (table, h, v);
+    auto& doc = proc.getDocument();
+    if (started && h != lastHarmonic)
+    {
+        // a quick stroke skips bands between two mouse moves: they follow the line from the last one
+        const int dir = h > lastHarmonic ? 1 : -1;
+        for (int k = lastHarmonic + dir; k != h; k += dir)
+            doc.setHarmonic (table, k, juce::roundToInt (lastLevel + (double) (v - lastLevel) * (k - lastHarmonic) / (double) (h - lastHarmonic)));
+    }
+    doc.setHarmonic (table, h, v);
+    lastHarmonic = h;
+    lastLevel = v;
 }
 
 //==============================================================================

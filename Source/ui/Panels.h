@@ -226,6 +226,8 @@ public:
     void resized() override;
     void mouseDown (const juce::MouseEvent&) override;
     void mouseDrag (const juce::MouseEvent&) override;
+    juce::Rectangle<float> barsArea() const         { return bars; }   // where the harmonics are drawn
+    int currentTable() const                        { return table; }
 
 private:
     void draw (const juce::MouseEvent&);
@@ -236,6 +238,7 @@ private:
     juce::Rectangle<float> group, bars, scope, infoArea;   // bars: the slots only (values above, numbers below)
     juce::String info;
     int table = 0;
+    int lastHarmonic = -1, lastLevel = 0;   // the stroke so far: the bands in between are drawn on its line
     atelier::WearLayer wear;
 };
 
