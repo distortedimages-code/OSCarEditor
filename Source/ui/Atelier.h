@@ -224,11 +224,14 @@ public:
     std::function<void (int)> onChange;
     void setLabel (const juce::String& t)           { labelText = t; repaint(); }
     void setTooltip (const juce::String& t)         { tip = t; window.setTooltip (t); }
+    // Without arrows (nor the wheel), a voice is only ever chosen from the list: never by browsing.
+    void setArrows (bool b)                         { arrows = b; prev.setVisible (b); next.setVisible (b); resized(); repaint(); }
 
     void resized() override;
     void paint (juce::Graphics&) override;
 
 private:
+    bool arrows = true;
     struct Window : juce::Component, juce::SettableTooltipClient
     {
         std::function<void()> onClick;

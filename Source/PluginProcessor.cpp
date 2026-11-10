@@ -205,6 +205,7 @@ void OscarProcessor::setSelectedSlot (int slot)
     slot = juce::jlimit (0, kNumVoices - 1, slot);
     if (slot != selectedSlot)
     {
+        morphOff (morphOn ? tr ("Morph off: voice %1 chosen.", { juce::String (slotLabel (slot)) }) : juce::String());
         selectedSlot = slot;
         publishRandom();
         statusBroadcaster.sendChangeMessage();
@@ -349,7 +350,7 @@ void OscarProcessor::editParam (int slot, const ParamDef& p, int value)
     }
     document.setParam (slot, p, value);
 
-    if (! liveCc || slot != selectedSlot)
+    if (! liveCc || slot != selectedSlot || morphOn)   // MORPH on: the OSCar plays the blend
         return;
 
     if (oscarSound && oscarSlot == slot)
@@ -360,7 +361,7 @@ void OscarProcessor::editParam (int slot, const ParamDef& p, int value)
 
 void OscarProcessor::pushDifferencesToOscar()
 {
-    if (! liveCc || ! oscarSound || oscarSlot != selectedSlot)
+    if (! liveCc || ! oscarSound || oscarSlot != selectedSlot || morphOn)
         return;
 
     const auto& v = document.getVoice (selectedSlot);
@@ -390,8 +391,8 @@ void OscarProcessor::changeListenerCallback (juce::ChangeBroadcaster*)
 {
     publishRandom();   // the randoms move around the voice as it is now
     // Undo, paste, revert, file loads...: keep what the OSCar plays equal to the editor.
-    // (Not while a morph is under way: it paces its own CC.)
-    if (morphMoving || morphPending)
+    // (Not while MORPH plays or gives the voice back: it paces its own CC.)
+    if (morphOn || morphPending)
         return;
     pushDifferencesToOscar();
 }
@@ -511,38 +512,69 @@ void OscarProcessor::setMorphSources (int slotA, int slotB)
 {
     morph.slotA = juce::jlimit (0, kNumVoices - 1, slotA);
     morph.slotB = juce::jlimit (0, kNumVoices - 1, slotB);
-    morphSession = false;   // the next move blends the new pair
 }
 
 void OscarProcessor::loadMorphSource (bool toB, int slot)
 {
-    slot = juce::jlimit (0, kNumVoices - 1, slot);
-    (toB ? morph.slotB : morph.slotA) = slot;
-    if (! morphSession || morphSlot != selectedSlot)
-        return;   // nothing blended yet: the next move of the fader starts from the new pair
-    (toB ? morphB : morphA) = document.getVoice (slot);
-    morphFrom = document.getVoice (morphSlot);   // what is heard now
+    (toB ? morph.slotB : morph.slotA) = juce::jlimit (0, kNumVoices - 1, slot);
+    if (morphOn)
+    {
+        morphFrom = morphHeard;   // glide from what is heard to the new pair
+        morphFade = 0.0f;
+    }
+}
+
+VoiceData OscarProcessor::getMorphBlend() const
+{
+    if (morphOn)
+        return morphHeard;
+    return blend (document.getVoice (morph.slotA), document.getVoice (morph.slotB), morphPos);
+}
+
+void OscarProcessor::setMorphOn (bool on)
+{
+    if (on == morphOn)
+        return;
+    if (! on)
+    {
+        morphOff (tr ("Morph off: the OSCar plays voice %1 again.", { juce::String (slotLabel (selectedSlot)) }));
+        return;
+    }
+    morphOn = true;
+    morphSlot = selectedSlot;
+    const auto& voice = document.getVoice (selectedSlot);
+    morphSent = (oscarSound && oscarSlot == selectedSlot) ? *oscarSound : voice;   // what the OSCar plays
+    morphFrom = voice;      // from the voice into the blend, over the smoothing time
     morphFade = 0.0f;
+    morphPos = morphTarget;
+    morphHeard = voice;
+    publishRandom();
+    statusBroadcaster.sendChangeMessage();
+    morphTick();
+}
+
+void OscarProcessor::morphOff (const juce::String& why)
+{
+    if (! morphOn)
+        return;
+    morphOn = false;
+    morphPending = true;   // morphTick sends the voice back, paced
+    publishRandom();
+    if (why.isNotEmpty())
+        addLog (why);
+    statusBroadcaster.sendChangeMessage();
 }
 
 void OscarProcessor::morphKeep()
 {
-    if (morphSession)
-        addLog (tr ("Morph kept in voice %1.", { juce::String (slotLabel (morphSlot)) }));
-    morphSession = false;
+    if (! morphOn)
+        return;
     document.endUndoGroup();
-}
-
-void OscarProcessor::startMorphSession()
-{
-    morphSlot = selectedSlot;
-    const auto current = document.getVoice (morphSlot);   // the slot's own sound, when it is A or B
-    morphA = morph.slotA == morphSlot ? current : document.getVoice (morph.slotA);
-    morphB = morph.slotB == morphSlot ? current : document.getVoice (morph.slotB);
-    morphSent = (oscarSound && oscarSlot == morphSlot) ? *oscarSound : current;   // what the OSCar plays
-    morphFade = 1.0f;
-    morphSession = true;
-    document.endUndoGroup();   // a new blend is a new undo step
+    document.setVoiceInGroup (morphSlot, morphHeard, "morph keep");   // one undo step
+    document.endUndoGroup();
+    if (oscarSlot == morphSlot)
+        oscarSound = morphSent;
+    addLog (tr ("Morph kept in voice %1.", { juce::String (slotLabel (morphSlot)) }));
 }
 
 void OscarProcessor::morphTick()
@@ -561,16 +593,18 @@ void OscarProcessor::morphTick()
         morphTarget = target;
         morphMoving = true;
     }
-    const bool fading = morphSession && morphSlot == selectedSlot && morphFade < 1.0f;
-    if (! morphMoving && ! fading)
+
+    if (! morphOn)
     {
+        // off: the fader and its automation do nothing (it only shows where the blend would start);
+        // just turned off: the OSCar gets the voice back, unless it has loaded another one meanwhile
+        morphPos = morphTarget;
+        morphMoving = false;
         if (morphPending)
-            morphPending = flushMorphCc();
+            morphPending = flushMorphCc (document.getVoice (morphSlot));
         return;
     }
 
-    if (! morphSession || morphSlot != selectedSlot)
-        startMorphSession();
     const float maxStep = morph.smoothing <= 0.01f ? 1.0f : (1.0f / 30.0f) / morph.smoothing;
     if (morphMoving)
     {
@@ -581,32 +615,26 @@ void OscarProcessor::morphTick()
             morphMoving = false;
         }
     }
-    auto v = blend (morphA, morphB, morphPos);
-    if (morphFade < 1.0f)   // a voice just loaded at one end: glide there from what was heard
+    // A and B as they are now (edits to either are heard at once)
+    auto v = blend (document.getVoice (morph.slotA), document.getVoice (morph.slotB), morphPos);
+    if (morphFade < 1.0f)   // MORPH just on, or a voice just loaded: glide there from what was heard
     {
         morphFade = juce::jmin (1.0f, morphFade + maxStep);
         v = blend (morphFrom, v, morphFade);
     }
-    applyMorph (v);
+    morphHeard = v;
+    morphPending = flushMorphCc (v);
 }
 
-void OscarProcessor::applyMorph (const VoiceData& v)
-{
-    if (v != document.getVoice (morphSlot))
-        document.setVoiceInGroup (morphSlot, v, "morph");   // one undo step for the whole blend, pauses included
-    morphPending = flushMorphCc();
-}
-
-bool OscarProcessor::flushMorphCc()
+bool OscarProcessor::flushMorphCc (const VoiceData& v)
 {
     const int slot = morphSlot;
-    if (! liveCc || slot != selectedSlot || (oscarSlot >= 0 && oscarSlot != slot))   // never touch another voice the OSCar is playing
+    if (! liveCc || slot < 0 || (oscarSlot >= 0 && oscarSlot != slot))   // never touch another voice the OSCar is playing
         return false;
     if (! midi.isOutputOpen() || midi.isBusy())
         return true;   // after the transfer
 
     // what the OSCar still lacks, the biggest moves first
-    const auto& v = document.getVoice (slot);
     struct Pending { std::vector<const ParamDef*> params; std::vector<CcMessage> msgs; int size; };
     std::vector<Pending> pending;
     bool arpDone = false;
@@ -667,6 +695,8 @@ oscar::Corpus OscarProcessor::learningCorpus() const
 
 void OscarProcessor::applyToSelected (const VoiceData& v, const juce::String& undoKey)
 {
+    morphOff (morphOn ? tr ("Morph off: the generator plays its voice.") : juce::String());
+    morphPending = false;   // the generated voice is sent below
     const int slot = selectedSlot;
     document.setVoice (slot, v, undoKey);
 
@@ -1393,7 +1423,7 @@ void OscarProcessor::publishRandom()
     s.settings = randomSet;
     s.amounts = randomAmounts;
     s.seeds = randomSeeds;
-    s.base = document.getVoice (selectedSlot);
+    s.base = morphOn ? morphHeard : document.getVoice (selectedSlot);   // MORPH on: around the blend
     s.live = liveCc;
     s.plays = oscarSlot < 0 || oscarSlot == selectedSlot;   // never touch another voice the OSCar is playing
     const juce::SpinLock::ScopedLockType sl (randomLock);

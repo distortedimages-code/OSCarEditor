@@ -449,6 +449,7 @@ void OscarEditor::refreshStatus()
     else if (midi.isBusy())                                     state = tr ("SENDING %1 S", { juce::String (midi.busyRemainingMs() / 1000.0, 1) });
     else if (progress >= 0 && now - lastProgressTime < 4000.0)  state = tr ("RECEIVING %1", { juce::String (progress) });
     else if (proc.channelMismatch())                            { state = tr ("OSCAR ON CH %1", { juce::String (proc.getOscarChannel()) }); warn = true; }
+    else if (proc.getMorphOn())                                 state = tr ("MORPH ON");
     else if (doc.hasUnsentEdits (slot))                         { state = tr ("EDITED"); warn = true; }
     else if (doc.isOscarVoiceStateKnown())                      state = tr ("IN SYNC");
     else                                                        state = tr ("NOT DUMPED");

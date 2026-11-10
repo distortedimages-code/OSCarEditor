@@ -144,15 +144,12 @@ public:
 
 private:
     void timerCallback() override;   // follows the gliding blend
-    void refreshLoad();              // Load lit while a chosen voice waits to be loaded
     OscarProcessor& proc;
-    // Choosing a voice in the list (or Selected voice) only prepares it; Load puts it at that end.
-    // Until then the blend keeps the voices A and B already loaded.
+    // One window per end: a click opens the list (the selected voice first), and the voice chosen
+    // there is loaded at that end. No arrows: nothing changes while browsing.
     atelier::Selector voiceA { TRANS ("Voice A") }, voiceB { TRANS ("Voice B") };
-    int pendingA = -1, pendingB = -1;   // chosen, not loaded yet (-1: nothing waiting)
-    atelier::LedButton takeA { TRANS ("Selected voice"), atelier::LedButton::LedPlace::None },
-                       takeB { TRANS ("Selected voice"), atelier::LedButton::LedPlace::None };
-    atelier::LedButton loadA { TRANS ("Load") }, loadB { TRANS ("Load") };
+    static constexpr int selectedItem = 100;   // the list's first line: the voice selected in the editor
+    atelier::LedButton morphButton { "Morph" };   // MORPH: on, the OSCar plays the blend
     juce::Slider fader;   // the crossfader: host parameter "morph"
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> faderAttachment;
     atelier::Knob smoothing { TRANS ("Smoothing"), atelier::KnobStyle::Chrome, 200 };
@@ -161,6 +158,8 @@ private:
     std::vector<juce::Rectangle<float>> columns;
     juce::Rectangle<float> preview, readout, info, letterA, letterB, bigA, bigB, summaryA, summaryB;   // summaries: the switches, which flip half way
     float shownPosition = -1.0f;
+    oscar::VoiceData shownBlend {};
+    juce::Rectangle<int> morphRow;              // MORPH and the position readout
     atelier::WearLayer wear;
 };
 

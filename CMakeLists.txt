@@ -5,7 +5,7 @@ if(APPLE)
     set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Universal binary")
 endif()
 
-project(OSCarEditor VERSION 0.6.1 LANGUAGES C CXX)
+project(OSCarEditor VERSION 0.6.2 LANGUAGES C CXX)
 
 # GitHub repository whose releases the plugin checks for updates (public releases).
 set(OSCAR_UPDATE_REPO "distortedimages-code/OSCarEditor" CACHE STRING "owner/repo checked for updates (empty = no update check)")

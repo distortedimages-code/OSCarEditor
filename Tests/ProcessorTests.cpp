@@ -714,6 +714,14 @@ static void testState (OscarProcessor& proc, Capture&)
 }
 
 // The A/B morph: knobs glide, switches flip half way, the CC are paced, Undo brings the voice back.
+static std::vector<int> ccValues (const std::vector<juce::MidiMessage>& ms, int cc)
+{
+    std::vector<int> r;
+    for (const auto& [n, v] : ccsOf (ms))
+        if (n == cc) r.push_back (v);
+    return r;
+}
+
 static void testMorph (OscarProcessor& proc, Capture& out)
 {
     auto& doc = proc.getDocument();
@@ -734,11 +742,27 @@ static void testMorph (OscarProcessor& proc, Capture& out)
     pump (700);
     out.take();
     const auto original = doc.getVoice (target);
+    const auto& filterFreq = *findParam ("filterFreq");
+    auto lastFreqCc = [&filterFreq] (const std::vector<juce::MidiMessage>& ms)
+    {
+        int last = -1;
+        for (const auto& [cc, value] : ccsOf (ms))
+            if (cc == filterFreq.cc) last = value;
+        return last;
+    };
 
     proc.setMorphSources (slotA, slotB);
     proc.setMorphSmoothing (0.0f);   // instant: the pacing alone spreads the CC
     auto* morph = proc.getHostParameters().getParameter ("morph");
+
+    // off (the default): the fader and its automation do nothing
+    CHECK (! proc.getMorphOn());
     morph->setValueNotifyingHost (0.25f);
+    pump (400);
+    CHECK (ccsOf (out.take()).empty() && doc.getVoice (target) == original);
+
+    // on: the OSCar plays the blend, paced; no voice changes
+    proc.setMorphOn (true);
     std::vector<size_t> batches;
     std::vector<juce::MidiMessage> all;
     for (int i = 0; i < 100; ++i)
@@ -748,73 +772,71 @@ static void testMorph (OscarProcessor& proc, Capture& out)
         if (! got.empty()) batches.push_back (ccsOf (got).size());
         all.insert (all.end(), got.begin(), got.end());
     }
-    const auto& filterFreq = *findParam ("filterFreq");
-    CHECK (getParam (doc.getVoice (target), filterFreq) == 64);                       // a quarter of the way
-    CHECK (getParam (doc.getVoice (target), *findParam ("wave1")) == 0);              // still A's wave
     CHECK (! batches.empty() && batches.front() <= 24);                               // paced, never all at once
-    size_t total = 0;
-    for (auto n : batches) total += n;
-    CHECK (total >= 26);
-    int lastFreq = -1;
-    for (const auto& [cc, value] : ccsOf (all))
-        if (cc == filterFreq.cc) lastFreq = value;
-    CHECK (lastFreq == ccValueFor (filterFreq.coding, 64));                          // the OSCar got there too
+    CHECK (lastFreqCc (all) == ccValueFor (filterFreq.coding, 64));                  // a quarter of the way
+    CHECK (doc.getVoice (target) == original);
+    CHECK (getParam (proc.getMorphBlend(), *findParam ("wave1")) == 0);               // still A's wave
 
-    pump (1700);   // a pause longer than the undo grouping of knob drags
     morph->setValueNotifyingHost (1.0f);
     pump (1000);
-    out.take();
-    CHECK (getParam (doc.getVoice (target), filterFreq) == kKnobMaxEditable);
-    CHECK (getParam (doc.getVoice (target), *findParam ("wave1")) == 2);              // B's wave past half way
+    CHECK (lastFreqCc (out.take()) == ccValueFor (filterFreq.coding, kKnobMaxEditable));
+    CHECK (doc.getVoice (target) == original);
     CHECK (OscarProcessor::blend (va, vb, 0.5f) != OscarProcessor::blend (va, vb, 0.49f));
 
+    // edits of the selected voice are stored, not sent: the blend plays
+    proc.editParam (target, *findParam ("resonance"), 77);
+    pump (200);
+    CHECK (ccValues (out.take(), findParam ("resonance")->cc).empty());
+    proc.editParam (target, *findParam ("resonance"), getParam (original, *findParam ("resonance")));
+    doc.endUndoGroup();
+
+    // keep: the blend goes into the selected voice, one undo step
+    const auto beforeKeep = doc.getVoice (target);
     proc.morphKeep();
-    doc.undo();   // the whole move is one step
-    pump (300);
-    CHECK (doc.getVoice (target) == original);
-    morph->setValueNotifyingHost (0.0f);
-    pump (300);
+    pump (100);
+    CHECK (getParam (doc.getVoice (target), filterFreq) == kKnobMaxEditable);
+    CHECK (getParam (doc.getVoice (target), *findParam ("wave1")) == 2);
     doc.undo();
     pump (200);
-    out.take();
+    CHECK (doc.getVoice (target) == beforeKeep);
 
-    // Loading a voice at one end: with no blend going on, the sound doesn't move...
+    // a voice loaded at one end: the sound glides there (A and C both at the bottom)
     const int slotC = 5;
-    VoiceData vc = va;   // knobs at the bottom like A, another wave
+    VoiceData vc = va;
     setParam (vc, *findParam ("wave1"), 3);
     doc.setVoice (slotC, vc);
-    pump (100);
-    proc.morphKeep();
-    const auto before = doc.getVoice (target);
-    proc.loadMorphSource (true, slotC);
-    pump (300);
-    CHECK (doc.getVoice (target) == before);
-    CHECK (proc.morphSettings().slotB == slotC);
-    // ...during a blend, it glides to the new pair at the fader's position
-    proc.loadMorphSource (true, slotB);
     morph->setValueNotifyingHost (0.5f);
-    pump (600);
-    CHECK (getParam (doc.getVoice (target), filterFreq) == kKnobMaxEditable / 2);
+    pump (400);
     proc.loadMorphSource (true, slotC);
     pump (600);
-    CHECK (getParam (doc.getVoice (target), filterFreq) == 0);                    // A and C both at the bottom
-    CHECK (getParam (doc.getVoice (target), *findParam ("wave1")) == 3);           // half way: C's wave
-    proc.morphKeep();
-    doc.undo();
+    CHECK (proc.morphSettings().slotB == slotC);
+    CHECK (getParam (proc.getMorphBlend(), filterFreq) == 0);
+    CHECK (getParam (proc.getMorphBlend(), *findParam ("wave1")) == 3);   // half way: C's wave
+    out.take();
+
+    // off: the OSCar gets the selected voice back
+    proc.setMorphOn (false);
+    pump (600);
+    CHECK (lastFreqCc (out.take()) == ccValueFor (filterFreq.coding, getParam (doc.getVoice (target), filterFreq)));
+    morph->setValueNotifyingHost (0.0f);
+    pump (300);
+    CHECK (ccsOf (out.take()).empty());
+
+    // choosing another voice turns MORPH off
+    proc.setMorphOn (true);
+    pump (300);
+    proc.chooseVoice (target == 21 ? 22 : 21);
     pump (200);
+    CHECK (! proc.getMorphOn());
+    proc.chooseVoice (target);
+    pump (700);
+    doc.setVoice (target, original);
+    pump (300);
     out.take();
 }
 
 // RANDOM: values sent at each step, free or looped, put back at 0; SCALE: Transpose steps through
 // it, its randoms land in it, MIDI Thru's notes move to it. (No DAW playing: the steps run on.)
-static std::vector<int> ccValues (const std::vector<juce::MidiMessage>& ms, int cc)
-{
-    std::vector<int> r;
-    for (const auto& [n, v] : ccsOf (ms))
-        if (n == cc) r.push_back (v);
-    return r;
-}
-
 static void testRandom (OscarProcessor& proc, Capture& out)
 {
     auto& doc = proc.getDocument();

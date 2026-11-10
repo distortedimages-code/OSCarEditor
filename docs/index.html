@@ -426,7 +426,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Current version">
   <a class="arrow" href="#news" aria-label="What's new">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.6.1</span><span class="name">OXIDE</span><span class="state">FREE</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.6.2</span><span class="name">OXIDE</span><span class="state">FREE</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -456,7 +456,7 @@ footer a { color: var(--muted); }
         Download for Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.6.1</dd>
+        <dt>Version</dt><dd id="spec-version">0.6.2</dd>
         <dt>Formats</dt><dd>AU for Logic Pro, VST3 and standalone app</dd>
         <dt>System</dt><dd>macOS 11 or later, Apple silicon and Intel</dd>
         <dt>Synth</dt><dd>OSCar with the Tauntek MIDI board. With the original MIDI, everything works except live editing.</dd>
@@ -491,8 +491,9 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Latest versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.6.1</span><div class="cap when">latest version</div></div>
+      <div><span class="vchip">0.6.2</span><div class="cap when">latest version</div></div>
       <div class="notes">
+        <p><strong>0.6.2: a safer, simpler Morph.</strong> The Morph page has a MORPH switch, off at start: off, the crossfader and its DAW automation do nothing. On, the OSCar plays the blend of A and B (as CC, Live CC on) and no voice changes any more: Keep the blend writes it into the selected voice, in one undo step. Edits of A or B are heard in the blend at once. Turning MORPH off, choosing another voice or generating one gives the OSCar the selected voice back; the display shows MORPH ON meanwhile. Each end has a single window: a click opens the list, with the selected voice first, and the voice chosen there is loaded (with MORPH on, the sound glides to it). The arrows, Selected voice and Load buttons are gone.</p>
         <p><strong>0.6.1: the OSCar on another channel.</strong> When the OSCar sends on a MIDI channel other than the plugin's (SPACE + a key from 1 to 16 on the OSCar changes it, easily by mistake, and the Tauntek board keeps it after power-off), the display shows OSCAR ON CH and its number, and a message says how to put it back. Unless it is in omni mode, the OSCar doesn't hear the plugin then.</p>
         <p><strong>0.6.0: RANDOM and SCALE.</strong> Two new functions at the top of the window, as in MIFM1. With RANDOM lit, turning a knob or a fader on the Voice page sets how much it moves instead of its value (Transpose, Osc 2 Interval and Octave Shift too). What it follows is chosen next to it, all in one place: SHAPE, S&amp;H (a new value at each step: up, new values; down, values that come back the same every loop), SMOOTH (gliding from one random value to the next, looped too when turned down) or one of MIFM1's LFO waves (sine, triangle, saw, ramp, square, pump, stairs, bounce, clave, rises, falls, zigzag: one LFO for every control, upside down when turned down); RATE, from 1/32 to 16 bars, on the DAW's tempo and bars; LOOP, any length from 2 to 64 steps. The further, the wider; back to the middle (or a double-click), none, and the control gets its own value back. Press RANDOM again to turn the knobs as usual: a small LED marks each control that moves (red: up, amber: down). Right-click on RANDOM: the tempo without a DAW, new loops, clear them all. The waves and glides go out as the values change, at most 400 CC a second. The voice itself never changes: the OSCar gets the values as CC (Live CC), and saved projects keep the randoms and their loops. SCALE and ROOT put Transpose and Osc 2 Interval on a scale (major, minor, the modes, harmonic and melodic minor, pentatonics, blues, whole tone, hirajoshi, phrygian dominant), their randoms too, and move the notes played through MIDI Thru to the scale.</p>
         <p><strong>0.5.5: a bolder drive plate.</strong> The Filter Drive plate is a deeper, livelier orange with a dark rim, and it now runs from above the knob to below its value window, which sits inside it. The amber drive LED is gone.</p>

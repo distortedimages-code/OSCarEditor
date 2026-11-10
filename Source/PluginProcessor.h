@@ -109,24 +109,26 @@ public:
     void addLog (const juce::String& text);
 
     //==============================================================================
-    // A/B morph (message thread): the selected voice becomes a blend of voices A and B, following the
-    // host parameter "morph" (the crossfader, or DAW automation). Knobs glide from A to B, switches flip
-    // half way. The blend follows the fader at most one full sweep per 'smoothing' seconds, so a sudden
-    // move becomes a glide. The OSCar only gets the CC that changed, at most 12 every 33 ms (the biggest
-    // moves first, the rest on the next steps): about a third of what a MIDI cable carries, which leaves
-    // room for notes, clock and the Tauntek board's own work. Nothing is sent during a SysEx transfer.
-    // Undo brings the voice back in one step.
+    // A/B morph (message thread). Off by default: then the crossfader and its automation do nothing.
+    // On (MORPH), the OSCar plays a blend of voices A and B that follows the host parameter "morph"
+    // (the crossfader, or DAW automation): knobs glide from A to B, switches flip half way. It only goes
+    // to the OSCar, as CC: no voice changes until Keep, which writes the blend into the selected voice
+    // (one undo step). A and B follow their voices as they are edited. The blend follows the fader at
+    // most one full sweep per 'smoothing' seconds, so a sudden move becomes a glide; turning MORPH on
+    // or loading a voice at one end glides too. The OSCar only gets the CC that changed, at most 12
+    // every 33 ms (the biggest moves first): about a third of what a MIDI cable carries. Nothing is
+    // sent during a SysEx transfer. Turning MORPH off, or choosing another voice, gives the OSCar the
+    // selected voice back; edits of the selected voice are not sent while MORPH is on (the blend plays).
     struct MorphSettings { int slotA = 0, slotB = 12; float smoothing = 0.3f; };
     const MorphSettings& morphSettings() const      { return morph; }
     void setMorphSources (int slotA, int slotB);
-    // Puts voice 'slot' at end A (toB false) or B. The page only does this when the user loads a voice:
-    // choosing one in the list changes nothing. While a blend is going on in the selected voice, the
-    // voice glides (over the smoothing time) to the new pair at the fader's position; otherwise the
-    // next move of the fader starts from the new pair.
-    void loadMorphSource (bool toB, int slot);
+    void loadMorphSource (bool toB, int slot);      // voice 'slot' at end A (toB false) or B
     void setMorphSmoothing (float seconds)          { morph.smoothing = juce::jlimit (0.0f, 2.0f, seconds); }
+    bool getMorphOn() const                         { return morphOn; }
+    void setMorphOn (bool on);
     float getMorphPosition() const                  { return morphPos; }
-    void morphKeep();                               // the blend stays; the next move starts again from A and B
+    oscar::VoiceData getMorphBlend() const;         // what MORPH plays (or would play, off)
+    void morphKeep();                               // the blend into the selected voice
     static oscar::VoiceData blend (const oscar::VoiceData& a, const oscar::VoiceData& b, float t);
 
     //==============================================================================
@@ -299,16 +301,15 @@ private:
         void timerCallback() override { tick(); }
     } morphTicker;
     void morphTick();
-    void startMorphSession();
-    void applyMorph (const oscar::VoiceData& v);
-    bool flushMorphCc();                    // true while some CC still wait for their turn
+    void morphOff (const juce::String& why);   // the OSCar gets the voice back (paced)
+    bool flushMorphCc (const oscar::VoiceData& target);   // true while some CC still wait for their turn
     static constexpr int morphCcPerTick = 12;   // at 30 Hz: about a third of a MIDI cable
     std::atomic<float>* morphParam = nullptr;
     float morphTarget = 0.0f, morphPos = 0.0f;
-    bool morphSeen = false, morphMoving = false, morphSession = false, morphPending = false;
-    int morphSlot = -1;
-    oscar::VoiceData morphA {}, morphB {}, morphSent {};
-    oscar::VoiceData morphFrom {};          // a newly loaded A or B: the voice glides from this one
+    bool morphSeen = false, morphMoving = false, morphOn = false, morphPending = false;
+    int morphSlot = -1;                     // the voice the OSCar played when MORPH came on
+    oscar::VoiceData morphHeard {}, morphSent {};   // the blend; what the OSCar got of it
+    oscar::VoiceData morphFrom {};          // MORPH just on, or a voice just loaded: the sound glides from this one
     float morphFade = 1.0f;                 // 0..1 through that glide; 1 when there is none
     std::atomic<bool> resyncHost { true };
     std::atomic<int> hostSuspend { 0 };   // > 0 while host values are being restored

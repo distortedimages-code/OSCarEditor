@@ -1482,39 +1482,31 @@ namespace
 
 MorphPanel::MorphPanel (OscarProcessor& p) : proc (p)
 {
-    voiceA.setTooltip (tr ("Voice A: the sound at the left end of the fader."));
-    voiceB.setTooltip (tr ("Voice B: the sound at the right end of the fader."));
-    // a voice chosen here waits for Load; the blend keeps the loaded A and B until then
+    voiceA.setTooltip (tr ("Voice A, at the left end of the fader: click to choose it (the selected voice is first in the list)."));
+    voiceB.setTooltip (tr ("Voice B, at the right end of the fader: click to choose it (the selected voice is first in the list)."));
+    // chosen in the list = loaded at that end (with MORPH on, the sound glides to the new pair)
     const auto choose = [this] (bool b, int v)
     {
-        const int loaded = b ? proc.morphSettings().slotB : proc.morphSettings().slotA;
-        (b ? pendingB : pendingA) = v == loaded ? -1 : v;
-        (b ? voiceB : voiceA).setValue (v);
-        refreshLoad();
+        proc.loadMorphSource (b, v == selectedItem ? proc.getSelectedSlot() : v);
+        refresh();
     };
     voiceA.onChange = [choose] (int v) { choose (false, v); };
     voiceB.onChange = [choose] (int v) { choose (true, v); };
-    takeA.onClick = [this, choose] { choose (false, proc.getSelectedSlot()); };
-    takeB.onClick = [this, choose] { choose (true, proc.getSelectedSlot()); };
-    loadA.onClick = [this] { if (pendingA >= 0) { proc.loadMorphSource (false, pendingA); pendingA = -1; refresh(); } };
-    loadB.onClick = [this] { if (pendingB >= 0) { proc.loadMorphSource (true, pendingB); pendingB = -1; refresh(); } };
     for (auto* s : { &voiceA, &voiceB })
-        addAndMakeVisible (s);
-    for (auto* b : { &takeA, &takeB })
     {
-        b->setTooltip (tr ("Choose the voice selected in the editor (then Load)."));
-        addAndMakeVisible (b);
+        s->setArrows (false);
+        addAndMakeVisible (s);
     }
-    loadA.setTooltip (tr ("Load the chosen voice into A. Until then the blend keeps the voice A already loaded; during a blend, the sound glides to the new pair."));
-    loadB.setTooltip (tr ("Load the chosen voice into B. Until then the blend keeps the voice B already loaded; during a blend, the sound glides to the new pair."));
-    for (auto* b : { &loadA, &loadB })
-        addAndMakeVisible (b);
+
+    morphButton.onClick = [this] { proc.setMorphOn (! proc.getMorphOn()); refresh(); };
+    morphButton.setTooltip (tr ("MORPH: on, the OSCar plays the blend of A and B, following the fader (and its DAW automation). Nothing is stored: Keep the blend writes it into the selected voice. Off (as at start), the fader does nothing and the OSCar plays the selected voice."));
+    addAndMakeVisible (morphButton);
 
     fader.setSliderStyle (juce::Slider::LinearHorizontal);
     fader.setTextBoxStyle (juce::Slider::NoTextBox, true, 0, 0);
     fader.getProperties().set ("crossfader", true);
     fader.setDoubleClickReturnValue (true, 0.5);
-    fader.setTooltip (tr ("Crossfader: A on the left, B on the right. Double-click: half way. Can be automated from the DAW (parameter Morph A-B)."));
+    fader.setTooltip (tr ("Crossfader: A on the left, B on the right. Double-click: half way. Can be automated from the DAW (parameter Morph A-B); nothing moves while MORPH is off."));
     faderAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (proc.getHostParameters(), "morph", fader);
     addAndMakeVisible (fader);
 
@@ -1526,7 +1518,7 @@ MorphPanel::MorphPanel (OscarProcessor& p) : proc (p)
     addAndMakeVisible (smoothing);
 
     keepButton.onClick = [this] { proc.morphKeep(); };
-    keepButton.setTooltip (tr ("Keep the blend in the selected voice. The next move starts again from voices A and B."));
+    keepButton.setTooltip (tr ("Writes the blend heard now into the selected voice (Undo takes it back). MORPH stays on."));
     addAndMakeVisible (keepButton);
 
     addAndMakeVisible (wear);
@@ -1539,19 +1531,11 @@ MorphPanel::~MorphPanel()
     faderAttachment.reset();
 }
 
-void MorphPanel::refreshLoad()
-{
-    for (auto [button, pending] : { std::pair<LedButton*, int> { &loadA, pendingA }, { &loadB, pendingB } })
-    {
-        button->setEnabled (pending >= 0);
-        button->setLit (pending >= 0);
-    }
-}
-
 void MorphPanel::refresh()
 {
     const auto& doc = proc.getDocument();
-    std::vector<Selector::Item> items;
+    const int sel = proc.getSelectedSlot();
+    std::vector<Selector::Item> items { { selectedItem, tr ("Selected voice: %1", { juce::String (slotLabel (sel)) + " " + doc.getDisplayName (sel) }) } };
     for (int pos = 0; pos < kNumVoices; ++pos)
     {
         const int i = slotAtPosition (pos);
@@ -1559,45 +1543,51 @@ void MorphPanel::refresh()
     }
     voiceA.setItems (items);
     voiceB.setItems (items);
-    voiceA.setValue (pendingA >= 0 ? pendingA : proc.morphSettings().slotA);
-    voiceB.setValue (pendingB >= 0 ? pendingB : proc.morphSettings().slotB);
-    refreshLoad();
-    // only what shows the voices: the fader moves the voice up to 30 times a second
+    voiceA.setValue (proc.morphSettings().slotA);
+    voiceB.setValue (proc.morphSettings().slotB);
+    const bool on = proc.getMorphOn();
+    morphButton.setLit (on);
+    keepButton.setEnabled (on);
+    // only what shows the voices
     for (const auto& r : { preview, summaryA, summaryB, info })
         repaint (r.toNearestInt().expanded (2));
 }
 
 void MorphPanel::timerCallback()
 {
+    // the blend moves without touching any voice: follow it here
     const float pos = proc.getMorphPosition();
     if (pos != shownPosition)
     {
         shownPosition = pos;
         repaint (readout.toNearestInt().expanded (4));
     }
+    const auto v = proc.getMorphBlend();
+    if (v != shownBlend)
+    {
+        shownBlend = v;
+        repaint (preview.toNearestInt().expanded (2));
+    }
+    if (morphButton.isLit() != proc.getMorphOn())   // turned off elsewhere (another voice chosen...)
+        refresh();
 }
 
 void MorphPanel::resized()
 {
     columns = splitColumns ({ 0, 0, (float) width, (float) height }, { 290, 700, 290 });
     groups.clear();
-    auto side = [this] (int i, Selector& sel, LedButton& take, LedButton& load, juce::Rectangle<float>& big, juce::Rectangle<float>& summary, const juce::String& label)
+    auto side = [this] (int i, Selector& sel, juce::Rectangle<float>& big, juce::Rectangle<float>& summary, const juce::String& label)
     {
         auto c = columns[(size_t) i].reduced (8.0f).toNearestInt();
         groups.push_back ({ c.toFloat(), label });
         auto g = c.reduced (16, 14).withTrimmedBottom (22);
-        big = g.removeFromTop (112).toFloat();
+        big = g.removeFromTop (124).toFloat();
         sel.setBounds (g.removeFromTop (46));
-        g.removeFromTop (12);
-        auto row = g.removeFromTop (34);   // choose the editor's voice | load it
-        take.setBounds (row.removeFromLeft ((row.getWidth() - 8) / 2));
-        row.removeFromLeft (8);
-        load.setBounds (row);
-        g.removeFromTop (16);
+        g.removeFromTop (22);
         summary = g.toFloat();
     };
-    side (0, voiceA, takeA, loadA, bigA, summaryA, tr ("voice a"));
-    side (2, voiceB, takeB, loadB, bigB, summaryB, tr ("voice b"));
+    side (0, voiceA, bigA, summaryA, tr ("voice a"));
+    side (2, voiceB, bigB, summaryB, tr ("voice b"));
 
     auto c = columns[1].reduced (8.0f).toNearestInt();
     groups.push_back ({ c.toFloat(), tr ("morph") });
@@ -1606,8 +1596,10 @@ void MorphPanel::resized()
     preview = g.removeFromTop (g.getHeight() - 12 - 104 - 16 - Knob::height (KnobStyle::Chrome)).toFloat();
     g.removeFromTop (12);
     auto row = g.removeFromTop (104);
-    readout = row.removeFromTop (30).withSizeKeepingCentre (64, 28).toFloat();
-    row.removeFromTop (4);
+    morphRow = row.removeFromTop (32);
+    morphButton.setBounds (morphRow.withWidth (120).withHeight (34));
+    readout = morphRow.withSizeKeepingCentre (64, 28).toFloat();
+    row.removeFromTop (2);
     letterA = row.removeFromLeft (44).toFloat();
     letterB = row.removeFromRight (44).toFloat();
     fader.setBounds (row.reduced (10, 0).withSizeKeepingCentre (row.getWidth() - 20, 70));
@@ -1637,10 +1629,12 @@ void MorphPanel::paint (juce::Graphics& g)
     g.drawText ("B", letterB, juce::Justification::centred);
     drawSegmentReadout (g, readout, juce::String (juce::roundToInt (proc.getMorphPosition() * 100.0f)), 3, true);
 
-    // preview: the 26 knobs of the selected voice, with a mark where A and B are
+    // preview: the 26 knobs of the blend, with a mark where A and B are (dimmer while MORPH is off:
+    // what it would play)
     drawVfdWindow (g, preview);
     const auto& doc = proc.getDocument();
-    const auto& v = doc.getVoice (proc.getSelectedSlot());
+    const auto v = proc.getMorphBlend();
+    const bool on = proc.getMorphOn();
     const auto& a = doc.getVoice (proc.morphSettings().slotA);
     const auto& b = doc.getVoice (proc.morphSettings().slotB);
     auto inner = preview.reduced (16.0f, 12.0f);
@@ -1658,7 +1652,7 @@ void MorphPanel::paint (juce::Graphics& g)
             auto col = juce::Rectangle<float> (x, inner.getY(), step, inner.getHeight()).reduced (step * 0.24f, 0.0f);
             g.setColour (colours::vfd.withAlpha (0.08f));
             g.fillRect (col);
-            g.setColour (colours::vfd);
+            g.setColour (on ? colours::vfd : colours::vfd.withAlpha (0.4f));
             g.fillRect (col.withTop (col.getBottom() - col.getHeight() * level (v)));
             g.setColour (colours::vfdDim);                                                     // A: a short dash on the left
             g.fillRect (col.getX() - 3.0f, col.getBottom() - col.getHeight() * level (a) - 1.0f, col.getWidth() * 0.5f + 3.0f, 2.0f);
@@ -1707,8 +1701,11 @@ void MorphPanel::paint (juce::Graphics& g)
     }
 
     const int slot = proc.getSelectedSlot();
-    drawText (g, info, tr ("Voice %1 follows the fader: knobs glide from A to B, switches change half way. A and B only change when you Load a voice. With Live CC on, the OSCar follows live. Undo brings the voice back. Dashes: where A (left) and B (right) are.",
-                           { juce::String (slotLabel (slot)) + " " + doc.getDisplayName (slot) }), 13.0f, colours::dim, juce::Justification::centredLeft);
+    drawText (g, info, on ? tr ("MORPH on: the OSCar plays the blend (Live CC), knobs gliding from A to B, switches changing half way. No voice changes: Keep the blend writes it into voice %1. Dashes: A (left) and B (right).",
+                                { juce::String (slotLabel (slot)) + " " + doc.getDisplayName (slot) })
+                          : tr ("MORPH off: the fader does nothing, the OSCar plays voice %1. Turn MORPH on to hear the blend of A and B; no voice changes until you keep it.",
+                                { juce::String (slotLabel (slot)) + " " + doc.getDisplayName (slot) }),
+              13.0f, colours::dim, juce::Justification::centredLeft);
 }
 
 //==============================================================================

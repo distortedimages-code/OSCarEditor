@@ -1400,7 +1400,7 @@ juce::Rectangle<float> Fader::readoutBounds() const
 Selector::Selector (const juce::String& l, bool labelOnLeft) : labelText (l), labelLeft (labelOnLeft)
 {
     window.onClick = [this] { showList(); };
-    window.onWheel = [this] (int d) { step (d); };
+    window.onWheel = [this] (int d) { if (arrows) step (d); };
     prev.onClick = [this] { step (-1); };
     next.onClick = [this] { step (1); };
     window.setMouseCursor (juce::MouseCursor::PointingHandCursor);
@@ -1479,14 +1479,17 @@ void Selector::resized()
     {
         win = b.removeFromTop (28);
     }
-    prev.setBounds (win.removeFromLeft (22));
-    next.setBounds (win.removeFromRight (22));
+    if (arrows)
+    {
+        prev.setBounds (win.removeFromLeft (22));
+        next.setBounds (win.removeFromRight (22));
+    }
     window.setBounds (win);
 }
 
 void Selector::paint (juce::Graphics& g)
 {
-    auto whole = prev.getBounds().getUnion (next.getBounds()).getUnion (window.getBounds()).toFloat();
+    auto whole = (arrows ? prev.getBounds().getUnion (next.getBounds()).getUnion (window.getBounds()) : window.getBounds()).toFloat();
     g.setColour (juce::Colours::black);
     g.fillRoundedRectangle (whole.expanded (1.0f), 4.0f);
     auto w = window.getBounds().toFloat();
@@ -1515,7 +1518,7 @@ void Selector::paint (juce::Graphics& g)
     g.setFont (Fonts::label (12.0f).withExtraKerningFactor (0.05f));
     g.setColour (colours::label);
     if (labelLeft)
-        g.drawText (lang::upper (labelText), getLocalBounds().withRight (prev.getX() - 8), juce::Justification::centredRight);
+        g.drawText (lang::upper (labelText), getLocalBounds().withRight ((arrows ? prev.getX() : window.getX()) - 8), juce::Justification::centredRight);
     else
         g.drawFittedText (lang::upper (labelText), getLocalBounds().withTop (window.getBottom() + 4), juce::Justification::centredTop, 1, 0.85f);
 }
