@@ -111,6 +111,20 @@ static void testFactoryPassesRules()
     }
 }
 
+// Init sits inside what the factory voices do, except one thing: no factory voice plays
+// a single oscillator, so the generator would bring oscillator 2 back in.
+static void testInitPassesRules()
+{
+    const auto env = Envelope::fromCorpus (Corpus::withFactory());
+    for (const auto& b : Generator::ruleViolations (initVoice(), {}, false, &env))
+    {
+        const bool expected = b == "osc: balance extreme" || b == "outside learned range: oscBalance";
+        if (! expected)
+            std::printf ("init breaks: %s\n", b.c_str());
+        CHECK (expected);
+    }
+}
+
 static void testVary()
 {
     const auto corpus = Corpus::withFactory();
@@ -305,6 +319,7 @@ int main()
 {
     testSections();
     testFactoryPassesRules();
+    testInitPassesRules();
     testVary();
     testCreate();
     testBreed();

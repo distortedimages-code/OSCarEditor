@@ -402,7 +402,10 @@ void OscarEditor::timerCallback()
 
 void OscarEditor::showVoiceMenu()
 {
+    constexpr int initItem = 1000;
     juce::PopupMenu m;
+    m.addItem (initItem, tr ("Init voice %1", { juce::String (slotLabel (proc.getSelectedSlot())) }));
+    m.addSeparator();
     m.addSectionHeader (tr ("Voices"));
     for (int pos = 0; pos < kNumVoices; ++pos)
     {
@@ -414,9 +417,20 @@ void OscarEditor::showVoiceMenu()
     m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (display).withMaximumNumColumns (2),
                      [safe = juce::Component::SafePointer<OscarEditor> (this)] (int r)
                      {
-                         if (safe != nullptr && r > 0)
+                         if (safe == nullptr || r <= 0)
+                             return;
+                         if (r == initItem)
+                             safe->initSelected();
+                         else
                              safe->proc.chooseVoice (r - 1);
                      });
+}
+
+void OscarEditor::initSelected()
+{
+    const int slot = proc.getSelectedSlot();
+    proc.getDocument().initSlot (slot);
+    proc.addLog (tr ("Voice %1 is now INIT, a plain starting sound. Undo brings the previous one back.", { juce::String (slotLabel (slot)) }));
 }
 
 //==============================================================================

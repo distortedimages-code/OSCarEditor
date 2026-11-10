@@ -597,6 +597,36 @@ void drawSegmentReadout (juce::Graphics& g, juce::Rectangle<float> window, const
                   padded, bright ? colours::vfd : colours::vfd.withAlpha (0.82f), bright);
 }
 
+float glyphWidth (const juce::String& legend, float h)
+{
+    if (legend == "~saw")   return h * 0.75f;
+    if (legend == "~sqr")   return h * 1.7f;
+    if (legend == "~pulse") return h * 1.7f;
+    return 0.0f;
+}
+
+bool drawGlyph (juce::Graphics& g, juce::Rectangle<float> box, const juce::String& legend, float stroke)
+{
+    const float w = glyphWidth (legend, box.getHeight());
+    if (w <= 0.0f)
+        return false;
+    const auto r = juce::Rectangle<float> (w, box.getHeight() * 0.8f).withCentre (box.getCentre());
+    const float x = r.getX(), y = r.getY(), b = r.getBottom(), rw = r.getWidth();
+    juce::Path p;
+    if (legend == "~saw")            // a ramp up, then straight down
+    {
+        p.startNewSubPath (x, b); p.lineTo (x + rw, y); p.lineTo (x + rw, b);
+    }
+    else                             // square: half and half; pulse: a narrow high part
+    {
+        const float hi = legend == "~sqr" ? 0.5f : 0.3f;
+        p.startNewSubPath (x, b); p.lineTo (x, y); p.lineTo (x + rw * hi, y); p.lineTo (x + rw * hi, b);
+        p.lineTo (x + rw, b); p.lineTo (x + rw, y);
+    }
+    g.strokePath (p, juce::PathStrokeType (stroke, juce::PathStrokeType::mitered, juce::PathStrokeType::butt));
+    return true;
+}
+
 void drawHardButton (juce::Graphics& g, juce::Rectangle<float> a, bool down, bool highlighted)
 {
     if (! down)
@@ -1010,6 +1040,8 @@ void Knob::paint (juce::Graphics& g)
         const float R = (float) k * 0.5f;
         for (int i = 0; i <= 10; ++i)
         {
+            if (i == 5 && scaleMid.isNotEmpty())
+                continue;   // the "0" takes the top tick's place
             const float a = knobAngle ((float) i / 10.0f);
             const bool major = i == 0 || i == 5 || i == 10;
             g.setColour (major ? colours::silk : colours::silkDim);
@@ -1020,7 +1052,16 @@ void Knob::paint (juce::Graphics& g)
         for (const auto& [text, side] : { std::pair<juce::String, float> { scaleLow, -1.0f }, { scaleHigh, 1.0f } })
         {
             const auto p = polar (c, R + 11.0f, knobAngle (side > 0 ? 1.0f : 0.0f));
-            g.drawText (text, juce::Rectangle<float> (40.0f, 11.0f).withCentre (p.translated (side * 5.0f, 2.0f)), juce::Justification::centred);
+            const bool word = text.length() > 2;   // OSC ... NOISE: smaller, tucked under the end tick
+            g.setFont (word ? Fonts::bold (8.5f).withExtraKerningFactor (0.04f) : Fonts::bold (10.5f).withExtraKerningFactor (0.04f));
+            g.drawText (text, juce::Rectangle<float> (40.0f, 11.0f).withCentre (p.translated (side * (word ? -5.0f : 5.0f), word ? 4.0f : 2.0f)),
+                        juce::Justification::centred);
+        }
+        g.setFont (Fonts::bold (10.5f).withExtraKerningFactor (0.04f));
+        if (scaleMid.isNotEmpty())   // in place of the top tick
+        {
+            const auto top = polar (c, R + 5.0f, knobAngle (0.5f));
+            g.drawText (scaleMid, juce::Rectangle<float> (20.0f, 10.0f).withCentre (top.translated (0.0f, -0.5f)), juce::Justification::centred);
         }
     }
 
@@ -1193,11 +1234,16 @@ void Selector::paint (juce::Graphics& g)
         if (it.value == value)
             text = it.text;
 
-    g.setFont (Fonts::mono (14.0f));
+    const auto glyphBox = window.getBounds().toFloat().withSizeKeepingCentre (40.0f, 14.0f);
     g.setColour (colours::vfd.withAlpha (0.35f));
-    g.drawFittedText (text, window.getBounds().reduced (3, 0).translated (0, 0), juce::Justification::centred, 1, 0.8f);
+    if (! drawGlyph (g, glyphBox, text, 3.2f))
+    {
+        g.setFont (Fonts::mono (14.0f));
+        g.drawFittedText (text, window.getBounds().reduced (3, 0).translated (0, 0), juce::Justification::centred, 1, 0.8f);
+    }
     g.setColour (colours::vfd);
-    g.drawFittedText (text, window.getBounds().reduced (3, 0), juce::Justification::centred, 1, 0.8f);
+    if (! drawGlyph (g, glyphBox, text, 1.8f))
+        g.drawFittedText (text, window.getBounds().reduced (3, 0), juce::Justification::centred, 1, 0.8f);
 
     g.setFont (Fonts::label (12.0f).withExtraKerningFactor (0.05f));
     g.setColour (colours::label);
@@ -1326,10 +1372,17 @@ juce::Rectangle<float> RotarySwitch::legendBox (int index) const
 {
     const auto text = shownLegend (index);
     const auto font = Fonts::bold (legendSize).withExtraKerningFactor (0.04f);
-    const float tw = juce::GlyphArrangement::getStringWidth (font, text) + 1.0f, th = legendSize;
+    const float glyph = glyphWidth (text, legendSize);
+    const auto lines = juce::StringArray::fromLines (text);   // "FILTER\nENV": two lines, as printed
+    float tw = glyph + 2.0f;
+    if (glyph <= 0.0f)
+        for (const auto& l : lines)
+            tw = juce::jmax (tw, juce::GlyphArrangement::getStringWidth (font, l) + 1.0f);
+    const float th = legendSize * (float) juce::jmax (1, lines.size());
     const float a = angleOf (index);
     const float dist = radius + 9.0f + std::abs (std::sin (a)) * tw * 0.5f + std::abs (std::cos (a)) * th * 0.5f;
-    return juce::Rectangle<float> (tw, th).withCentre (polar (centre(), dist, a));
+    const auto box = juce::Rectangle<float> (tw, th).withCentre (polar (centre(), dist, a));
+    return box.withY (juce::jmax (1.0f, box.getY()));   // a two-line legend at the top stays inside
 }
 
 void RotarySwitch::paint (juce::Graphics& g)
@@ -1351,10 +1404,12 @@ void RotarySwitch::paint (juce::Graphics& g)
         if (lit)
         {
             g.setColour (colours::vfd.withAlpha (0.3f));
-            g.drawText (text, box.expanded (2.0f).translated (0.0f, 0.5f), juce::Justification::centred, false);
+            if (! drawGlyph (g, box.translated (0.0f, 0.5f), text, 2.4f))
+                g.drawFittedText (text, box.expanded (2.0f).translated (0.0f, 0.5f).toNearestInt(), juce::Justification::centred, 2, 1.0f);
         }
         g.setColour (lit ? colours::vfd : colours::silk);
-        g.drawText (text, box.expanded (2.0f), juce::Justification::centred, false);
+        if (! drawGlyph (g, box, text))
+            g.drawFittedText (text, box.expanded (2.0f).toNearestInt(), juce::Justification::centred, 2, 1.0f);
     }
 
     drawSwitchKnob (g, c, radius, current >= 0 ? angleOf (current) : 0.0f);

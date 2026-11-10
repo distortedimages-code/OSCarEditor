@@ -58,13 +58,13 @@ private:
     std::map<std::string, std::unique_ptr<atelier::Selector>> selectors;        // waveforms
     std::map<std::string, std::unique_ptr<atelier::RotarySwitch>> rotaries;     // four positions or more
     std::map<std::string, std::unique_ptr<atelier::LedSelector>> ledSelectors;  // two or three positions
-    atelier::LedButton kbdTrack { "Kbd track", atelier::LedButton::LedPlace::Below },
+    atelier::LedButton noTrack { "No track", atelier::LedButton::LedPlace::Below },
                        hold { "Hold", atelier::LedButton::LedPlace::Below },
                        glideFix { "Fix", atelier::LedButton::LedPlace::Below };
     atelier::LedButton lfoToOsc1 { "LFO > Osc 1", atelier::LedButton::LedPlace::Right },
                        lfoSync { "LFO Sync", atelier::LedButton::LedPlace::Right };
     juce::Component lfoStack;   // where the two LFO buttons go, one above the other
-    atelier::VfdNumber tempo { TRANS ("Tempo (global)"), 1, 254 };   // dragged up or down, like an old synth display
+    atelier::VfdNumber tempo { "Tempo", 1, 254 };   // dragged up or down, like an old synth display
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> tempoAttachment;
 
     // MIDI clock: Sync sets Trigger to Ext (arp and sequencer step on the MIDI clock),
@@ -73,7 +73,7 @@ private:
     bool followsClock() const;
     void setSync (int v);
     atelier::LedSelector syncLeds { TRANS ("Sync") };
-    atelier::RotarySwitch divisionSwitch { TRANS ("Division") };
+    atelier::RotarySwitch divisionSwitch { "Ext Trigger Divide" };
     std::unique_ptr<juce::ParameterAttachment> tempoWatch;
     int lastTrigger = 1;   // Multi
 
@@ -182,7 +182,7 @@ private:
 
     atelier::LedButton renameButton { TRANS ("Rename") }, copyButton { TRANS ("Copy") }, pasteButton { TRANS ("Paste") }, swapButton { TRANS ("Swap...") },
                        revertButton { TRANS ("Revert") }, selectButton { TRANS ("Select on synth") }, exportVoiceButton { TRANS ("Save voice...") },
-                       importVoiceButton { TRANS ("Import voice...") };
+                       importVoiceButton { TRANS ("Import voice...") }, initButton { TRANS ("Init") };
     atelier::LedButton allButton { TRANS ("All") }, banksButton { TRANS ("My banks") }, voicesButton { TRANS ("My voices") },
                        backupsButton { TRANS ("Backups") };
     atelier::CopperButton loadButton { TRANS ("Load into editor") };

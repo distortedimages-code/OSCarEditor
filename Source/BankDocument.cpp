@@ -182,6 +182,15 @@ void BankDocument::pasteSlot (int slot)
     changed();
 }
 
+void BankDocument::initSlot (int slot)
+{
+    if (slot < 0 || slot >= kNumVoices) return;
+    pushUndo();
+    bank.voices[(size_t) slot] = oscar::initVoice();
+    names[(size_t) slot] = "INIT";
+    changed();
+}
+
 void BankDocument::swapSlots (int a, int b)
 {
     if (a == b || a < 0 || b < 0 || a >= kNumVoices || b >= kNumVoices) return;

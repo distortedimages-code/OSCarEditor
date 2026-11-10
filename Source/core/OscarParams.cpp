@@ -102,25 +102,26 @@ namespace
         p.push_back (sw ("wave1",       "Wave 1",        "Oscillators", 52, 0x0F, 0, waveforms ("Off"), false, 14, CcCoding::Steps16));
         p.push_back (sw ("glideType",   "Glide Type",    "Performance", 53, 0x07, 0,
                          labelled ({ 0, 1, 2, 4, 5, 6 }, { "Normal", "Auto", "Gliss", "Norm fix", "Auto fix", "Gliss fix" }),
-                         false, 22, CcCoding::SixSparse));
-        p.push_back (sw ("octaveShift", "Osc 2 Octave",  "Oscillators", 54, 0x07, 0, numbered (0, 5), false, 18, CcCoding::Six));
+                         true, 22, CcCoding::SixSparse));
+        p.push_back (sw ("octaveShift", "Osc 2 Octave",  "Oscillators", 54, 0x07, 0,
+                         labelled ({ 0, 1, 2, 3, 4, 5 }, { "-2", "-1", "0", "+1", "+2", "+3" }), true, 18, CcCoding::Six));
         p.push_back (sw ("wave2",       "Wave 2",        "Oscillators", 55, 0x0F, 0, waveforms ("Osc 1"), false, 15, CcCoding::Steps16));
         p.push_back (sw ("function",    "Function",      "Performance", 56, 0x07, 0,
                          labelled ({ 0, 1, 2, 4, 5, 6 }, { "Normal", "Arp", "Duo", "Norm hold", "Arp hold", "Duo hold" }),
-                         false, 50, CcCoding::SixSparse));
+                         true, 50, CcCoding::SixSparse));
         p.push_back (sw ("lfoToOsc1",   "LFO > Osc 1",   "Tauntek",     56, 0x08, 3,
                          labelled ({ 0, 1 }, { "On", "Off" }), true, 52, CcCoding::Two));
         p.push_back (sw ("lfoWave",     "LFO Wave",      "Modulation",  57, 0x07, 0,
                          labelled ({ 0, 1, 2, 3, 4, 5 }, { "Triangle", "Sawtooth", "Square", "Filt env", "Keyboard", "Random" }),
-                         false, 46, CcCoding::Six));
+                         true, 46, CcCoding::Six));
         p.push_back (sw ("lfoSync",     "LFO Sync",      "Tauntek",     57, 0x08, 3,
                          labelled ({ 0, 1 }, { "Off", "On" }), true, 53, CcCoding::Two));
         p.push_back (sw ("filterType",  "Type",          "Filter",      58, 0x07, 0,
                          labelled ({ 0, 1, 2, 4, 5, 6 }, { "LP", "BP", "HP", "LP no kb", "BP no kb", "HP no kb" }),
-                         false, 33, CcCoding::SixSparse));
+                         true, 33, CcCoding::SixSparse));
         p.push_back (sw ("trigger",     "Trigger",       "Performance", 59, 0x07, 0,
                          labelled ({ 0, 1, 2, 3, 4, 5 }, { "Single", "Multi", "Rpt 1", "Rpt 2", "Rpt 1+2", "Ext" }),
-                         false, 49, CcCoding::Six));
+                         true, 49, CcCoding::Six));
         p.push_back ({ "pwmRate", "PWM Rate", "Tauntek", ParamKind::PwmRate, kFilterTypeNibble, 0x08, 3,
                        labelled ({ 0, 1, 2, 3 }, { "Slowest", "Slower", "Normal", "Fastest" }), true, 55, CcCoding::PwmRate });
         p.push_back (sw ("tuneSemi",    "Tune Semi",     "Oscillators", 60, 0x0F, 0, semitones(), true, 20, CcCoding::Semitone));
@@ -421,6 +422,31 @@ CcDumpRecall voiceFromCcDump (const VoiceData& reference, const std::vector<int>
         r.changed.push_back (name);
     }
     return r;
+}
+
+//==============================================================================
+VoiceData initVoice()
+{
+    // knobs: 1 = fastest / closed / none, 254 = slowest / fully open; the bipolar ones
+    // (Detune, Env Amount, Direct > Pitch, Direct > Filter) are at zero around 128
+    static const std::pair<const char*, int> values[] = {
+        { "wave1", 1 }, { "wave2", 1 }, { "octaveShift", 2 }, { "tuneSemi", 7 }, { "osc2Semi", 7 },
+        { "oscBalance", 1 }, { "detune", 136 }, { "noiseBalance", 1 }, { "pulseWidth", 128 }, { "pwmRate", 2 },
+        { "filterType", 0 }, { "filterFreq", 254 }, { "resonance", 1 }, { "filterSep", 1 }, { "filterDrive", 176 },
+        { "envFilter", 128 },
+        { "filtAttack", 1 }, { "filtDecay", 120 }, { "filtSustain", 1 }, { "filtRelease", 110 },
+        { "volAttack", 1 }, { "volDecay", 128 }, { "volSustain", 254 }, { "volRelease", 60 },
+        { "lfoWave", 0 }, { "lfoRate", 192 }, { "introDelay", 1 }, { "lfoPitch", 128 }, { "lfoFilter", 128 },
+        { "lfoToOsc1", 0 }, { "lfoSync", 0 },
+        { "bendAmount", 92 }, { "mwPitch", 32 }, { "mwFilter", 1 }, { "octaveSet", 4 },
+        { "function", 0 }, { "trigger", 1 }, { "glideType", 0 }, { "glideRate", 1 },
+        { "arpDir", 3 }, { "arpMode", 1 }, { "gateTime", 96 },
+    };
+    VoiceData v {};
+    for (const auto& [id, value] : values)
+        if (const auto* p = findParam (id))
+            setParam (v, *p, value);
+    return v;
 }
 
 } // namespace oscar

@@ -126,6 +126,16 @@ static void testClipboardAndSwap()
     CHECK (doc.getBank() == factoryBank());
 }
 
+static void testInit()
+{
+    BankDocument doc;
+    doc.initSlot (5);
+    CHECK (doc.getVoice (5) == initVoice() && doc.getName (5) == "INIT");
+    CHECK (doc.hasUnsentEdits (5));
+    doc.undo();
+    CHECK (doc.getBank() == factoryBank() && doc.getName (5) != "INIT");
+}
+
 static void testFiles()
 {
     auto dir = juce::File::createTempFile ("oscartest");
@@ -275,6 +285,7 @@ int main()
     testSyncAndUndo();
     testNamesFollowVoices();
     testClipboardAndSwap();
+    testInit();
     testFiles();
     testHostState();
     testHex();

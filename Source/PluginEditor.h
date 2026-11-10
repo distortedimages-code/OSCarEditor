@@ -38,6 +38,7 @@ public:
     void confirmThenSendSequences();
     void renameSelected();
     void swapSelected (juce::Component& anchor);
+    void initSelected();
     void exportSelectedVoice();
     void importIntoSelectedVoice();
     void loadBankFromFile();

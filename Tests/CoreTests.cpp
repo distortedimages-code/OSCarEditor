@@ -562,6 +562,34 @@ static void testFuzz()
     }
 }
 
+static void testInitVoice()
+{
+    const auto v = initVoice();
+    const auto get = [&v] (const char* id) { return getParam (v, *findParam (id)); };
+    for (const auto& p : allParams())
+    {
+        const int x = getParam (v, p);
+        if (p.kind == ParamKind::Knob)
+            CHECK (x >= 1 && x <= kKnobMaxEditable);
+        else
+            CHECK (isValidChoice (p, x));
+        // Live CC gives the OSCar exactly this value
+        if (p.coding != CcCoding::None && p.coding != CcCoding::ArpNibble)
+            CHECK (firmwareValueFromCc (p.coding, ccValueFor (p.coding, x)) == x);
+    }
+    CHECK (get ("wave1") == 1 && get ("oscBalance") == 1);                 // oscillator 1 alone, sawtooth
+    CHECK (get ("filterFreq") == 254 && get ("resonance") == 1 && get ("envFilter") == 128);
+    CHECK (get ("volAttack") == 1 && get ("volSustain") == 254);
+    CHECK (get ("lfoPitch") == 128 && get ("lfoFilter") == 128 && get ("glideRate") == 1);
+    CHECK (choiceLabel (*findParam ("function"), get ("function")) == "Normal");
+    CHECK (choiceLabel (*findParam ("trigger"), get ("trigger")) == "Multi");
+    CHECK (choiceLabel (*findParam ("pwmRate"), get ("pwmRate")) == "Normal");
+    CHECK (choiceLabel (*findParam ("tuneSemi"), get ("tuneSemi")) == "0");
+    CHECK (choiceLabel (*findParam ("osc2Semi"), get ("osc2Semi")) == "0");
+    for (auto b : v)
+        CHECK (b <= 0x0F);   // nibbles only
+}
+
 int main (int argc, char** argv)
 {
     if (argc < 2)
@@ -572,6 +600,7 @@ int main (int argc, char** argv)
 
     testFactoryFile (argv[1]);
     testSlots();
+    testInitVoice();
     testParamMapLayout();
     testEditIsolation();
     testCcNumbers();

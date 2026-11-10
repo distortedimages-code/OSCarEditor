@@ -9,7 +9,14 @@
 //  - Tauntek settings live in bit 3 of the Function, LFO Wave, Filter Type
 //    and Trigger nibbles (firmware routines at 0x4800 / 0x481E).
 // Switch *names* (which waveform is "Triangle" etc.) come from community
-// documentation and are flagged unverified; values are never guessed.
+// documentation and are flagged unverified; values are never guessed. Glide Type,
+// Function, Filter Type, Trigger, LFO Wave and Osc 2 Octave are checked against the
+// OSCar's panel: its positions run in the same order, and the second half of Glide
+// (FIX), Function (HOLD) and Filter Type (NO TRACK) is exactly the flag bit. The panel
+// prints "N" for the first waveform position (triangle in contemporary reviews);
+// Osc 2 Octave goes from -2 to +3 (panel and review), the factory voices use -1..+1.
+// The oscillator waveforms stay flagged: the panel confirms positions 0-5 only, not
+// the numbered waveforms -3..-12.
 
 #pragma once
 
@@ -74,6 +81,15 @@ const ParamDef* findParam (const std::string& id);
 int  getParam (const VoiceData& v, const ParamDef& p);
 // Returns false (and leaves 'v' untouched) if the value can't be stored.
 bool setParam (VoiceData& v, const ParamDef& p, int value);
+
+// "Init": a plain starting sound. Oscillator 1 alone on sawtooth (Osc Balance fully on 1, as printed
+// on the panel; oscillator 2 waits on the same wave, barely detuned, so turning Balance brings it in
+// without a change of tone), low-pass wide open without resonance, filter envelope amount at zero,
+// organ-like amp envelope (instant attack, full sustain, short release), no LFO, no glide,
+// Function Normal, Trigger Multi. The switches the factory voices agree on (osc 2 octave,
+// keyboard octave, arpeggiator, Tauntek bits) keep that common value. Knob values are even or 1,
+// so Live CC gives the OSCar exactly this voice.
+VoiceData initVoice();
 
 int  maxParamValue (const ParamDef& p);              // largest storable raw value
 bool isValidChoice (const ParamDef& p, int value);   // value is one of p.choices

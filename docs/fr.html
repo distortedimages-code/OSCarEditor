@@ -426,7 +426,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Version actuelle">
   <a class="arrow" href="#news" aria-label="Nouveautés">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.4.1</span><span class="name">OSCAR EDITOR</span><span class="state">GRATUIT</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.4.2</span><span class="name">OSCAR EDITOR</span><span class="state">GRATUIT</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -456,7 +456,7 @@ footer a { color: var(--muted); }
         Télécharger pour Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.4.1</dd>
+        <dt>Version</dt><dd id="spec-version">0.4.2</dd>
         <dt>Formats</dt><dd>AU pour Logic Pro, VST3 et application autonome</dd>
         <dt>Système</dt><dd>macOS 11 ou plus récent, Apple Silicon et Intel</dd>
         <dt>Synthé</dt><dd>OSCar avec la carte MIDI Tauntek. Avec le MIDI d'origine, tout marche sauf l'édition en direct.</dd>
@@ -491,8 +491,10 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Les dernières versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.4.1</span><div class="cap when">dernière version</div></div>
+      <div><span class="vchip">0.4.2</span><div class="cap when">dernière version</div></div>
       <div class="notes">
+        <p><strong>0.4.2 : Init.</strong> Un son de départ neutre pour construire une voix à partir de zéro : l'oscillateur 1 seul en dent de scie (Osc Balance fait entrer l'oscillateur 2 sur la même onde), filtre grand ouvert, sans résonance ni modulation, enveloppe façon orgue, nommé INIT. Sur la page Banques (bouton Init) et en haut du menu des voix (clic sur l'afficheur). Annuler ramène la voix ; avec Live CC l'OSCar le joue tout de suite, et rien n'est écrit dans sa mémoire tant que tu n'envoies pas.</p>
+        <p><strong>Les mots de la façade.</strong> La page Voix se lit maintenant comme l'OSCar : les mêmes noms (OSC 1 WAVEFORM, OCTAVE SHIFT, OSC 2 INTERVAL, DE TUNE, PW, OSC BALANCE, NOISE BALANCE, PITCH AMOUNT, TYPE et TIME pour le glide, NO TRACK, Q, SEPARATION, FILTER DRIVE, RATE, INTRO, PITCH MOD, TRIGGERING, GATE TIME…), les mêmes repères de position (N et les symboles d'onde, SG / MULT / RPT1 / RPT2 / RPT1 &amp; 2 / EXT, la division d'horloge externe de 1 à 16, l'octave de −2 à +3) et les mêmes graduations : DE TUNE, l'AMOUNT du filtre et les deux quantités du LFO vont de − à + avec 0 en haut, OSC BALANCE de 1 à 2 et NOISE BALANCE de OSC à NOISE avec = au milieu. Ces libellés restent en anglais en mode français, comme sur le synthé. Glide, Function, type de filtre, Trigger, forme du LFO et Octave shift sont vérifiés sur la façade (plus de point d'interrogation). Le style reste celui du plugin.</p>
         <p><strong>0.4.1 : les mémoires dans l'ordre du clavier.</strong> Les boutons mémoire, la liste de la banque, les menus de voix et les flèches ◀ ▶ vont maintenant de -12, -11 … -1, puis 1 … 24, comme sur les touches de l'OSCar. Seul l'affichage change : banques, fichiers et MIDI restent identiques.</p>
         <p><strong>Morphing A ↔ B</strong> : une nouvelle page avec deux voix et un crossfader façon Octatrack. La voix choisie suit le fader : les potards glissent de A vers B, les sélecteurs basculent à mi-course. Le lissage fixe le temps le plus court pour aller de A à B : un geste brusque devient un glissement. Avec Live CC, l'OSCar suit en direct, et le plugin n'envoie que les CC qui ont changé, à un rythme d'environ un tiers d'un câble MIDI. Garde le mélange, ou annule-le d'un coup. Le fader s'automatise dans Logic (Morph A-B).</p>
         <p><strong>Page Voix finalisée</strong> : boutons à LED pour les modes à deux ou trois positions (function, glide, arpégiateur, type de filtre, sync), sélecteurs rotatifs pour les autres, valeurs dans de petits afficheurs à segments, commandes principales de chaque section encadrées, séparateurs dans la colonne performance, textes plus grands.</p>

@@ -47,6 +47,10 @@ void drawSegments (juce::Graphics&, juce::Rectangle<float> area, const juce::Str
 // A small framed readout: dark window with right-aligned segment digits.
 void drawSegmentReadout (juce::Graphics&, juce::Rectangle<float> window, const juce::String& text, int digits, bool bright);
 void drawHardButton (juce::Graphics&, juce::Rectangle<float> area, bool down, bool highlighted);
+// Waveform pictograms, as printed on the OSCar's panel: a legend "~saw", "~sqr" or "~pulse" is drawn
+// as the wave instead of text, in the current colour. glyphWidth is 0 for an ordinary legend.
+float glyphWidth (const juce::String& legend, float textHeight);
+bool  drawGlyph (juce::Graphics&, juce::Rectangle<float> box, const juce::String& legend, float stroke = 1.4f);
 void drawCopper (juce::Graphics&, juce::Rectangle<float> area, float corner, bool lit, bool down);
 
 enum class KnobStyle { Knurled, Chrome, Brass };
@@ -98,7 +102,11 @@ public:
     void setLabel (const juce::String& t)           { labelText = t; repaint(); }
     void setValueText (std::function<juce::String (int)> f) { valueText = std::move (f); repaint(); }
     void setTooltip (const juce::String& t)         { slider.setTooltip (t); }
-    void setScale (const juce::String& low, const juce::String& high) { scaleLow = low; scaleHigh = high; repaint(); }
+    // the words printed at both ends of the scale, and at the top for a bipolar knob ("0")
+    void setScale (const juce::String& low, const juce::String& high, const juce::String& middle = {})
+    {
+        scaleLow = low; scaleHigh = high; scaleMid = middle; repaint();
+    }
     void setLabelStyle (LabelStyle s)               { labelStyle = s; repaint(); }
     void mouseEnter (const juce::MouseEvent&) override { repaint(); }   // the value lights up under the mouse
     void mouseExit (const juce::MouseEvent&) override  { repaint(); }
@@ -116,7 +124,7 @@ public:
     juce::Rectangle<float> readoutBounds() const;   // the value's segment readout
 
 private:
-    juce::String labelText, scaleLow { "0" }, scaleHigh { "10" };
+    juce::String labelText, scaleLow { "0" }, scaleHigh { "10" }, scaleMid;
     KnobStyle style;
     LabelStyle labelStyle = LabelStyle::Plain;
     std::function<juce::String (int)> valueText;

@@ -58,6 +58,7 @@ public:
     void pasteSlot (int slot);
     void swapSlots (int a, int b);
     void revertSlot (int slot);                  // back to the OSCar's known content
+    void initSlot (int slot);                    // a plain starting sound named INIT (oscar::initVoice)
     void setVoice (int slot, const oscar::VoiceData& v, const juce::String& undoCoalesceKey = {});
     // Changes made through this with the same key are one undo step, however long they take,
     // until another change or endUndoGroup() (an A/B morph with pauses in it).

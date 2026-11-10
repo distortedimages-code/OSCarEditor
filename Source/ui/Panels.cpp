@@ -17,9 +17,28 @@ namespace
         return *p;
     }
 
+    // The words printed on the OSCar's panel (in English, as on the synth), so that going from the
+    // plugin to the synth and back reads the same. Tauntek settings keep the Tauntek chart's name.
+    juce::String panelWord (const ParamDef& p)
+    {
+        static const std::map<std::string, const char*> words {
+            { "wave1", "Osc 1 Waveform" }, { "wave2", "Osc 2 Waveform" }, { "octaveShift", "Octave Shift" },
+            { "osc2Semi", "Osc 2 Interval" }, { "tuneSemi", "Transpose" }, { "detune", "De Tune" },
+            { "pulseWidth", "PW" }, { "oscBalance", "Osc Balance" }, { "noiseBalance", "Noise Balance" },
+            { "bendAmount", "Bend Amount" }, { "mwPitch", "Pitch Amount" }, { "mwFilter", "Filter Amount" },
+            { "octaveSet", "Octave" }, { "glideType", "Type" }, { "glideRate", "Time" },
+            { "filterFreq", "Frequency" }, { "resonance", "Q" }, { "filterSep", "Separation" },
+            { "envFilter", "Amount" }, { "filterDrive", "Filter Drive" },
+            { "lfoWave", "Waveform" }, { "lfoRate", "Rate" }, { "introDelay", "Intro" }, { "lfoPitch", "Pitch Mod" },
+            { "lfoFilter", "Amount" }, { "trigger", "Triggering" }, { "function", "Function" }, { "gateTime", "Gate Time" },
+        };
+        const auto it = words.find (p.id);
+        return it != words.end() ? juce::String (it->second) : juce::String (p.name);
+    }
+
     juce::String switchLabel (const ParamDef& p)
     {
-        return juce::String (p.name) + (p.labelsVerified ? "" : " ?");
+        return panelWord (p) + (p.labelsVerified ? "" : " ?");
     }
 
     juce::String unverifiedText() { return tr ("Values checked against the Tauntek firmware; the names come from community documentation and are not confirmed yet."); }
@@ -28,14 +47,7 @@ namespace
     constexpr int kExtTrigger = 5;   // Trigger "Ext": arp and sequencer step on the MIDI clock
     // clock ticks per step {1, 2, 3, 4, 6, 8, 12, 16} at 24 per quarter note, chosen by Tempo >> 5
     const char* const kDivisions[8] = { "1/96", "1/48", "1/32", "1/16T", "1/16", "1/8T", "1/8", "1/4T" };
-
-    std::vector<Selector::Item> itemsFor (const ParamDef& p)
-    {
-        std::vector<Selector::Item> items;
-        for (const auto& c : p.choices)
-            items.push_back ({ c.value, juce::String (c.label) });
-        return items;
-    }
+    const char* const kDivides[8] = { "1", "2", "3", "4", "6", "8", "12", "16" };   // as printed on the panel
 
     void drawText (juce::Graphics& g, juce::Rectangle<float> area, const juce::String& text, float size = 13.0f,
                    juce::Colour c = colours::dim, juce::Justification j = juce::Justification::topLeft)
@@ -115,7 +127,7 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
 
     auto addKnob = [&] (const char* id, KnobStyle style)
     {
-        auto k = std::make_unique<Knob> (def (id).name, style);
+        auto k = std::make_unique<Knob> (panelWord (def (id)), style);
         k->onChange = edit (id);
         k->setTooltip (tr ("%1: stored value 0-254 (sent as CC %2 in Live CC).", { juce::String (def (id).name), juce::String (def (id).cc) }));
         addAndMakeVisible (*k);
@@ -129,7 +141,14 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
     addKnob ("filterFreq", KnobStyle::Brass);
     for (auto* id : { "filterFreq", "resonance", "filterSep", "detune", "lfoRate" })   // the main controls: their names framed
         knob (id).setLabelStyle (LabelStyle::Boxed);
-    knob ("oscBalance").setScale ("1", "2");
+    knob ("oscBalance").setScale ("1", "2", "=");   // equal mix in the middle, as printed on the panel
+    knob ("noiseBalance").setScale ("OSC", "NOISE", "=");
+    // bipolar, as on the OSCar's panel: zero in the middle (stored 128), shown signed
+    for (auto* id : { "detune", "envFilter", "lfoPitch", "lfoFilter" })
+    {
+        knob (id).setScale (juce::String::fromUTF8 ("\xe2\x88\x92"), "+", "0");
+        knob (id).setValueText ([] (int v) { return juce::String (v - 128); });
+    }
 
     const std::pair<const char*, const char*> faderIds[] = { { "filtAttack", "Att" }, { "filtDecay", "Dec" }, { "filtSustain", "Sus" },
                                                              { "filtRelease", "Rel" }, { "volAttack", "Att" }, { "volDecay", "Dec" },
@@ -143,12 +162,16 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
         faders[id] = std::move (f);
     }
 
-    auto tipFor = [] (const ParamDef& d) { return d.labelsVerified ? tr ("Values and names checked against the Tauntek firmware and chart.") : unverifiedText(); };
+    auto tipFor = [] (const ParamDef& d) { return d.labelsVerified ? tr ("Values checked against the Tauntek firmware, names against the Tauntek chart or the OSCar's panel.") : unverifiedText(); };
     for (auto* id : { "wave1", "wave2" })
     {
         const auto& d = def (id);
         auto s = std::make_unique<Selector> (switchLabel (d));
-        s->setItems (itemsFor (d));
+        std::vector<Selector::Item> items;
+        const char* shown[6] = { "N", "~saw", "~sqr", "~pulse", "PWM", std::strcmp (id, "wave1") == 0 ? "OFF" : "OSC 1" };
+        for (const auto& c : d.choices)
+            items.push_back ({ c.value, c.value < 6 ? juce::String (shown[c.value]) : "WAVE " + juce::String (3 - c.value) });   // 6..15 = -3..-12
+        s->setItems (items);
         s->onChange = edit (id);
         s->setTooltip (tipFor (d));
         addAndMakeVisible (*s);
@@ -196,33 +219,32 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
     auto semitones = [] { std::vector<Legend> l;   // value 0 = +7 ... 14 = -7, shown from -7 to +7
                           for (int v = 14; v >= 0; --v) l.push_back ({ v, v == 14 ? "-7" : v == 7 ? "0" : v == 0 ? "+7" : "" });
                           return l; };
-    addRotary ("octaveShift", { { 0, "0" }, { 1, "1" }, { 2, "2" }, { 3, "3" }, { 4, "4" }, { 5, "5" } });
+    addRotary ("octaveShift", { { 0, "-2" }, { 1, "-1" }, { 2, "0" }, { 3, "+1" }, { 4, "+2" }, { 5, "+3" } });   // as on the panel
     addRotary ("osc2Semi", semitones());
     addRotary ("tuneSemi", semitones());
     addRotary ("octaveSet", { { 2, "2" }, { 3, "3" }, { 4, "4" }, { 5, "5" }, { 6, "6" } });
     addRotary ("pwmRate", { { 0, "1" }, { 1, "2" }, { 2, "3" }, { 3, "4" } });   // slowest to fastest (names in the list)
-    addRotary ("lfoWave", { { 0, "TRI" }, { 1, "SAW" }, { 2, "SQR" }, { 3, "F.ENV" }, { 4, "KBD" }, { 5, "RAND" } });
-    addRotary ("trigger", { { 0, "SINGLE" }, { 1, "MULTI" }, { 2, "RPT 1" }, { 3, "RPT 2" }, { 4, "RPT 1+2" }, { 5, "EXT" } }, 0.0f, 10.0f);
+    addRotary ("lfoWave", { { 0, "N" }, { 1, "~saw" }, { 2, "~sqr" }, { 3, "FILTER\nENV" }, { 4, "KBD" }, { 5, "R" } }, 0.0f, 9.5f);
+    addRotary ("trigger", { { 0, "SG" }, { 1, "MULT" }, { 2, "RPT1" }, { 3, "RPT2" }, { 4, "RPT1 & 2" }, { 5, "EXT" } }, 0.0f, 10.0f);
 
-    const auto unsure = [] (const char* id) { return juce::String (def (id).labelsVerified ? "" : " ?"); };
     addLeds ("arpDir", { { 1, "DOWN" }, { 2, "UP" }, { 3, "UP/DN" } }, switchLabel (def ("arpDir")));
     addLeds ("arpMode", { { 0, "NORM" }, { 1, "DEL" }, { 2, "MEM" } }, switchLabel (def ("arpMode")));
-    addLeds ("function", { { 0, "NORM" }, { 1, "ARP" }, { 2, "DUO" } }, "Function" + unsure ("function"),
+    addLeds ("function", { { 0, "NORM" }, { 1, "ARP" }, { 2, "DUO" } }, switchLabel (def ("function")),
              [this] (int v) { editFlagged ("function", v, hold.isLit()); });
-    addLeds ("glideType", { { 0, "NORM" }, { 1, "AUTO" }, { 2, "GLISS" } }, "Glide" + unsure ("glideType"),
+    addLeds ("glideType", { { 0, "N" }, { 1, "AUTO" }, { 2, "GLISS" } }, switchLabel (def ("glideType")),
              [this] (int v) { editFlagged ("glideType", v, glideFix.isLit()); });
     addLeds ("filterType", { { 0, "LP" }, { 1, "BP" }, { 2, "HP" } }, {},   // filter type, and keyboard tracking (values 4-6 = without)
-             [this] (int v) { editFlagged ("filterType", v, ! kbdTrack.isLit()); });
+             [this] (int v) { editFlagged ("filterType", v, noTrack.isLit()); });
 
-    hold.setTooltip (unverifiedText());
+    hold.setTooltip (tipFor (def ("function")));
     hold.onClick = [this] { editFlagged ("function", leds ("function").getValue(), ! hold.isLit()); };
-    glideFix.setTooltip (unverifiedText());
+    glideFix.setTooltip (tipFor (def ("glideType")));
     glideFix.onClick = [this] { editFlagged ("glideType", leds ("glideType").getValue(), ! glideFix.isLit()); };
-    kbdTrack.setTooltip (tipFor (def ("filterType")));
-    kbdTrack.onClick = [this] { editFlagged ("filterType", paramValue ("filterType") % 4, kbdTrack.isLit()); };
+    noTrack.setTooltip (tipFor (def ("filterType")));
+    noTrack.onClick = [this] { editFlagged ("filterType", paramValue ("filterType") % 4, ! noTrack.isLit()); };
     addAndMakeVisible (hold);
     addAndMakeVisible (glideFix);
-    addAndMakeVisible (kbdTrack);
+    addAndMakeVisible (noTrack);
 
     lfoToOsc1.setTooltip (tr ("Tauntek: the LFO also modulates oscillator 1 (same as TUNE/TRANSPOSE + the 'LFO to Oscillator 1' keys)."));
     lfoSync.setTooltip (tr ("Tauntek: LFO hard sync (same as TUNE/TRANSPOSE + the 'LFO Sync' keys)."));
@@ -249,7 +271,7 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
     syncLeds.onChange = [this] (int v) { setSync (v); };
     std::vector<RotarySwitch::Item> divisions;
     for (int z = 0; z < 8; ++z)
-        divisions.push_back ({ z, kDivisions[z], kDivisions[z] });
+        divisions.push_back ({ z, kDivides[z], juce::String (kDivides[z]) + "  (" + kDivisions[z] + ")" });
     divisionSwitch.setItems (divisions, 300.0f);
     divisionSwitch.setLegendSize (9.5f);
     divisionSwitch.setTooltip (tr ("Steps of the arpeggiator and the sequencer when the voice follows the MIDI clock (T = triplet). Sets the global Tempo (CC 54, sent with Live CC)."));
@@ -406,7 +428,7 @@ void VoicePanel::refresh()
     }
     hold.setLit (getParam (v, def ("function")) >= 4);
     glideFix.setLit (getParam (v, def ("glideType")) >= 4);
-    kbdTrack.setLit (getParam (v, def ("filterType")) < 4);
+    noTrack.setLit (getParam (v, def ("filterType")) >= 4);
     lfoToOsc1.setLit (getParam (v, def ("lfoToOsc1")) == 0);   // 0 = On
     lfoSync.setLit (getParam (v, def ("lfoSync")) == 1);
     refreshClock();
@@ -485,13 +507,13 @@ void VoicePanel::layout()
     {
         auto c = col (0);
         auto osc = c.removeFromTop (322);
-        groups.push_back ({ osc.toFloat(), tr ("oscillators") });
+        groups.push_back ({ osc.toFloat(), juce::String::fromUTF8 ("osc 1 \xc2\xb7 osc 2 \xc2\xb7 mix") });
         const int half = (inside (osc).getWidth() - 12) / 2, q = inside (osc).getWidth() / 4 - 1;
         arrange (inside (osc), { { { &selector ("wave1"), half }, { &selector ("wave2"), half } },
                                  { { &rotary ("octaveShift"), q }, { &rotary ("pwmRate"), q }, { &rotary ("osc2Semi"), q }, { &rotary ("tuneSemi"), q } },
                                  { { &knob ("detune"), q }, { &knob ("pulseWidth"), q }, { &knob ("oscBalance"), q }, { &knob ("noiseBalance"), q } } });
         c.removeFromTop (8);
-        groups.push_back ({ c.toFloat(), tr ("keyboard") });
+        groups.push_back ({ c.toFloat(), "wheels" });
         arrange (inside (c), { { { &knob ("bendAmount"), q }, { &knob ("mwPitch"), q }, { &knob ("mwFilter"), q }, { &rotary ("octaveSet"), q } } });
     }
 
@@ -499,12 +521,12 @@ void VoicePanel::layout()
     {
         auto c = col (1);
         auto f = c.removeFromTop (322);
-        groups.push_back ({ f.toFloat(), tr ("filter") });
+        groups.push_back ({ f.toFloat(), "filter" });
         auto g = inside (f);
         const int topY = g.getY() + 6;
         auto& type = leds ("filterType");
         type.setBounds (g.getCentreX() - 92, topY, 92, type.blockHeight());
-        kbdTrack.setBounds (g.getCentreX() + 12, topY, 74, 45);
+        noTrack.setBounds (g.getCentreX() + 12, topY, 74, 45);
         const int cx = g.getCentreX(), sideW = 76;
         knob ("filterFreq").setBounds (cx - 65, topY + 64, 130, Knob::height (KnobStyle::Brass));
         const int line1 = topY + 96, line2 = topY + 206;
@@ -514,7 +536,7 @@ void VoicePanel::layout()
         place (knob ("filterDrive"), g.getRight() - sideW, line2, sideW);
 
         c.removeFromTop (8);
-        groups.push_back ({ c.toFloat(), tr ("midi clock") });
+        groups.push_back ({ c.toFloat(), "midi clock" });
         arrange (inside (c), { { { &syncLeds, 78 }, { &divisionSwitch, 112 }, { &tempo, 92 } } });
     }
 
@@ -524,8 +546,8 @@ void VoicePanel::layout()
         auto envs = c.removeFromTop (214);
         auto fe = envs.removeFromLeft ((envs.getWidth() - 8) / 2);
         envs.removeFromLeft (8);
-        groups.push_back ({ fe.toFloat(), tr ("filter env") });
-        groups.push_back ({ envs.toFloat(), tr ("amp env") });
+        groups.push_back ({ fe.toFloat(), "filter env" });
+        groups.push_back ({ envs.toFloat(), "amp env" });
         auto placeFaders = [this] (juce::Rectangle<int> grp, std::initializer_list<const char*> ids)
         {
             auto g = grp.reduced (4, 8);
@@ -541,7 +563,7 @@ void VoicePanel::layout()
         placeFaders (envs, { "volAttack", "volDecay", "volSustain", "volRelease" });
 
         c.removeFromTop (8);
-        groups.push_back ({ c.toFloat(), tr ("modulation") });
+        groups.push_back ({ c.toFloat(), "lfo" });
         arrange (inside (c), { { { &rotary ("lfoWave"), 108 }, { &knob ("lfoRate"), 76 }, { &knob ("introDelay"), 76 } },
                                { { &lfoStack, 108 }, { &knob ("lfoPitch"), 76 }, { &knob ("lfoFilter"), 76 } } });
         auto stack = lfoStack.getBounds().withSizeKeepingCentre (104, 60);
@@ -552,7 +574,7 @@ void VoicePanel::layout()
     // 4: performance in three rows: trigger and function, glide, arpeggiator
     {
         auto c = col (3);
-        groups.push_back ({ c.toFloat(), tr ("performance") });
+        groups.push_back ({ c.toFloat(), "triggering" });
         performanceArea = c;
         performanceRows = arrange (inside (c), { { { &rotary ("trigger"), 140 }, { &leds ("function"), 86, true }, { &hold, 50 } },
                                                  { { &leds ("glideType"), 92, true }, { &glideFix, 44 }, { &knob ("glideRate"), 124 } },
@@ -570,7 +592,7 @@ void VoicePanel::paint (juce::Graphics& g)
         drawGroup (g, gr.area, gr.label);
 
     // dividers between the performance rows, named after the row below
-    const juce::String names[] = { {}, tr ("glide"), tr ("arpeggiator") };
+    const juce::String names[] = { {}, "glide", "arpeggiator" };   // as printed: English
     for (size_t i = 1; i < performanceRows.size() && i < 3; ++i)
     {
         const float y = (float) (performanceRows[i - 1].getEnd() + performanceRows[i].getStart()) * 0.5f;
@@ -840,6 +862,8 @@ BanksPanel::BanksPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
     };
     pasteButton.onClick = [this] { proc.getDocument().pasteSlot (proc.getSelectedSlot()); };
     swapButton.onClick = [this] { editor.swapSelected (swapButton); };
+    initButton.onClick = [this] { editor.initSelected(); };
+    initButton.setTooltip (tr ("A plain starting sound: oscillator 1 alone on sawtooth, filter wide open, no modulation. Undo brings the voice back."));
     revertButton.onClick = [this] { proc.getDocument().revertSlot (proc.getSelectedSlot()); };
     revertButton.setTooltip (tr ("Back to what the OSCar holds for this voice"));
     selectButton.onClick = [this]
@@ -874,7 +898,7 @@ BanksPanel::BanksPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
     };
     sequencesButton.onClick = [this] { editor.confirmThenSendSequences(); };
 
-    for (auto* b : std::initializer_list<juce::Component*> { &renameButton, &copyButton, &pasteButton, &swapButton, &revertButton,
+    for (auto* b : std::initializer_list<juce::Component*> { &renameButton, &copyButton, &pasteButton, &swapButton, &initButton, &revertButton,
                                                              &selectButton, &exportVoiceButton, &importVoiceButton, &allButton,
                                                              &banksButton, &voicesButton, &backupsButton, &loadButton, &saveAsButton,
                                                              &openFileButton, &exportSyxButton, &factoryButton, &folderButton,
@@ -1076,25 +1100,26 @@ void BanksPanel::resized()
 {
     const auto cols = splitColumns ({ 0, 0, (float) width, (float) height }, { 520, 776 });
     groups.clear();
+    constexpr int buttonRows = 3 * 34 + 2 * 8;   // both columns: three rows of buttons
 
     {
         auto c = cols[0].reduced (8.0f).toNearestInt();
         groups.push_back ({ c.toFloat(), tr ("bank in the editor") });
         auto g = c.reduced (12, 12).withTrimmedBottom (22);
-        auto buttons = g.removeFromBottom (78);
+        auto buttons = g.removeFromBottom (buttonRows);
         g.removeFromBottom (8);
         bankList.setBounds (g.reduced (4));
         // from the top (-12) when the selected voice fits on the first screen, else just enough to show it
         bankList.setVerticalPosition (0.0);
         bankList.scrollToEnsureRowIsOnscreen (positionOfSlot (proc.getSelectedSlot()));
-        const int bw = (buttons.getWidth() - 24) / 4;
-        juce::Component* row1[] = { &renameButton, &copyButton, &pasteButton, &swapButton };
-        juce::Component* row2[] = { &revertButton, &selectButton, &exportVoiceButton, &importVoiceButton };
-        for (int i = 0; i < 4; ++i)
-        {
-            row1[i]->setBounds (buttons.getX() + i * (bw + 8), buttons.getY(), bw, 34);
-            row2[i]->setBounds (buttons.getX() + i * (bw + 8), buttons.getY() + 42, bw, 34);
-        }
+        // three rows of three: clipboard, what replaces the voice, the voice on the synth / in a file
+        const int bw = (buttons.getWidth() - 16) / 3;
+        juce::Component* grid[3][3] = { { &renameButton, &copyButton, &pasteButton },
+                                        { &swapButton, &initButton, &revertButton },
+                                        { &selectButton, &exportVoiceButton, &importVoiceButton } };
+        for (int r = 0; r < 3; ++r)
+            for (int i = 0; i < 3; ++i)
+                grid[r][i]->setBounds (buttons.getX() + i * (bw + 8), buttons.getY() + r * 42, bw, 34);
         groups.push_back ({ bankList.getBounds().toFloat().expanded (4.0f), {} });
     }
 
@@ -1113,20 +1138,19 @@ void BanksPanel::resized()
         top.removeFromLeft (16);
         libraryNote = top.toFloat();
 
-        auto buttons = g.removeFromBottom (78);
+        auto buttons = g.removeFromBottom (buttonRows);   // same height as the bank's, so both lists end level
         g.removeFromBottom (8);
         g.removeFromTop (8);
         libraryList.setBounds (g.reduced (4));
-        loadButton.setBounds (buttons.getX(), buttons.getY(), 220, 76);
+        loadButton.setBounds (buttons.getX(), buttons.getY(), 220, buttons.getHeight() - 2);
         auto rest = buttons.withTrimmedLeft (232);
-        const int bw = (rest.getWidth() - 16) / 3;
-        juce::Component* row1[] = { &saveAsButton, &openFileButton, &exportSyxButton };
-        juce::Component* row2[] = { &factoryButton, &folderButton, &sequencesButton };
-        for (int i = 0; i < 3; ++i)
-        {
-            row1[i]->setBounds (rest.getX() + i * (bw + 8), rest.getY(), bw, 34);
-            row2[i]->setBounds (rest.getX() + i * (bw + 8), rest.getY() + 42, bw, 34);
-        }
+        const int bw = (rest.getWidth() - 8) / 2;
+        juce::Component* grid[3][2] = { { &saveAsButton, &openFileButton },
+                                        { &exportSyxButton, &sequencesButton },
+                                        { &factoryButton, &folderButton } };
+        for (int r = 0; r < 3; ++r)
+            for (int i = 0; i < 2; ++i)
+                grid[r][i]->setBounds (rest.getX() + i * (bw + 8), rest.getY() + r * 42, bw, 34);
         groups.push_back ({ libraryList.getBounds().toFloat().expanded (4.0f), {} });
     }
     std::vector<juce::Rectangle<float>> windows;
