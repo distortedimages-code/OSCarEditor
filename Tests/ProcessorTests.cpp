@@ -758,6 +758,7 @@ static void testMorph (OscarProcessor& proc, Capture& out)
         if (cc == filterFreq.cc) lastFreq = value;
     CHECK (lastFreq == ccValueFor (filterFreq.coding, 64));                          // the OSCar got there too
 
+    pump (1700);   // a pause longer than the undo grouping of knob drags
     morph->setValueNotifyingHost (1.0f);
     pump (1000);
     out.take();

@@ -474,6 +474,7 @@ void OscarProcessor::morphKeep()
     if (morphSession)
         addLog (tr ("Morph kept in voice %1.", { juce::String (slotLabel (morphSlot)) }));
     morphSession = false;
+    document.endUndoGroup();
 }
 
 void OscarProcessor::startMorphSession()
@@ -484,6 +485,7 @@ void OscarProcessor::startMorphSession()
     morphB = morph.slotB == morphSlot ? current : document.getVoice (morph.slotB);
     morphSent = (oscarSound && oscarSlot == morphSlot) ? *oscarSound : current;   // what the OSCar plays
     morphSession = true;
+    document.endUndoGroup();   // a new blend is a new undo step
 }
 
 void OscarProcessor::morphTick()
@@ -524,7 +526,7 @@ void OscarProcessor::morphTick()
 void OscarProcessor::applyMorph (const VoiceData& v)
 {
     if (v != document.getVoice (morphSlot))
-        document.setVoice (morphSlot, v, "morph");   // one undo step for the whole move
+        document.setVoiceInGroup (morphSlot, v, "morph");   // one undo step for the whole blend, pauses included
     morphPending = flushMorphCc();
 }
 

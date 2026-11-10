@@ -89,13 +89,13 @@ void BankDocument::restore (const Snapshot& s)
     waves = s.waves;
 }
 
-void BankDocument::pushUndo (const juce::String& coalesceKey)
+void BankDocument::pushUndo (const juce::String& coalesceKey, bool withoutTimeLimit)
 {
     const auto now = juce::Time::getMillisecondCounterHiRes();
 
     // Consecutive changes of the same control (a knob drag) become one undo step.
     if (coalesceKey.isNotEmpty() && coalesceKey == lastCoalesceKey
-        && now - lastCoalesceTime < 1500.0 && ! undoStack.empty())
+        && (withoutTimeLimit || now - lastCoalesceTime < 1500.0) && ! undoStack.empty())
     {
         lastCoalesceTime = now;
         return;
@@ -206,6 +206,18 @@ void BankDocument::setVoice (int slot, const VoiceData& v, const juce::String& u
         if (n > 0x0F)
             return;   // not a valid voice
     pushUndo (undoCoalesceKey);
+    bank.voices[(size_t) slot] = v;
+    changed();
+}
+
+void BankDocument::setVoiceInGroup (int slot, const VoiceData& v, const juce::String& groupKey)
+{
+    if (slot < 0 || slot >= kNumVoices || bank.voices[(size_t) slot] == v)
+        return;
+    for (auto n : v)
+        if (n > 0x0F)
+            return;   // not a valid voice
+    pushUndo (groupKey, true);
     bank.voices[(size_t) slot] = v;
     changed();
 }

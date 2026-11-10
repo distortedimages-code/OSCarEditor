@@ -59,6 +59,10 @@ public:
     void swapSlots (int a, int b);
     void revertSlot (int slot);                  // back to the OSCar's known content
     void setVoice (int slot, const oscar::VoiceData& v, const juce::String& undoCoalesceKey = {});
+    // Changes made through this with the same key are one undo step, however long they take,
+    // until another change or endUndoGroup() (an A/B morph with pauses in it).
+    void setVoiceInGroup (int slot, const oscar::VoiceData& v, const juce::String& groupKey);
+    void endUndoGroup()                                     { lastCoalesceKey = {}; }
     void loadFactoryVoices();
 
     bool canUndo() const                         { return ! undoStack.empty(); }
@@ -100,7 +104,7 @@ private:
 
     Snapshot capture() const;
     void restore (const Snapshot&);
-    void pushUndo (const juce::String& coalesceKey = {});
+    void pushUndo (const juce::String& coalesceKey = {}, bool withoutTimeLimit = false);
     void changed()                               { sendChangeMessage(); }
     juce::String nameForReceivedVoice (const oscar::VoiceData& v, const Snapshot& before) const;
 
