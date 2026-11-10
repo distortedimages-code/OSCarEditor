@@ -26,22 +26,22 @@ jobs:
         run: |
           mkdir -p out
           cd build/OSCarEditor_artefacts/Release
-          for b in "AU/OSCar Editor.component" "VST3/OSCar Editor.vst3" "Standalone/OSCar Editor.app"; do
+          for b in "AU/OXIde.component" "VST3/OXIde.vst3" "Standalone/OXIde.app"; do
             codesign --force --deep --sign - "$b"
           done
-          ditto -c -k --keepParent "AU/OSCar Editor.component" ../../../out/OSCar-Editor-AU-mac.zip
-          ditto -c -k --keepParent "VST3/OSCar Editor.vst3" ../../../out/OSCar-Editor-VST3-mac.zip
-          ditto -c -k --keepParent "Standalone/OSCar Editor.app" ../../../out/OSCar-Editor-App-mac.zip
+          ditto -c -k --keepParent "AU/OXIde.component" ../../../out/OXIde-AU-mac.zip
+          ditto -c -k --keepParent "VST3/OXIde.vst3" ../../../out/OXIde-VST3-mac.zip
+          ditto -c -k --keepParent "Standalone/OXIde.app" ../../../out/OXIde-App-mac.zip
       - name: Disk image
         run: |
           mkdir -p pkg
           ART=build/OSCarEditor_artefacts/Release
-          cp -R "$ART/AU/OSCar Editor.component" "$ART/VST3/OSCar Editor.vst3" "$ART/Standalone/OSCar Editor.app" pkg/
+          cp -R "$ART/AU/OXIde.component" "$ART/VST3/OXIde.vst3" "$ART/Standalone/OXIde.app" pkg/
           python3 -m pip install --quiet --break-system-packages dmgbuild==1.6.7 || python3 -m pip install --quiet dmgbuild==1.6.7
-          tools/dmg/make_dmg.sh pkg out/OSCar-Editor-mac.dmg
+          tools/dmg/make_dmg.sh pkg out/OXIde-mac.dmg
       - uses: actions/upload-artifact@v4
         with:
-          name: OSCar-Editor-mac
+          name: OXIde-mac
           path: |
             out/*.zip
             out/*.dmg
@@ -58,7 +58,7 @@ jobs:
         run: ctest --test-dir build -C Release --output-on-failure
       - uses: actions/upload-artifact@v4
         with:
-          name: OSCar-Editor-windows
+          name: OXIde-windows
           path: |
             build/OSCarEditor_artefacts/Release/VST3
             build/OSCarEditor_artefacts/Release/Standalone

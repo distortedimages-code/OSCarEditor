@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>OSCar Editor</title>
+<title>OXIde</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Free editor and librarian for the OSCar synth with the Tauntek MIDI board. AU for Logic Pro, VST3 and app for Mac.">
 <link rel="alternate" hreflang="en" href="index.html">
@@ -86,10 +86,8 @@ img { max-width: 100%; height: auto; display: block; }
   box-shadow: inset 0 1px 0 rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.05);
 }
 .brand { text-align: center; }
-.brand h1 {
-  margin: 0; font: 600 clamp(38px, 6vw, 62px)/1 var(--display); letter-spacing: .01em; color: #f3efe6;
-  text-shadow: 0 1px 0 rgba(0,0,0,.6);
-}
+.brand h1 { margin: 0; line-height: 0; color: #f3efe6; }
+.brand h1 svg { display: block; height: clamp(30px, 4.6vw, 48px); width: auto; margin-inline: auto; filter: drop-shadow(0 1px 0 rgba(0,0,0,.6)); }
 .tag { margin: 8px 0 0; font: 600 11.5px/1 var(--label); letter-spacing: .32em; text-transform: uppercase; color: var(--muted); }
 
 /* VFD display */
@@ -169,7 +167,7 @@ p { margin: 0 0 12px; }
   border-radius: 6px; overflow: hidden; background: var(--inset);
   box-shadow: 0 0 0 1px #000, 0 10px 30px rgba(0,0,0,.55), 0 2px 0 rgba(255,255,255,.04);
 }
-.screen img { width: 100%; aspect-ratio: 1600 / 914; object-fit: cover; }
+.screen img { width: 100%; aspect-ratio: 1600 / 1029; object-fit: cover; }
 .minis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .mini {
   display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 6px 7px; border: 0; border-radius: 4px; cursor: pointer;
@@ -414,8 +412,8 @@ footer a { color: var(--muted); }
 <header class="masthead">
   <div class="vents" aria-hidden="true"></div>
   <div class="brand">
-    <h1>OSCar Editor</h1>
-    <p class="tag">oscar · midi · sysex · tauntek cc</p>
+    <h1><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4.94 1" role="img" aria-label="OXIde"><defs><clipPath id="logo-band"><rect width="4.94" height="1"/></clipPath><mask id="logo-ink" maskUnits="userSpaceOnUse" x="-1" y="-1" width="6.94" height="3"><g fill="none" stroke-linejoin="miter" stroke-linecap="butt"><path d="M0.1 0.5A0.525 0.4 0 1 1 1.15 0.5A0.525 0.4 0 1 1 0.1 0.5ZM1.2384 -0.3L2.6016 1.3M2.6016 -0.3L1.2384 1.3M2.69 -0.3L2.69 1.3M3.01 0.1L3.46 0.1A0.4 0.4 0 0 1 3.46 0.9L3.01 0.9ZM4.94 0.1L4.18 0.1L4.18 0.9L4.94 0.9M4.18 0.5L4.88 0.5" stroke="#fff" stroke-width="0.2"/><path d="M0.1 0.5A0.525 0.4 0 1 1 1.15 0.5A0.525 0.4 0 1 1 0.1 0.5ZM1.2384 -0.3L2.6016 1.3M2.6016 -0.3L1.2384 1.3M2.69 -0.3L2.69 1.3M3.01 0.1L3.46 0.1A0.4 0.4 0 0 1 3.46 0.9L3.01 0.9ZM4.94 0.1L4.18 0.1L4.18 0.9L4.94 0.9M4.18 0.5L4.88 0.5" stroke="#000" stroke-width="0.12"/><path d="M0.1 0.5A0.525 0.4 0 1 1 1.15 0.5A0.525 0.4 0 1 1 0.1 0.5ZM1.2384 -0.3L2.6016 1.3M2.6016 -0.3L1.2384 1.3M2.69 -0.3L2.69 1.3M3.01 0.1L3.46 0.1A0.4 0.4 0 0 1 3.46 0.9L3.01 0.9ZM4.94 0.1L4.18 0.1L4.18 0.9L4.94 0.9M4.18 0.5L4.88 0.5" stroke="#fff" stroke-width="0.04"/></g></mask></defs><g clip-path="url(#logo-band)"><rect x="-1" y="-1" width="6.94" height="3" fill="currentColor" mask="url(#logo-ink)"/></g></svg></h1>
+    <p class="tag">editor &amp; librarian for the oscar</p>
   </div>
   <div class="vents" aria-hidden="true"></div>
   <nav class="lang" aria-label="Language">
@@ -426,7 +424,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Current version">
   <a class="arrow" href="#news" aria-label="What's new">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.4.2</span><span class="name">OSCAR EDITOR</span><span class="state">FREE</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.5.0</span><span class="name">OXIDE</span><span class="state">FREE</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -451,12 +449,12 @@ footer a { color: var(--muted); }
     <div>
       <h2 id="t-dl">The OSCar editor and librarian</h2>
       <p class="pitch">Back up, name, edit and invent sounds for your OSCar from Logic Pro. With the Tauntek MIDI board, every knob acts live and the plug-in shows exactly what the OSCar is playing.</p>
-      <a class="copper" id="download-btn" href="https://github.com/distortedimages-code/OSCarEditor/releases/latest/download/OSCar-Editor-mac.dmg">
+      <a class="copper" id="download-btn" href="https://github.com/distortedimages-code/OSCarEditor/releases/latest/download/OXIde-mac.dmg">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1v9m0 0L4.5 6.5M8 10l3.5-3.5M2 12.5v1.5h12v-1.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Download for Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.4.2</dd>
+        <dt>Version</dt><dd id="spec-version">0.5.0</dd>
         <dt>Formats</dt><dd>AU for Logic Pro, VST3 and standalone app</dd>
         <dt>System</dt><dd>macOS 11 or later, Apple silicon and Intel</dd>
         <dt>Synth</dt><dd>OSCar with the Tauntek MIDI board. With the original MIDI, everything works except live editing.</dd>
@@ -470,7 +468,7 @@ footer a { color: var(--muted); }
     </div>
 
     <figure class="viewer" aria-label="The plug-in's pages">
-      <div class="screen"><img id="shot" src="img/en/voix.webp" width="1600" height="914" alt="OSCar Editor, Voice page"></div>
+      <div class="screen"><img id="shot" src="img/en/voix.webp" width="1600" height="1029" alt="OXIde, Voice page"></div>
       <div class="minis" role="group" aria-label="Choose a page of the plug-in">
 <button type="button" class="mini on" id="shot-voix" data-i="0" aria-pressed="true"><span>Voice</span><i class="led"></i></button>
 <button type="button" class="mini" id="shot-generateur" data-i="1" aria-pressed="false"><span>Generator</span><i class="led"></i></button>
@@ -491,14 +489,14 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Latest versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.4.2</span><div class="cap when">latest version</div></div>
+      <div><span class="vchip">0.5.0</span><div class="cap when">latest version</div></div>
       <div class="notes">
-        <p><strong>0.4.2: Init.</strong> A plain starting sound to build a voice from scratch: oscillator 1 alone on sawtooth (Osc Balance brings in oscillator 2 on the same wave), filter wide open, no resonance, no modulation, organ-like envelope, named INIT. On the Banks page (Init button) and at the top of the voice menu (click the voice display). Undo brings the voice back; with Live CC the OSCar plays it at once, and nothing is stored in its memory until you send.</p>
-        <p><strong>The panel's own words.</strong> The Voice page now reads like the OSCar: the same names (OSC 1 WAVEFORM, OCTAVE SHIFT, OSC 2 INTERVAL, DE TUNE, PW, OSC BALANCE, NOISE BALANCE, PITCH AMOUNT, TYPE and TIME for the glide, NO TRACK, Q, SEPARATION, FILTER DRIVE, RATE, INTRO, PITCH MOD, TRIGGERING, GATE TIME…), the same position legends (N and the waveform symbols, SG / MULT / RPT1 / RPT2 / RPT1 &amp; 2 / EXT, the external trigger divide 1 to 16, octave shift −2 to +3) and the same scales: DE TUNE, the filter AMOUNT and both LFO amounts go from − to + with 0 at the top, OSC BALANCE from 1 to 2 and NOISE BALANCE from OSC to NOISE with = in the middle. These labels stay in English in French mode, as on the synth. Glide, Function, Filter type, Trigger, LFO waveform and Octave shift are checked against the panel (no more question mark). The look stays the plug-in's own.</p>
-        <p><strong>0.4.1: memories in the keyboard's order.</strong> The memory buttons, the bank list, the voice menus and the ◀ ▶ arrows now run -12, -11 … -1, then 1 … 24, as on the OSCar's keys. Only the display changes: banks, files and MIDI stay as they were.</p>
-        <p><strong>Morph A ↔ B</strong>: a new page with two voices and an Octatrack-style crossfader. The selected voice follows the fader: knobs glide from A to B, switches change half way. Smoothing sets the shortest time from A to B, so a sudden move becomes a glide. With Live CC the OSCar follows live, and the plug-in only sends the CC that changed, paced to about a third of a MIDI cable. Keep the blend, or Undo it in one step. The fader can be automated in Logic (Morph A-B).</p>
-        <p><strong>Voice page, finished</strong>: buttons with LEDs for two- or three-position modes (function, glide, arpeggiator, filter type, sync), rotary switches for the others, values in small segment readouts, the main controls of each section framed, dividers in the performance column, larger lettering.</p>
-        <p><strong>A panel with a past</strong>: the printed ink is lightly worn in places, with fine scratches and a little dust, on every page. The controls themselves stay clean.</p>
+        <p><strong>0.5.0: OXIde.</strong> The plug-in is now called OXIde, with a new logo. Updating from inside the plug-in puts OXIde where OSCar Editor was and removes the old copies; your settings, banks, voices and backups move to Documents › OXIde. If both names end up side by side (after installing the disk image by hand, say), the plug-in offers to move the old ones to the Trash. In Logic, OXIde is under OSCarTools, and projects made with OSCar Editor open as before.</p>
+        <p><strong>A Voice page that reads like a signal chart.</strong> The window is taller (1400 × 900 at 100 %). On the top floor, the sound: the wheels, then oscillators → mix → filter. Below, what shapes it: LFO, glide, triggering, arpeggiator, clock, and both envelopes side by side, the amplifier's last. Printed lines show the way: the audio path in orange along the titles, the modulations into ENV AMOUNT, LFO AMOUNT and the oscillators' pitch, and the filter envelope's DELAY from Sustain to Release. On each row, every name and every value readout sits at the same height.</p>
+        <p>- The waveforms are knobs with the panel's positions (N, ramp, square, pulse, PWM, off); waveforms −3 to −12 show their number under the knob. - Function, glide type and filter type are six-position knobs, as on the panel: the last three, under an arc, are HOLD, FIX and NO TRACK. - The keyboard octave has its five LEDs. The envelopes are faders again, four side by side for each. - The ARP column holds Function, Direction and Mode; the CLOCK column holds Sync, the external trigger divide and the tempo.</p>
+        <p><strong>The other pages use the extra height</strong>: a larger morph preview, the generator's controls in the middle of their columns, a taller user guide on the Setup page.</p>
+        <p><strong>Also new since 0.3.0</strong></p>
+        <p>- <strong>Morph A ↔ B</strong>: a page with two voices and an Octatrack-style crossfader. Knobs glide from A to B, switches change half way; Smoothing turns a sudden move into a glide. With Live CC the OSCar follows live, the plug-in only sending the CC that changed. Keep the blend or Undo it in one step; the fader can be automated in Logic (Morph A-B). - <strong>Init</strong>: a plain starting sound to build a voice from scratch (Banks page, and at the top of the voice menu). - <strong>Memories in the keyboard's order</strong>: -12 … -1, then 1 … 24, as on the OSCar's keys. - <strong>The panel's own words and scales</strong>: OSC 1 WAVEFORM, DE TUNE, OSC BALANCE, Q, SEPARATION, PITCH MOD, TRIGGERING, GATE TIME… with − / 0 / + on the bipolar knobs. They stay in English in French mode, as on the synth. - <strong>A panel with a past</strong>: the printed ink is lightly worn in places; the controls stay clean.</p>
       </div>
     </article>
   </div>
@@ -516,16 +514,16 @@ footer a { color: var(--muted); }
       <span class="step-n" aria-hidden="true">1</span>
       <div class="step-text">
         <h3>Open the disk image and drag the files</h3>
-        <p>Double-click <code>OSCar-Editor-mac.dmg</code>. In its window, drag each file onto the folder opposite. macOS may ask for your password.</p>
+        <p>Double-click <code>OXIde-mac.dmg</code>. In its window, drag each file onto the folder opposite. macOS may ask for your password.</p>
         <p class="note">Logic Pro only uses the AU; the VST3 is for other hosts, and the app works without a DAW. Already installed? No need for the disk image: the plug-in updates itself.</p>
       </div>
       <div class="step-art">
         <figure class="mini-dmg" aria-label="The disk image window: each file on the left, its folder on the right">
-          <div class="md-bar" aria-hidden="true"><i></i><i></i><i></i><span>OSCar Editor</span></div>
+          <div class="md-bar" aria-hidden="true"><i></i><i></i><i></i><span>OXIde</span></div>
           <div class="md-body">
-            <div class="md-row"><span class="md-item"><i class="ic bundle">AU</i>OSCar Editor.component</span><span class="md-arrow" aria-hidden="true"></span><span class="md-item"><i class="ic folder"></i>Components</span></div>
-            <div class="md-row"><span class="md-item"><i class="ic bundle">VST3</i>OSCar Editor.vst3</span><span class="md-arrow" aria-hidden="true"></span><span class="md-item"><i class="ic folder"></i>VST3</span></div>
-            <div class="md-row"><span class="md-item"><i class="ic bundle app">APP</i>OSCar Editor.app</span><span class="md-arrow" aria-hidden="true"></span><span class="md-item"><i class="ic folder"></i>Applications</span></div>
+            <div class="md-row"><span class="md-item"><i class="ic bundle">AU</i>OXIde.component</span><span class="md-arrow" aria-hidden="true"></span><span class="md-item"><i class="ic folder"></i>Components</span></div>
+            <div class="md-row"><span class="md-item"><i class="ic bundle">VST3</i>OXIde.vst3</span><span class="md-arrow" aria-hidden="true"></span><span class="md-item"><i class="ic folder"></i>VST3</span></div>
+            <div class="md-row"><span class="md-item"><i class="ic bundle app">APP</i>OXIde.app</span><span class="md-arrow" aria-hidden="true"></span><span class="md-item"><i class="ic folder"></i>Applications</span></div>
           </div>
         </figure>
       </div>
@@ -536,15 +534,19 @@ footer a { color: var(--muted); }
       <div class="step-text">
         <h3>Unblock the plug-in, once</h3>
         <p>The plug-in isn't notarized by Apple: until it's unblocked, macOS stops Logic from loading it. Open Terminal (<kbd>⌘</kbd> <kbd>Space</kbd>, type "Terminal", Return), paste this text and press Return. Terminal asks for your Mac password: nothing shows while you type, that's normal.</p>
-        <p class="note">The last line should read "AU VALIDATION SUCCEEDED.": Logic Pro can then load the plug-in. "No such file" for a format you didn't install is normal. Updates made from within the plug-in don't need this.</p>
+        <p class="note">The last line should read "AU VALIDATION SUCCEEDED.": Logic Pro can then load the plug-in. "No such file" for a format you didn't install is normal. The start of the command removes copies under the old name (OSCar Editor) if any are left: it's the same plug-in, and two copies confuse Logic. Updates made from within the plug-in don't need this.</p>
       </div>
       <div class="step-art">
         <div class="inset terminal">
           <div class="term-bar"><span class="cap">Terminal</span><button type="button" class="btn copy" id="copy-cmd"><span>Copy</span><i class="led"></i></button></div>
-<pre id="cmd">sudo xattr -dr com.apple.quarantine \
+<pre id="cmd">sudo rm -rf \
   "/Library/Audio/Plug-Ins/Components/OSCar Editor.component" \
   "/Library/Audio/Plug-Ins/VST3/OSCar Editor.vst3" \
   "/Applications/OSCar Editor.app"; \
+sudo xattr -dr com.apple.quarantine \
+  "/Library/Audio/Plug-Ins/Components/OXIde.component" \
+  "/Library/Audio/Plug-Ins/VST3/OXIde.vst3" \
+  "/Applications/OXIde.app"; \
 killall -9 AudioComponentRegistrar 2>/dev/null; \
 auval -v aumu Oscr Otls | tail -n 1</pre>
         </div>
@@ -555,12 +557,12 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
       <span class="step-n" aria-hidden="true">3</span>
       <div class="step-text">
         <h3>Open it in Logic Pro</h3>
-        <p>Restart Logic Pro: it checks new plug-ins when it starts. Create a software instrument track, click the instrument slot and choose OSCar Editor in the AU instruments, under OSCarTools.</p>
-        <p class="note">Not there? Logic Pro › Settings › Plug-in Manager: select OSCar Editor, then "Reset & Rescan Selection". The plug-in makes no sound: it talks straight to the OSCar through your MIDI interface.</p>
+        <p>Restart Logic Pro: it checks new plug-ins when it starts. Create a software instrument track, click the instrument slot and choose OXIde in the AU instruments, under OSCarTools.</p>
+        <p class="note">Not there? Logic Pro › Settings › Plug-in Manager: select OXIde, then "Reset & Rescan Selection". The plug-in makes no sound: it talks straight to the OSCar through your MIDI interface.</p>
       </div>
       <div class="step-art">
         <figure>
-          <img class="shot-crop" src="img/en/voix.webp" width="1600" height="914" alt="The plug-in window, Voice page" loading="lazy">
+          <img class="shot-crop" src="img/en/voix.webp" width="1600" height="1029" alt="The plug-in window, Voice page" loading="lazy">
           <figcaption>The window opens on the Voice page. Top right: the Live CC and CC DUMP lights.</figcaption>
         </figure>
       </div>
@@ -603,7 +605,7 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
   <text class="tt2" x="495" y="234" text-anchor="middle">cable 2</text>
 </svg></div>
         <figure class="ports">
-          <img class="shot-crop" src="img/en/ports.webp" width="900" height="524" alt="Setup page: MIDI output, input and channel" loading="lazy">
+          <img class="shot-crop" src="img/en/ports.webp" width="900" height="526" alt="Setup page: MIDI output, input and channel" loading="lazy">
           <figcaption>Setup page: the names shown depend on your interface.</figcaption>
         </figure>
       </div>
@@ -630,13 +632,13 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
       <div class="step-text">
         <h3>Fetch your voices before anything else</h3>
         <p>With the plug-in open, on the OSCar: hold <kbd>INSERT</kbd>, press <kbd>VOICE</kbd>, then <kbd>SPACE</kbd>. The OSCar sends its 36 voices in under a second and the bottom of the window reads "Voices received (36)".</p>
-        <p>A copy goes automatically to <span class="path">Documents › OSCar Editor › Backups</span>. That's your backup: everything reloads from the Banks page.</p>
+        <p>A copy goes automatically to <span class="path">Documents › OXIde › Backups</span>. That's your backup: everything reloads from the Banks page.</p>
         <p class="note">Nothing shows up? The MIDI input chosen in step 4 isn't the right one, or cable 2 isn't plugged in properly.</p>
       </div>
       <div class="step-art">
         <div class="combo"><kbd>INSERT</kbd><span>hold</span><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">then</span><kbd>SPACE</kbd></div>
         <figure>
-          <img class="shot-crop" src="img/en/voix-recues.webp" width="900" height="698" alt="Banks page: the 36 voices received" loading="lazy">
+          <img class="shot-crop" src="img/en/voix-recues.webp" width="900" height="917" alt="Banks page: the 36 voices received" loading="lazy">
           <figcaption>Banks page: the 36 voices received, with their names.</figcaption>
         </figure>
       </div>
@@ -692,10 +694,10 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>The plug-in follows the OSCar</h3><p>Pick a voice on the OSCar: the plug-in shows it as it plays, Duo or Arp mode included. This needs the patch CC dump (step 5).</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Try things safely</h3><p>The Generator plays every try on the OSCar without touching its memory. "Back to original" undoes, "Keep" puts the sound in the voice.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Arpeggiator in time with Logic</h3><p>Voice page, midi clock block: turn Sync to MIDI and pick a Division (1/16, 1/8T…). Then either "Send the DAW's MIDI clock to the OSCar" in Setup, or Logic's own clock (File › Project Settings › Synchronization › MIDI, Destination = the OSCar's port, Clock box). Not both.</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Play the OSCar from Logic</h3><p>Select the OSCar Editor track and turn on MIDI Thru (bottom of the window): your controller keyboard and the track's MIDI regions play the OSCar. Leave it off if you already play the OSCar through Logic's External Instrument plug-in.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Play the OSCar from Logic</h3><p>Select the OXIde track and turn on MIDI Thru (bottom of the window): your controller keyboard and the track's MIDI regions play the OSCar. Leave it off if you already play the OSCar through Logic's External Instrument plug-in.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Nothing gets lost</h3><p>Every receive and every send is backed up. "Save voice…" files a voice in Voices, "Save bank as…" a bank in Banks. A double-click loads them back.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Mind the red keys</h3><p>On the Tauntek keys page, the red keys (factory, B, C sounds, save areas) replace the OSCar's 36 voices. Save a bank first.</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Nothing to route in Logic</h3><p>In Logic, an AU instrument can't send MIDI to an interface. So OSCar Editor talks to the OSCar through its own MIDI ports, chosen in Setup.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Nothing to route in Logic</h3><p>In Logic, an AU instrument can't send MIDI to an interface. So OXIde talks to the OSCar through its own MIDI ports, chosen in Setup.</p></div></div>
   </div>
 </section>
 
@@ -716,7 +718,7 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
     <p class="legend">support</p>
     <div class="kofi">
       <h2 id="t-kofi">A coffee for the workshop</h2>
-      <p>OSCar Editor is free and will stay free. If it helps you, you can support its development on Ko-fi.</p>
+      <p>OXIde is free and will stay free. If it helps you, you can support its development on Ko-fi.</p>
       <div><a class="copper" id="kofi-open" href="https://ko-fi.com/amnesy" target="_blank" rel="noopener">Support on Ko-fi</a></div>
     </div>
   </section>
@@ -725,7 +727,7 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
 </main>
 
 <footer>
-  <p>OSCar Editor is an independent project, not affiliated with Oxford Synthesiser Company or Tauntek.</p>
+  <p>OXIde is an independent project, not affiliated with Oxford Synthesiser Company or Tauntek.</p>
   <p>MIDI board, firmware and documentation: <a href="http://www.tauntek.com/OSCar.htm" target="_blank" rel="noopener">tauntek.com/OSCar.htm</a> · <a href="https://github.com/distortedimages-code/OSCarEditor" target="_blank" rel="noopener">Source code</a> · <a href="https://ko-fi.com/amnesy" target="_blank" rel="noopener">Ko-fi</a></p>
 </footer>
 
@@ -762,7 +764,7 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
   } catch (e) {}
 
   // --- the plugin's pages
-  var PAGES = [["voix", "Voice", "Every setting of the chosen voice. Each knob goes to the OSCar as a CC, and everything can be automated from the DAW.", "OSCar Editor, Voice page"], ["generateur", "Generator", "Vary, New (bass, lead, pad, percussive, texture) and Breed, with locks per section. Every try plays on the OSCar without touching its memory.", "OSCar Editor, Generator page"], ["morphing", "Morph", "Two voices A and B and a crossfader: knobs glide from one to the other, switches change half way. Smoothing guards against sudden moves, and the fader can be automated in Logic.", "OSCar Editor, Morph page"], ["banques", "Banks", "The 36 voices with their names, and the library: your banks, your voices and every automatic backup.", "OSCar Editor, Banks page"], ["formes-d-onde", "Waveforms", "The five user waveforms (−8 to −12), drawn with the mouse.", "OSCar Editor, Waveforms page"], ["raccourcis-tauntek", "Tauntek keys", "Every TUNE/TRANSPOSE shortcut on the keyboard. The keys that replace the voices in memory are red.", "OSCar Editor, Tauntek keys page"], ["reglages", "Setup", "MIDI ports, language, Live CC, MIDI clock, MIDI Thru, updates and log.", "OSCar Editor, Setup page"]];
+  var PAGES = [["voix", "Voice", "Every setting of the chosen voice. Each knob goes to the OSCar as a CC, and everything can be automated from the DAW.", "OXIde, Voice page"], ["generateur", "Generator", "Vary, New (bass, lead, pad, percussive, texture) and Breed, with locks per section. Every try plays on the OSCar without touching its memory.", "OXIde, Generator page"], ["morphing", "Morph", "Two voices A and B and a crossfader: knobs glide from one to the other, switches change half way. Smoothing guards against sudden moves, and the fader can be automated in Logic.", "OXIde, Morph page"], ["banques", "Banks", "The 36 voices with their names, and the library: your banks, your voices and every automatic backup.", "OXIde, Banks page"], ["formes-d-onde", "Waveforms", "The five user waveforms (−8 to −12), drawn with the mouse.", "OXIde, Waveforms page"], ["raccourcis-tauntek", "Tauntek keys", "Every TUNE/TRANSPOSE shortcut on the keyboard. The keys that replace the voices in memory are red.", "OXIde, Tauntek keys page"], ["reglages", "Setup", "MIDI ports, language, Live CC, MIDI clock, MIDI Thru, updates and log.", "OXIde, Setup page"]];
   var IMG = "img/en/";
   var shot = document.getElementById("shot"), caption = document.getElementById("shot-caption");
   var minis = Array.prototype.slice.call(document.querySelectorAll(".mini"));
@@ -867,7 +869,7 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
       var lines = block.split("\n").filter(function (l) { return l.trim(); });
       if (!lines.length) return;
       if (/^#{1,6}\s/.test(lines[0]) && lines.length === 1) {
-        if (/OSCar Editor/i.test(lines[0])) return;
+        if (/OSCar Editor|OXIde/i.test(lines[0])) return;
         out.push("<p><strong>" + inline(lines[0].replace(/^#+\s*/, "")) + "</strong></p>"); return;
       }
       if (lines.every(function (l) { return /^\s*[-*]\s/.test(l); })) {
@@ -905,7 +907,8 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
         }
         // the disk image when the latest release has one, otherwise its zip
         var assets = pub[0].assets || [];
-        var file = assets.filter(function (a) { return /\.dmg$/i.test(a.name); })[0] || assets.filter(function (a) { return /mac\.zip$/i.test(a.name); })[0];
+        var pick = function (re) { return assets.filter(function (a) { return re.test(a.name); })[0]; };
+        var file = pick(/^OXIde.*\.dmg$/i) || pick(/\.dmg$/i) || pick(/^OXIde.*mac\.zip$/i) || pick(/mac\.zip$/i);
         if (file) document.getElementById("download-btn").setAttribute("href", file.browser_download_url);
       })
       .catch(function () {});

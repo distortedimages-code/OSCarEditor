@@ -16,7 +16,7 @@ public:
 
     void resized() override;
 
-    static constexpr int baseWidth = 1400, baseHeight = 800;   // everything is laid out on this size, then scaled
+    static constexpr int baseWidth = 1400, baseHeight = 900;   // everything is laid out on this size, then scaled
 
     // Shared by the pages
     void runFileChooser (const juce::String& title, const juce::String& patterns, const juce::File& folder,
@@ -39,6 +39,7 @@ public:
     void renameSelected();
     void swapSelected (juce::Component& anchor);
     void initSelected();
+    void checkOutdatedCopies();   // copies still named OSCar Editor next to OXIde: offers to bin them
     void exportSelectedVoice();
     void importIntoSelectedVoice();
     void loadBankFromFile();

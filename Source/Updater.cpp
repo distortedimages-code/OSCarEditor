@@ -224,7 +224,7 @@ void Updater::install()
                 const auto targets = installedBundles();
                 if (targets.isEmpty())
                 {
-                    err = tr ("OSCar Editor wasn't found in the usual plug-in folders: install this version by hand.");
+                    err = tr ("OXIde wasn't found in the usual plug-in folders: install this version by hand.");
                 }
                 else
                 {
@@ -333,19 +333,43 @@ juce::Array<juce::File> Updater::installedBundles()
     auto add = [&r] (const juce::File& f) { if (f.isDirectory() && ! r.contains (f)) r.add (f); };
 
     const auto home = juce::File::getSpecialLocation (juce::File::userHomeDirectory);
-    for (const auto& base : { home, juce::File ("/") })
+    for (const auto* name : { productName, legacyName })
     {
-        add (base.getChildFile ("Library/Audio/Plug-Ins/Components/OSCar Editor.component"));
-        add (base.getChildFile ("Library/Audio/Plug-Ins/VST3/OSCar Editor.vst3"));
+        const juce::String n (name);
+        for (const auto& base : { home, juce::File ("/") })
+        {
+            add (base.getChildFile ("Library/Audio/Plug-Ins/Components/" + n + ".component"));
+            add (base.getChildFile ("Library/Audio/Plug-Ins/VST3/" + n + ".vst3"));
+        }
+        add (home.getChildFile ("Applications/" + n + ".app"));
+        add (juce::File ("/Applications/" + n + ".app"));
     }
-    add (home.getChildFile ("Applications/OSCar Editor.app"));
-    add (juce::File ("/Applications/OSCar Editor.app"));
 
     // the running copy, wherever it is
     const auto self = juce::File::getSpecialLocation (juce::File::currentApplicationFile);
-    if (self.hasFileExtension ("component;vst3;app") && self.getFileNameWithoutExtension() == "OSCar Editor")
+    if (self.hasFileExtension ("component;vst3;app")
+        && (self.getFileNameWithoutExtension() == productName || self.getFileNameWithoutExtension() == legacyName))
         add (self);
     return r;
+}
+
+juce::Array<juce::File> Updater::outdatedCopies (const juce::Array<juce::File>& installed)
+{
+    juce::Array<juce::File> r;
+    for (const auto& old : installed)
+        if (old.getFileNameWithoutExtension() == legacyName)
+            for (const auto& f : installed)
+                if (f.getFileNameWithoutExtension() == productName && f.getFileExtension() == old.getFileExtension())
+                {
+                    r.addIfNotAlreadyThere (old);
+                    break;
+                }
+    return r;
+}
+
+juce::Array<juce::File> Updater::outdatedCopies()
+{
+    return outdatedCopies (installedBundles());
 }
 
 juce::Result Updater::installBundles (const juce::File& zip, const juce::Array<juce::File>& targets,
@@ -355,10 +379,32 @@ juce::Result Updater::installBundles (const juce::File& zip, const juce::Array<j
     const auto stamp = juce::Time::getCurrentTime().formatted ("%Y%m%d-%H%M%S");
     juce::StringArray problems;
 
+    juce::Array<juce::File> done;   // bundles already installed by this call
+
     for (const auto& target : targets)
     {
-        const auto name = target.getFileName();
+        // From 0.5 the bundles are named OXIde: a copy with the old name is replaced by the new
+        // one next to it, then removed.
         const auto parent = target.getParentDirectory();
+        const auto dest = parent.getChildFile (juce::String (productName) + target.getFileExtension());
+        const auto name = dest.getFileName();
+        const auto removeRenamed = [&]
+        {
+            if (target == dest || ! target.exists())
+                return;
+            const auto gone = parent.getChildFile ("." + target.getFileName() + ".old-" + stamp);
+            if (target.moveFileTo (gone))
+                gone.deleteRecursively();
+            else
+                problems.add (tr ("%1: the copy with the old name couldn't be removed. Delete it by hand.", { target.getFullPathName() }));
+        };
+
+        if (done.contains (dest))
+        {
+            removeRenamed();
+            continue;
+        }
+
         const auto staging = parent.getChildFile (".oscar-update-" + stamp);
         staging.deleteRecursively();
 
@@ -377,7 +423,9 @@ juce::Result Updater::installBundles (const juce::File& zip, const juce::Array<j
             continue;
         }
 
-        const auto fresh = staging.getChildFile (name);
+        auto fresh = staging.getChildFile (name);
+        if (! fresh.isDirectory())
+            fresh = staging.getChildFile (target.getFileName());   // a zip with the old names
         const auto plist = fresh.getChildFile ("Contents/Info.plist").loadFileAsString();
         if (! fresh.isDirectory() || ! plist.contains (kBundleId) || ! plist.contains (normalise (expectedVersion)))
         {
@@ -386,16 +434,18 @@ juce::Result Updater::installBundles (const juce::File& zip, const juce::Array<j
             continue;
         }
 
+        const bool hadDest = dest.exists();
         const auto old = parent.getChildFile ("." + name + ".old-" + stamp);
-        if (! target.moveFileTo (old))
+        if (hadDest && ! dest.moveFileTo (old))
         {
             problems.add (tr ("%1: couldn't be replaced (is it in use or protected?). Left unchanged.", { name }));
             cleanup();
             continue;
         }
-        if (! fresh.moveFileTo (target))
+        if (! fresh.moveFileTo (dest))
         {
-            old.moveFileTo (target);   // put the previous version back
+            if (hadDest)
+                old.moveFileTo (dest);   // put the previous version back
             problems.add (tr ("%1: couldn't be replaced. The previous version was kept.", { name }));
             cleanup();
             continue;
@@ -403,7 +453,9 @@ juce::Result Updater::installBundles (const juce::File& zip, const juce::Array<j
 
         old.deleteRecursively();
         cleanup();
-        installed.add (target.getFullPathName());
+        installed.add (dest.getFullPathName());
+        done.add (dest);
+        removeRenamed();
     }
 
     return problems.isEmpty() ? juce::Result::ok() : juce::Result::fail (problems.joinIntoString ("\n"));

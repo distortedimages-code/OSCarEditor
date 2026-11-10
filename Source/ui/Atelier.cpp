@@ -507,6 +507,129 @@ void drawLed (juce::Graphics& g, juce::Point<float> c, float d, bool on)
     }
 }
 
+//==============================================================================
+namespace
+{
+    int finishNumber = 0;
+}
+
+int currentFinish() { return finishNumber; }
+
+void applyFinish (int finish)
+{
+    finishNumber = juce::jlimit (0, 3, finish);
+    using namespace colours;
+    struct Set { juce::uint32 top, mid, low, in, inLow, text, label, dim, faint, silk, silkDim, accent, line; };
+    static const Set sets[4] = {
+        { 0xff2b2e32, 0xff222428, 0xff1d1f22, 0xff1c1e21, 0xff17181b, 0xffe6e7e9, 0xffc3c6ca, 0xff9a9ea4, 0xff7d8085, 0xffb4b8be, 0xff80848a, 0xffd2693a, 0x33ffffff },   // graphite
+        { 0xff1c1c1d, 0xff161617, 0xff121213, 0xff19191a, 0xff131314, 0xfff3ecdc, 0xffe8dec8, 0xffb6ad9a, 0xff8e8676, 0xffe4dac2, 0xffa69d89, 0xffe8742c, 0x33fff4dc },   // black, ivory print
+        { 0xff2f2722, 0xff28211b, 0xff211b16, 0xff231d18, 0xff1c1713, 0xffefe4d1, 0xffdccbad, 0xffab9a7f, 0xff887961, 0xffd5c3a2, 0xff9c8c72, 0xffc5602a, 0x33ffe8d0 },   // oxide
+        { 0xff29313b, 0xff212830, 0xff1b2128, 0xff1d232a, 0xff171c22, 0xffe9eef3, 0xffc6cfd9, 0xff99a4af, 0xff7b8692, 0xffbac5d0, 0xff808b97, 0xffff9b5e, 0x33e8f0ff },   // slate
+    };
+    const auto& f = sets[finishNumber];
+    panelTop = juce::Colour (f.top); panel = juce::Colour (f.mid); panelLow = juce::Colour (f.low);
+    inset = juce::Colour (f.in); insetLow = juce::Colour (f.inLow);
+    text = juce::Colour (f.text); label = juce::Colour (f.label); dim = juce::Colour (f.dim); faint = juce::Colour (f.faint);
+    silk = juce::Colour (f.silk); silkDim = juce::Colour (f.silkDim); accent = juce::Colour (f.accent); groupLine = juce::Colour (f.line);
+}
+
+//==============================================================================
+// Logo
+namespace
+{
+    // In cap heights: each letter's width, the gap between letters, the stroke (three lines, two gaps).
+    constexpr float kLogoStroke = 0.2f, kLogoGap = 0.12f;
+    constexpr float kLetterWidths[5] = { 1.25f, 1.1f, 0.2f, 1.05f, 0.86f };   // O X I D E
+
+    // The centre lines of the five letters for a cap height of 1, from x = 0.
+    juce::Path logoCentreLines()
+    {
+        const float w = kLogoStroke, h = 1.0f, ext = 0.3f;   // ext: open ends run past the band, cut flat by the clip
+        juce::Path p;
+        float x = 0.0f;
+        // O
+        p.addEllipse (x + w * 0.5f, w * 0.5f, kLetterWidths[0] - w, h - w);
+        x += kLetterWidths[0] + kLogoGap;
+        // X: two diagonals
+        {
+            const float a = x + w * 0.62f, b = x + kLetterWidths[1] - w * 0.62f;
+            const float dx = (b - a) * ext;
+            p.startNewSubPath (a - dx, -ext); p.lineTo (b + dx, h + ext);
+            p.startNewSubPath (b + dx, -ext); p.lineTo (a - dx, h + ext);
+        }
+        x += kLetterWidths[1] + kLogoGap;
+        // I
+        p.startNewSubPath (x + w * 0.5f, -ext); p.lineTo (x + w * 0.5f, h + ext);
+        x += kLetterWidths[2] + kLogoGap;
+        // D: straight back, round bowl
+        {
+            const float r = (h - w) * 0.5f, cx = x + kLetterWidths[3] - w * 0.5f - r;
+            p.startNewSubPath (x + w * 0.5f, w * 0.5f);
+            p.lineTo (cx, w * 0.5f);
+            p.addCentredArc (cx, h * 0.5f, r, r, 0.0f, 0.0f, juce::MathConstants<float>::pi);
+            p.lineTo (x + w * 0.5f, h - w * 0.5f);
+            p.closeSubPath();
+        }
+        x += kLetterWidths[3] + kLogoGap;
+        // E
+        {
+            const float right = x + kLetterWidths[4];
+            p.startNewSubPath (right, w * 0.5f); p.lineTo (x + w * 0.5f, w * 0.5f);
+            p.lineTo (x + w * 0.5f, h - w * 0.5f); p.lineTo (right, h - w * 0.5f);
+            p.startNewSubPath (x + w * 0.5f, h * 0.5f); p.lineTo (right - 0.06f, h * 0.5f);
+        }
+        return p;
+    }
+}
+
+float logoWidth (float height)
+{
+    float w = 4.0f * kLogoGap;
+    for (auto l : kLetterWidths)
+        w += l;
+    return w * height;
+}
+
+void drawLogo (juce::Graphics& g, juce::Point<float> topLeft, float height, juce::Colour ink)
+{
+    // Three lines per stroke: a mask with the full stroke, its middle cleared, its centre line drawn
+    // again. Rendered at the screen's pixel scale and kept until the size changes.
+    static juce::Image cache;
+    static float cachedPixels = 0.0f;
+    const float pixelScale = g.getInternalContext().getPhysicalPixelScaleFactor();
+    const float px = height * pixelScale;
+    if (! cache.isValid() || std::abs (px - cachedPixels) > 0.01f)
+    {
+        cachedPixels = px;
+        const int iw = (int) std::ceil (logoWidth (px)) + 2, ih = (int) std::ceil (px) + 2;
+        juce::Image rgb (juce::Image::RGB, iw, ih, true);
+        {
+            juce::Graphics m (rgb);
+            m.addTransform (juce::AffineTransform::scale (px).translated (1.0f, 1.0f));
+            juce::Path band;   // open ends (X, I) are cut flat at the cap height
+            band.addRectangle (0.0f, 0.0f, logoWidth (1.0f), 1.0f);
+            m.reduceClipRegion (band);
+            const auto lines = logoCentreLines();
+            const auto stroke = [&] (float width, juce::Colour c)
+            {
+                m.setColour (c);
+                m.strokePath (lines, juce::PathStrokeType (width, juce::PathStrokeType::mitered, juce::PathStrokeType::butt));
+            };
+            stroke (kLogoStroke, juce::Colours::white);
+            stroke (kLogoStroke * 0.6f, juce::Colours::black);
+            stroke (kLogoStroke * 0.2f, juce::Colours::white);
+        }
+        cache = juce::Image (juce::Image::SingleChannel, iw, ih, true);
+        const juce::Image::BitmapData src (rgb, juce::Image::BitmapData::readOnly), dst (cache, juce::Image::BitmapData::writeOnly);
+        for (int y = 0; y < ih; ++y)
+            for (int x = 0; x < iw; ++x)
+                *dst.getPixelPointer (x, y) = src.getPixelColour (x, y).getRed();
+    }
+    juce::Graphics::ScopedSaveState s (g);
+    g.setColour (ink);
+    g.drawImageTransformed (cache, juce::AffineTransform::translation (-1.0f, -1.0f).scaled (1.0f / pixelScale).translated (topLeft.x, topLeft.y), true);
+}
+
 void drawVfdWindow (juce::Graphics& g, juce::Rectangle<float> area)
 {
     g.setColour (juce::Colours::black);
@@ -1113,22 +1236,22 @@ void Fader::setValue (int v)
 
 void Fader::resized()
 {
-    slider.setBounds (getLocalBounds().withTrimmedBottom (34));
+    slider.setBounds (getLocalBounds().withTrimmedBottom (footer + 6));
 }
 
 void Fader::paint (juce::Graphics& g)
 {
-    auto area = getLocalBounds().removeFromBottom (32);
-    g.setFont (Fonts::bold (11.5f).withExtraKerningFactor (0.06f));
-    g.setColour (colours::label);
-    g.drawText (lang::upper (labelText), area.removeFromTop (16), juce::Justification::centred);
+    // name and value as under a knob: the name 16 high, the readout 18 high just below
+    auto area = getLocalBounds().removeFromBottom (footer);
+    drawControlLabel (g, area.removeFromTop (16), lang::upper (labelText), Fonts::label (12.0f).withExtraKerningFactor (0.04f),
+                      LabelStyle::Plain, colours::label, 1);
     drawSegmentReadout (g, readoutBounds(), juce::String ((int) slider.getValue()), 3, slider.isMouseOverOrDragging());
 }
 
 juce::Rectangle<float> Fader::readoutBounds() const
 {
-    const auto box = getLocalBounds().removeFromBottom (16).toFloat();
-    return juce::Rectangle<float> (juce::jmin (32.0f, box.getWidth()), 15.0f).withCentre (box.getCentre());
+    const auto box = getLocalBounds().removeFromBottom (18).toFloat();
+    return juce::Rectangle<float> (juce::jmin (36.0f, box.getWidth()), 18.0f).withCentre (box.getCentre());
 }
 
 //==============================================================================
@@ -1315,7 +1438,7 @@ void VfdNumber::paint (juce::Graphics& g)
 
     g.setFont (Fonts::label (12.0f).withExtraKerningFactor (0.05f));
     g.setColour (colours::label);
-    g.drawFittedText (lang::upper (labelText), getLocalBounds().withTrimmedTop (windowHeight + 4), juce::Justification::centredTop, 1, 0.8f);
+    g.drawFittedText (lang::upper (labelText), getLocalBounds().removeFromBottom (15), juce::Justification::centred, 1, 0.8f);
 }
 
 //==============================================================================
@@ -1350,6 +1473,30 @@ int RotarySwitch::indexOf (int v) const
         if (items[i].value == v)
             return (int) i;
     return -1;
+}
+
+bool RotarySwitch::isExtra (int v) const
+{
+    for (const auto& it : extra)
+        if (it.value == v)
+            return true;
+    return false;
+}
+
+int RotarySwitch::shownIndex() const
+{
+    const int i = indexOf (value);
+    return i >= 0 ? i : (isExtra (value) ? anchor : -1);
+}
+
+void RotarySwitch::chooseValue (int v)
+{
+    if (v == value)
+        return;
+    value = v;
+    repaint();
+    if (onChange)
+        onChange (value);
 }
 
 float RotarySwitch::angleOf (int index) const
@@ -1388,7 +1535,7 @@ juce::Rectangle<float> RotarySwitch::legendBox (int index) const
 void RotarySwitch::paint (juce::Graphics& g)
 {
     const auto c = centre();
-    const int current = indexOf (value);
+    const int current = shownIndex();
     const auto font = Fonts::bold (legendSize).withExtraKerningFactor (0.04f);
     g.setFont (font);
     for (int i = 0; i < (int) items.size(); ++i)
@@ -1412,7 +1559,30 @@ void RotarySwitch::paint (juce::Graphics& g)
             g.drawFittedText (text, box.expanded (2.0f).toNearestInt(), juce::Justification::centred, 2, 1.0f);
     }
 
+    // FIX / HOLD / NO TRACK: an arc outside the legends of the flagged positions, its name above
+    if (bracketFrom > 0 && bracketFrom < (int) items.size())
+    {
+        const float r = radius + 26.0f, a0 = angleOf (bracketFrom) - 0.10f, a1 = angleOf ((int) items.size() - 1) + 0.10f;
+        juce::Path arc;
+        arc.addCentredArc (c.x, c.y, r, r, 0.0f, a0, a1, true);
+        g.setColour (colours::silkDim);
+        g.strokePath (arc, juce::PathStrokeType (1.2f));
+        for (auto a : { a0, a1 })
+            g.drawLine (juce::Line<float> (polar (c, r - 3.0f, a), polar (c, r + 1.0f, a)), 1.2f);
+        const auto top = polar (c, r, a0);
+        g.setFont (Fonts::bold (9.0f).withExtraKerningFactor (0.08f));
+        g.setColour (colours::silk);
+        g.drawText (bracketName, juce::Rectangle<float> (60.0f, 10.0f).withCentre (top.translated (8.0f, -7.0f)), juce::Justification::centred, false);
+        g.setFont (font);
+    }
+
     drawSwitchKnob (g, c, radius, current >= 0 ? angleOf (current) : 0.0f);
+
+    // a numbered waveform: its number under the knob
+    if (isExtra (value))
+        for (const auto& it : extra)
+            if (it.value == value)
+                drawSegmentReadout (g, juce::Rectangle<float> (32.0f, 13.0f).withCentre ({ c.x, c.y + radius + 10.0f }), it.legend, 3, true);   // in the gap under the knob
 
     g.setFont (Fonts::label (12.0f).withExtraKerningFactor (0.05f));
     g.setColour (colours::label);
@@ -1432,7 +1602,7 @@ void RotarySwitch::choose (int index)
 void RotarySwitch::mouseDown (const juce::MouseEvent& e)
 {
     dragged = pickedLegend = false;
-    dragFrom = indexOf (value);
+    dragFrom = shownIndex();
     for (int i = 0; i < (int) items.size(); ++i)
         if (shownLegend (i).isNotEmpty() && legendBox (i).expanded (3.0f, 2.0f).contains (e.position))
         {
@@ -1462,7 +1632,7 @@ void RotarySwitch::mouseUp (const juce::MouseEvent& e)
 void RotarySwitch::mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& d)
 {
     if (std::abs (d.deltaY) > 0.0f && ! items.empty())
-        choose (juce::jlimit (0, (int) items.size() - 1, juce::jmax (0, indexOf (value)) + (d.deltaY > 0 ? -1 : 1)));
+        choose (juce::jlimit (0, (int) items.size() - 1, juce::jmax (0, shownIndex()) + (d.deltaY > 0 ? -1 : 1)));
 }
 
 void RotarySwitch::showList()
@@ -1472,12 +1642,112 @@ void RotarySwitch::showList()
         m.addSectionHeader (labelText);
     for (const auto& it : items)
         m.addItem (it.value + 1000, it.name, true, it.value == value);
+    if (! extra.empty())
+        m.addSeparator();
+    for (const auto& it : extra)
+        m.addItem (it.value + 1000, it.name, true, it.value == value);
     m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this),
                      [safe = juce::Component::SafePointer<RotarySwitch> (this)] (int r)
                      {
                          if (safe != nullptr && r >= 1000)
-                             safe->choose (safe->indexOf (r - 1000));
+                             safe->chooseValue (r - 1000);
                      });
+}
+
+//==============================================================================
+// LedRow
+//==============================================================================
+LedRow::LedRow (const juce::String& l) : labelText (l)
+{
+    setMouseCursor (juce::MouseCursor::PointingHandCursor);
+}
+
+juce::Rectangle<float> LedRow::stripBounds() const
+{
+    const float ledsW = 14.0f * (float) juce::jmax (1, (int) items.size()) + 8.0f;
+    return juce::Rectangle<float> (ledsW + 2.0f * (18.0f + 4.0f), 22.0f).withCentre ({ (float) getWidth() * 0.5f, (float) centreY });
+}
+
+juce::Rectangle<float> LedRow::stepButton (int direction) const
+{
+    const auto s = stripBounds();
+    return direction < 0 ? s.withWidth (18.0f) : s.withLeft (s.getRight() - 18.0f);
+}
+
+juce::Rectangle<float> LedRow::ledArea (int index) const
+{
+    const auto s = stripBounds().reduced (22.0f, 0.0f);
+    return juce::Rectangle<float> (14.0f, s.getHeight()).withPosition (s.getX() + 4.0f + 14.0f * (float) index, s.getY());
+}
+
+int LedRow::indexOf (int v) const
+{
+    for (size_t i = 0; i < items.size(); ++i)
+        if (items[i].value == v)
+            return (int) i;
+    return -1;
+}
+
+void LedRow::choose (int index)
+{
+    if (index < 0 || index >= (int) items.size() || items[(size_t) index].value == value)
+        return;
+    value = items[(size_t) index].value;
+    repaint();
+    if (onChange)
+        onChange (value);
+}
+
+void LedRow::paint (juce::Graphics& g)
+{
+    g.setFont (Fonts::label (12.0f).withExtraKerningFactor (0.05f));
+    g.setColour (colours::label);
+    g.drawFittedText (lang::upper (labelText), getLocalBounds().removeFromBottom (15), juce::Justification::centred, 1, 0.8f);
+
+    const auto strip = stripBounds();
+    const auto leds = strip.reduced (22.0f, 0.0f);
+    g.setColour (juce::Colours::black);
+    g.fillRoundedRectangle (leds.expanded (1.0f), 4.0f);
+    g.setColour (juce::Colour (0xff0d0d0e));
+    g.fillRoundedRectangle (leds, 3.0f);
+    const int current = indexOf (value);
+    for (int i = 0; i < (int) items.size(); ++i)
+        drawLed (g, ledArea (i).getCentre(), 9.0f, i == current);
+
+    for (int d : { -1, 1 })
+    {
+        const auto b = stepButton (d);
+        drawHardButton (g, b, pressed == d, isMouseOver());
+        juce::Path arrow;
+        const auto c = b.getCentre().translated (0.0f, pressed == d ? 1.0f : 0.0f);
+        arrow.addTriangle (c.x + 3.0f * (float) d, c.y, c.x - 2.5f * (float) d, c.y - 4.0f, c.x - 2.5f * (float) d, c.y + 4.0f);
+        g.setColour (colours::label);
+        g.fillPath (arrow);
+    }
+}
+
+void LedRow::mouseDown (const juce::MouseEvent& e)
+{
+    for (int d : { -1, 1 })
+        if (stepButton (d).contains (e.position))
+        {
+            pressed = d;
+            choose (juce::jlimit (0, (int) items.size() - 1, juce::jmax (0, indexOf (value)) + d));
+            repaint();
+            return;
+        }
+    for (int i = 0; i < (int) items.size(); ++i)
+        if (ledArea (i).expanded (0.0f, 6.0f).contains (e.position))
+        {
+            choose (i);
+            return;
+        }
+}
+
+void LedRow::mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& d)
+{
+    if (std::abs (d.deltaY) > 0.0f && ! items.empty())
+        choose (juce::jlimit (0, (int) items.size() - 1, juce::jmax (0, indexOf (value)) + (d.deltaY > 0 ? 1 : -1)));
 }
 
 //==============================================================================
@@ -1545,7 +1815,7 @@ void LedSelector::paint (juce::Graphics& g)
     }
     g.setFont (Fonts::label (12.0f).withExtraKerningFactor (0.05f));
     g.setColour (colours::label);
-    g.drawFittedText (lang::upper (labelText), getLocalBounds().withTop (blockHeight() + 6), juce::Justification::centredTop, 1, 0.8f);
+    g.drawFittedText (lang::upper (labelText), getLocalBounds().withTop (blockHeight() + labelGap()), juce::Justification::centredTop, 1, 0.8f);
 }
 
 void LedSelector::choose (int index)

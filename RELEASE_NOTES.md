@@ -1,27 +1,41 @@
 ## English
 
-**0.4.2: Init.** A plain starting sound to build a voice from scratch: oscillator 1 alone on sawtooth (Osc Balance brings in oscillator 2 on the same wave), filter wide open, no resonance, no modulation, organ-like envelope, named INIT. On the Banks page (Init button) and at the top of the voice menu (click the voice display). Undo brings the voice back; with Live CC the OSCar plays it at once, and nothing is stored in its memory until you send.
+**0.5.0: OXIde.** The plug-in is now called OXIde, with a new logo. Updating from inside the plug-in puts OXIde where OSCar Editor was and removes the old copies; your settings, banks, voices and backups move to Documents › OXIde. If both names end up side by side (after installing the disk image by hand, say), the plug-in offers to move the old ones to the Trash. In Logic, OXIde is under OSCarTools, and projects made with OSCar Editor open as before.
 
-**The panel's own words.** The Voice page now reads like the OSCar: the same names (OSC 1 WAVEFORM, OCTAVE SHIFT, OSC 2 INTERVAL, DE TUNE, PW, OSC BALANCE, NOISE BALANCE, PITCH AMOUNT, TYPE and TIME for the glide, NO TRACK, Q, SEPARATION, FILTER DRIVE, RATE, INTRO, PITCH MOD, TRIGGERING, GATE TIME…), the same position legends (N and the waveform symbols, SG / MULT / RPT1 / RPT2 / RPT1 & 2 / EXT, the external trigger divide 1 to 16, octave shift −2 to +3) and the same scales: DE TUNE, the filter AMOUNT and both LFO amounts go from − to + with 0 at the top, OSC BALANCE from 1 to 2 and NOISE BALANCE from OSC to NOISE with = in the middle. These labels stay in English in French mode, as on the synth. Glide, Function, Filter type, Trigger, LFO waveform and Octave shift are checked against the panel (no more question mark). The look stays the plug-in's own.
+**A Voice page that reads like a signal chart.** The window is taller (1400 × 900 at 100 %). On the top floor, the sound: the wheels, then oscillators → mix → filter. Below, what shapes it: LFO, glide, triggering, arpeggiator, clock, and both envelopes side by side, the amplifier's last. Printed lines show the way: the audio path in orange along the titles, the modulations into ENV AMOUNT, LFO AMOUNT and the oscillators' pitch, and the filter envelope's DELAY from Sustain to Release. On each row, every name and every value readout sits at the same height.
 
-**0.4.1: memories in the keyboard's order.** The memory buttons, the bank list, the voice menus and the ◀ ▶ arrows now run -12, -11 … -1, then 1 … 24, as on the OSCar's keys. Only the display changes: banks, files and MIDI stay as they were.
+- The waveforms are knobs with the panel's positions (N, ramp, square, pulse, PWM, off); waveforms −3 to −12 show their number under the knob.
+- Function, glide type and filter type are six-position knobs, as on the panel: the last three, under an arc, are HOLD, FIX and NO TRACK.
+- The keyboard octave has its five LEDs. The envelopes are faders again, four side by side for each.
+- The ARP column holds Function, Direction and Mode; the CLOCK column holds Sync, the external trigger divide and the tempo.
 
-**Morph A ↔ B**: a new page with two voices and an Octatrack-style crossfader. The selected voice follows the fader: knobs glide from A to B, switches change half way. Smoothing sets the shortest time from A to B, so a sudden move becomes a glide. With Live CC the OSCar follows live, and the plug-in only sends the CC that changed, paced to about a third of a MIDI cable. Keep the blend, or Undo it in one step. The fader can be automated in Logic (Morph A-B).
+**The other pages use the extra height**: a larger morph preview, the generator's controls in the middle of their columns, a taller user guide on the Setup page.
 
-**Voice page, finished**: buttons with LEDs for two- or three-position modes (function, glide, arpeggiator, filter type, sync), rotary switches for the others, values in small segment readouts, the main controls of each section framed, dividers in the performance column, larger lettering.
+**Also new since 0.3.0**
 
-**A panel with a past**: the printed ink is lightly worn in places, with fine scratches and a little dust, on every page. The controls themselves stay clean.
+- **Morph A ↔ B**: a page with two voices and an Octatrack-style crossfader. Knobs glide from A to B, switches change half way; Smoothing turns a sudden move into a glide. With Live CC the OSCar follows live, the plug-in only sending the CC that changed. Keep the blend or Undo it in one step; the fader can be automated in Logic (Morph A-B).
+- **Init**: a plain starting sound to build a voice from scratch (Banks page, and at the top of the voice menu).
+- **Memories in the keyboard's order**: -12 … -1, then 1 … 24, as on the OSCar's keys.
+- **The panel's own words and scales**: OSC 1 WAVEFORM, DE TUNE, OSC BALANCE, Q, SEPARATION, PITCH MOD, TRIGGERING, GATE TIME… with − / 0 / + on the bipolar knobs. They stay in English in French mode, as on the synth.
+- **A panel with a past**: the printed ink is lightly worn in places; the controls stay clean.
 
 ## Français
 
-**0.4.2 : Init.** Un son de départ neutre pour construire une voix à partir de zéro : l'oscillateur 1 seul en dent de scie (Osc Balance fait entrer l'oscillateur 2 sur la même onde), filtre grand ouvert, sans résonance ni modulation, enveloppe façon orgue, nommé INIT. Sur la page Banques (bouton Init) et en haut du menu des voix (clic sur l'afficheur). Annuler ramène la voix ; avec Live CC l'OSCar le joue tout de suite, et rien n'est écrit dans sa mémoire tant que tu n'envoies pas.
+**0.5.0 : OXIde.** Le plugin s'appelle maintenant OXIde, avec un nouveau logo. La mise à jour depuis le plugin met OXIde à la place d'OSCar Editor et retire les anciennes copies ; tes réglages, banques, voix et sauvegardes passent dans Documents › OXIde. Si les deux noms se retrouvent côte à côte (après une installation à la main depuis l'image disque, par exemple), le plugin propose de mettre les anciens à la corbeille. Dans Logic, OXIde est rangé sous OSCarTools, et les projets faits avec OSCar Editor s'ouvrent comme avant.
 
-**Les mots de la façade.** La page Voix se lit maintenant comme l'OSCar : les mêmes noms (OSC 1 WAVEFORM, OCTAVE SHIFT, OSC 2 INTERVAL, DE TUNE, PW, OSC BALANCE, NOISE BALANCE, PITCH AMOUNT, TYPE et TIME pour le glide, NO TRACK, Q, SEPARATION, FILTER DRIVE, RATE, INTRO, PITCH MOD, TRIGGERING, GATE TIME…), les mêmes repères de position (N et les symboles d'onde, SG / MULT / RPT1 / RPT2 / RPT1 & 2 / EXT, la division d'horloge externe de 1 à 16, l'octave de −2 à +3) et les mêmes graduations : DE TUNE, l'AMOUNT du filtre et les deux quantités du LFO vont de − à + avec 0 en haut, OSC BALANCE de 1 à 2 et NOISE BALANCE de OSC à NOISE avec = au milieu. Ces libellés restent en anglais en mode français, comme sur le synthé. Glide, Function, type de filtre, Trigger, forme du LFO et Octave shift sont vérifiés sur la façade (plus de point d'interrogation). Le style reste celui du plugin.
+**Une page Voix qui se lit comme un schéma.** La fenêtre est plus haute (1400 × 900 à 100 %). À l'étage du haut, le son : les molettes, puis oscillateurs → mix → filtre. En bas, ce qui le façonne : LFO, glide, triggering, arpégiateur, horloge, et les deux enveloppes côte à côte, celle de l'ampli en dernier. Des lignes imprimées montrent le chemin : le son en orange le long des titres, les modulations vers ENV AMOUNT, LFO AMOUNT et la hauteur des oscillateurs, et le DELAY de l'enveloppe du filtre, de Sustain à Release. Sur chaque rangée, tous les noms et tous les afficheurs de valeur sont à la même hauteur.
 
-**0.4.1 : les mémoires dans l'ordre du clavier.** Les boutons mémoire, la liste de la banque, les menus de voix et les flèches ◀ ▶ vont maintenant de -12, -11 … -1, puis 1 … 24, comme sur les touches de l'OSCar. Seul l'affichage change : banques, fichiers et MIDI restent identiques.
+- Les formes d'onde sont des potards avec les positions de la façade (N, rampe, carré, impulsion, PWM, off) ; les formes −3 à −12 affichent leur numéro sous le potard.
+- Function, le type de glide et le type de filtre sont des potards à six positions, comme sur la façade : les trois dernières, sous un arc, sont HOLD, FIX et NO TRACK.
+- L'octave du clavier a ses cinq LED. Les enveloppes repassent en tirettes, quatre côte à côte pour chacune.
+- La colonne ARP réunit Function, Direction et Mode ; la colonne CLOCK réunit Sync, la division d'horloge externe et le tempo.
 
-**Morphing A ↔ B** : une nouvelle page avec deux voix et un crossfader façon Octatrack. La voix choisie suit le fader : les potards glissent de A vers B, les sélecteurs basculent à mi-course. Le lissage fixe le temps le plus court pour aller de A à B : un geste brusque devient un glissement. Avec Live CC, l'OSCar suit en direct, et le plugin n'envoie que les CC qui ont changé, à un rythme d'environ un tiers d'un câble MIDI. Garde le mélange, ou annule-le d'un coup. Le fader s'automatise dans Logic (Morph A-B).
+**Les autres pages profitent de la hauteur** : un aperçu de morphing plus grand, les commandes du générateur au milieu de leurs colonnes, un mode d'emploi plus haut dans Réglages.
 
-**Page Voix finalisée** : boutons à LED pour les modes à deux ou trois positions (function, glide, arpégiateur, type de filtre, sync), sélecteurs rotatifs pour les autres, valeurs dans de petits afficheurs à segments, commandes principales de chaque section encadrées, séparateurs dans la colonne performance, textes plus grands.
+**Aussi nouveau depuis la 0.3.0**
 
-**Une façade qui a vécu** : l'encre est légèrement usée par endroits, avec de fines rayures et un peu de poussière, sur toutes les pages. Les commandes restent intactes.
+- **Morphing A ↔ B** : une page avec deux voix et un crossfader façon Octatrack. Les potards glissent de A vers B, les sélecteurs basculent à mi-course ; le lissage transforme un geste brusque en glissement. Avec Live CC, l'OSCar suit en direct, le plugin n'envoyant que les CC qui ont changé. Garde le mélange ou annule-le d'un coup ; le fader s'automatise dans Logic (Morph A-B).
+- **Init** : un son de départ neutre pour construire une voix à partir de zéro (page Banques, et en haut du menu des voix).
+- **Les mémoires dans l'ordre du clavier** : -12 … -1, puis 1 … 24, comme sur les touches de l'OSCar.
+- **Les mots et les graduations de la façade** : OSC 1 WAVEFORM, DE TUNE, OSC BALANCE, Q, SEPARATION, PITCH MOD, TRIGGERING, GATE TIME… avec − / 0 / + sur les potards bipolaires. Ils restent en anglais en mode français, comme sur le synthé.
+- **Une façade qui a vécu** : l'encre est légèrement usée par endroits ; les commandes restent intactes.

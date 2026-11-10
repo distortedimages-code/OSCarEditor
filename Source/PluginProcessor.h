@@ -76,7 +76,7 @@ public:
     static juce::File getBackupFolder();
     static juce::File getBanksFolder();          // the user's saved banks (.oscbank, .syx)
     static juce::File getVoicesFolder();         // the user's saved voices (.oscvoice)
-    static juce::File getUserFolder();           // Documents/OSCar Editor
+    static juce::File getUserFolder();           // Documents/OXIde (moved from Documents/OSCar Editor)
 
     //==============================================================================
     // Sound generator (message thread). It works on the selected voice, which the OSCar

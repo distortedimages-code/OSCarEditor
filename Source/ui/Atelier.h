@@ -9,18 +9,23 @@
 namespace atelier
 {
 //==============================================================================
-namespace colours
+namespace colours   // the panel's finish can change them (applyFinish)
 {
-    const juce::Colour panelTop   { 0xff2b2e32 }, panel { 0xff222428 }, panelLow { 0xff1d1f22 };
-    const juce::Colour inset      { 0xff1c1e21 }, insetLow { 0xff17181b };
-    const juce::Colour text       { 0xffe6e7e9 }, label { 0xffc3c6ca }, dim { 0xff9a9ea4 }, faint { 0xff7d8085 };
-    const juce::Colour vfd        { 0xffff9b5e }, vfdDim { 0xffd9875a }, vfdBg { 0xff160904 }, valueText { 0xffe58a55 };
-    const juce::Colour ledOn      { 0xffff3b2a }, ledOff { 0xff3a1512 };
-    const juce::Colour copper     { 0xffe0703a }, copperLight { 0xfff7a36e }, copperDark { 0xff8f3c18 };
-    const juce::Colour warn       { 0xffffb347 }, ok { 0xff8fd18a };
-    const juce::Colour groupLine  { 0x33ffffff };
-    const juce::Colour silk       { 0xffb4b8be }, silkDim { 0xff80848a };   // printed scales and legends
+    inline juce::Colour panelTop   { 0xff2b2e32 }, panel { 0xff222428 }, panelLow { 0xff1d1f22 };
+    inline juce::Colour inset      { 0xff1c1e21 }, insetLow { 0xff17181b };
+    inline juce::Colour text       { 0xffe6e7e9 }, label { 0xffc3c6ca }, dim { 0xff9a9ea4 }, faint { 0xff7d8085 };
+    inline juce::Colour vfd        { 0xffff9b5e }, vfdDim { 0xffd9875a }, vfdBg { 0xff160904 }, valueText { 0xffe58a55 };
+    inline juce::Colour ledOn      { 0xffff3b2a }, ledOff { 0xff3a1512 };
+    inline juce::Colour copper     { 0xffe0703a }, copperLight { 0xfff7a36e }, copperDark { 0xff8f3c18 };
+    inline juce::Colour warn       { 0xffffb347 }, ok { 0xff8fd18a };
+    inline juce::Colour groupLine  { 0x33ffffff };
+    inline juce::Colour silk       { 0xffb4b8be }, silkDim { 0xff80848a };   // printed scales and legends
+    inline juce::Colour accent     { 0xffd2693a };                           // the rule under section titles
 }
+
+// Panel finishes: 0 graphite, 1 black with ivory print, 2 oxide (warm bronze, more worn), 3 slate.
+void applyFinish (int finish);
+int  currentFinish();
 
 //==============================================================================
 // Fonts bundled with the plugin (SIL Open Font License, see Resources/Fonts).
@@ -42,6 +47,11 @@ void drawDivider (juce::Graphics&, float y, float x0, float x1, const juce::Stri
 void drawBracketLabel (juce::Graphics&, juce::Rectangle<float> row, const juce::String& text);
 void drawLed (juce::Graphics&, juce::Point<float> centre, float diameter, bool on);
 void drawVfdWindow (juce::Graphics&, juce::Rectangle<float> area);
+
+// The OXIDE wordmark: geometric letters drawn with three parallel lines. Its height is the cap
+// height; logoWidth gives the width for a height (tools/logo/make_logo.py draws the same for the web).
+float logoWidth (float height);
+void  drawLogo (juce::Graphics&, juce::Point<float> topLeft, float height, juce::Colour ink);
 // Seven-segment digits (0-9, '-' and spaces) in 'area', one cell per character, unlit segments faintly visible.
 void drawSegments (juce::Graphics&, juce::Rectangle<float> area, const juce::String& text, juce::Colour lit, bool glow);
 // A small framed readout: dark window with right-aligned segment digits.
@@ -131,10 +141,12 @@ private:
     bool updating = false;
 };
 
-// Vertical fader (envelopes).
+// Vertical fader (envelopes). Its name and value sit at its bottom, as under a knob: placed with its
+// bottom 72 under a row's centre line, they line up with the knobs of that row.
 class Fader : public juce::Component
 {
 public:
+    static constexpr int footer = 35;              // name (16), 1 apart, value readout (18)
     explicit Fader (const juce::String& labelText);
     juce::Rectangle<float> readoutBounds() const;
     void setValue (int v);
@@ -206,7 +218,8 @@ public:
 
     juce::Slider slider;                            // invisible, over the window: for host-parameter attachments
 
-    static constexpr int windowHeight = 46, height = windowHeight + 20;
+    // the name sits as far under the window's centre as a knob's name under the knob's centre
+    static constexpr int windowHeight = 46, height = 75;
     void resized() override;
     void paint (juce::Graphics&) override;
 
@@ -224,7 +237,15 @@ public:
 
     explicit RotarySwitch (const juce::String& labelText);
     void setItems (std::vector<Item> items, float spanDegrees = 0.0f);   // 0: from the number of positions
+    // Values beyond the printed positions (the numbered waveforms): the knob points at position
+    // 'anchorIndex' and the value's legend shows in a small readout under it; picked from the list.
+    void setMoreValues (std::vector<Item> more, int anchorIndex)  { extra = std::move (more); anchor = anchorIndex; repaint(); }
     void setLegendSize (float h)                    { legendSize = h; repaint(); }
+    // A bracket over the positions from 'firstIndex' to the last, named like the panel's FIX / HOLD /
+    // NO TRACK; 'extraTop' adds room above the legends for it.
+    void setBracket (int firstIndex, const juce::String& name) { bracketFrom = firstIndex; bracketName = name; repaint(); }
+    void setExtraTop (int pixels)                   { extraTop = pixels; repaint(); }
+    int getExtraTop() const                         { return extraTop; }
     void setValue (int v);
     int getValue() const                            { return value; }
     std::function<void (int)> onChange;
@@ -232,7 +253,8 @@ public:
 
     static constexpr float radius = 20.0f, legendRoom = 26.0f;            // room above the knob for legends
     juce::Rectangle<float> knobBounds() const       { return juce::Rectangle<float> (2.0f * radius, 2.0f * radius).withCentre (centre()); }
-    static constexpr int centreY = (int) (legendRoom + radius);           // knob centre from the top
+    static constexpr int centreY = (int) (legendRoom + radius);           // knob centre from the top (plus extraTop)
+    static constexpr int height = centreY + 52;                           // its name 37 below the centre, like a knob's
 
     void paint (juce::Graphics&) override;
     void mouseDown (const juce::MouseEvent&) override;
@@ -241,19 +263,55 @@ public:
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
 
 private:
-    juce::Point<float> centre() const               { return { (float) getWidth() * 0.5f, (float) centreY }; }
+    juce::Point<float> centre() const               { return { (float) getWidth() * 0.5f, (float) (centreY + extraTop) }; }
     float angleOf (int index) const;
     juce::String shownLegend (int index) const;
     juce::Rectangle<float> legendBox (int index) const;
     int indexOf (int v) const;
+    int shownIndex() const;                         // the position the knob points at
+    bool isExtra (int v) const;
     void choose (int index);
+    void chooseValue (int v);
     void showList();
 
     juce::String labelText;
-    std::vector<Item> items;
+    std::vector<Item> items, extra;
+    int anchor = -1, bracketFrom = -1, extraTop = 0;
+    juce::String bracketName;
     float span = 90.0f, legendSize = 10.5f;
     int value = 0, dragFrom = -1;
     bool dragged = false, pickedLegend = false;
+};
+
+// A row of LEDs on a dark strip, one per position, the current one lit, with a step button at each
+// end (the keyboard octave). A click on a LED picks it; the mouse wheel steps.
+class LedRow : public juce::Component, public juce::SettableTooltipClient
+{
+public:
+    explicit LedRow (const juce::String& labelText);
+    void setItems (std::vector<RotarySwitch::Item> i)  { items = std::move (i); repaint(); }
+    void setValue (int v)                           { if (v != value) { value = v; repaint(); } }
+    int getValue() const                            { return value; }
+    void setLabel (const juce::String& t)           { labelText = t; repaint(); }
+    std::function<void (int)> onChange;
+
+    static constexpr int height = 98, centreY = 46;   // like a rotary switch: the strip on its centre line, the name under
+    juce::Rectangle<float> stripBounds() const;       // the LEDs and the two buttons
+
+    void paint (juce::Graphics&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override  { pressed = 0; repaint(); }
+    void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
+
+private:
+    juce::Rectangle<float> ledArea (int index) const;
+    juce::Rectangle<float> stepButton (int direction) const;   // -1 left, +1 right
+    int indexOf (int v) const;
+    void choose (int index);
+
+    juce::String labelText;
+    std::vector<RotarySwitch::Item> items;
+    int value = 0, pressed = 0;
 };
 
 // Selector for two or three positions: a push button that steps through them, and a column of LEDs
@@ -270,7 +328,9 @@ public:
 
     static constexpr int rowHeight = 16, buttonWidth = 24, buttonHeight = 22;
     int blockHeight() const                         { return juce::jmax (buttonHeight, (int) items.size() * rowHeight); }
-    int preferredHeight() const                     { return blockHeight() + 22; }
+    // the name 37 under the block's centre, like a knob's (labelGap: from the block to the name)
+    int labelGap() const                            { return juce::jmax (6, 37 - blockHeight() / 2); }
+    int preferredHeight() const                     { return blockHeight() + labelGap() + 16; }
     juce::Rectangle<float> controlBounds() const;   // the button and the LEDs (not the legends)
 
     void paint (juce::Graphics&) override;

@@ -51,16 +51,25 @@ public:
     // section for 'language' ("en" or "fr") and drops the headings. Other notes come back unchanged.
     static juce::String notesForLanguage (const juce::String& notes, const juce::String& language);
 
-    // Replaces each existing bundle in 'targets' with the bundle of the same name found in
-    // the zip. 'extract' unpacks the zip into a folder (ditto on macOS). Each replacement is
-    // atomic per bundle: the old one is put back if the new one can't be moved in.
+    // Replaces each existing bundle in 'targets' with the OXIde bundle of the same format found in
+    // the zip, in the same folder; a target still named OSCar Editor is removed once its OXIde
+    // replacement is in. 'extract' unpacks the zip into a folder (ditto on macOS). Each replacement
+    // is atomic per bundle: the old one is put back if the new one can't be moved in.
     using Extractor = std::function<bool (const juce::File& zip, const juce::File& destination)>;
     static juce::Result installBundles (const juce::File& zip, const juce::Array<juce::File>& targets,
                                         const juce::String& expectedVersion, const Extractor& extract,
                                         juce::StringArray& installed);
-    static juce::Array<juce::File> installedBundles();   // where OSCar Editor is installed on this Mac
+    static juce::Array<juce::File> installedBundles();   // where the plug-in is installed on this Mac (either name)
+    // Copies still carrying the pre-0.5 name while the same format is installed as OXIde
+    // somewhere: two copies of one plug-in, which hosts confuse.
+    static juce::Array<juce::File> outdatedCopies();
+    static juce::Array<juce::File> outdatedCopies (const juce::Array<juce::File>& installed);
 
-    static constexpr const char* assetName = "OSCar-Editor-mac.zip";
+    static constexpr const char* productName = "OXIde";          // bundle names from 0.5
+    static constexpr const char* legacyName  = "OSCar Editor";   // bundle names before 0.5
+    // The zip the updater downloads. Releases also carry OSCar-Editor-mac.zip (the same plug-in
+    // under the old bundle names) for the updaters of 0.4 and older.
+    static constexpr const char* assetName = "OXIde-mac.zip";
 
 private:
     void setState (State s, const juce::String& text);

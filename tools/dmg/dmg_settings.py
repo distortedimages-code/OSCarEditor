@@ -1,4 +1,4 @@
-# dmgbuild settings for OSCar-Editor-mac.dmg (see make_dmg.sh).
+# dmgbuild settings for OXIde-mac.dmg (see make_dmg.sh).
 # The window shows the three bundles, each with a shortcut to the folder it goes in, joined by
 # the arrows of the background. Positions match make_background.py.
 import os
@@ -9,9 +9,9 @@ work = defines["work"]            # the background, prepared by make_dmg.sh
 format = "UDZO"
 filesystem = "HFS+"
 files = [
-    (os.path.join(src, "OSCar Editor.component"), "OSCar Editor.component"),
-    (os.path.join(src, "OSCar Editor.vst3"), "OSCar Editor.vst3"),
-    (os.path.join(src, "OSCar Editor.app"), "OSCar Editor.app"),
+    (os.path.join(src, "OXIde.component"), "OXIde.component"),
+    (os.path.join(src, "OXIde.vst3"), "OXIde.vst3"),
+    (os.path.join(src, "OXIde.app"), "OXIde.app"),
 ]
 symlinks = {
     "Components": "/Library/Audio/Plug-Ins/Components",
@@ -19,11 +19,11 @@ symlinks = {
     "Applications": "/Applications",
 }
 icon_locations = {
-    "OSCar Editor.component": (170, 128),
+    "OXIde.component": (170, 128),
     "Components": (470, 128),
-    "OSCar Editor.vst3": (170, 222),
+    "OXIde.vst3": (170, 222),
     "VST3": (470, 222),
-    "OSCar Editor.app": (170, 316),
+    "OXIde.app": (170, 316),
     "Applications": (470, 316),
 }
 background = os.path.join(work, "background.png")   # background@2x.png next to it is used on Retina screens

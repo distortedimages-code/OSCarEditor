@@ -1,4 +1,4 @@
-<title>OSCar Editor</title>
+<title>OXIde</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="[[fr]]Éditeur et librarian gratuit pour le synthé OSCar avec la carte MIDI Tauntek. AU pour Logic Pro, VST3 et application pour Mac.[[en]]Free editor and librarian for the OSCar synth with the Tauntek MIDI board. AU for Logic Pro, VST3 and app for Mac.[[/]]">
 <link rel="alternate" hreflang="en" href="index.html">
@@ -81,10 +81,8 @@ img { max-width: 100%; height: auto; display: block; }
   box-shadow: inset 0 1px 0 rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.05);
 }
 .brand { text-align: center; }
-.brand h1 {
-  margin: 0; font: 600 clamp(38px, 6vw, 62px)/1 var(--display); letter-spacing: .01em; color: #f3efe6;
-  text-shadow: 0 1px 0 rgba(0,0,0,.6);
-}
+.brand h1 { margin: 0; line-height: 0; color: #f3efe6; }
+.brand h1 svg { display: block; height: clamp(30px, 4.6vw, 48px); width: auto; margin-inline: auto; filter: drop-shadow(0 1px 0 rgba(0,0,0,.6)); }
 .tag { margin: 8px 0 0; font: 600 11.5px/1 var(--label); letter-spacing: .32em; text-transform: uppercase; color: var(--muted); }
 
 /* VFD display */
@@ -164,7 +162,7 @@ p { margin: 0 0 12px; }
   border-radius: 6px; overflow: hidden; background: var(--inset);
   box-shadow: 0 0 0 1px #000, 0 10px 30px rgba(0,0,0,.55), 0 2px 0 rgba(255,255,255,.04);
 }
-.screen img { width: 100%; aspect-ratio: 1600 / 914; object-fit: cover; }
+.screen img { width: 100%; aspect-ratio: 1600 / 1029; object-fit: cover; }
 .minis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .mini {
   display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 6px 7px; border: 0; border-radius: 4px; cursor: pointer;
@@ -408,8 +406,8 @@ footer a { color: var(--muted); }
 <header class="masthead">
   <div class="vents" aria-hidden="true"></div>
   <div class="brand">
-    <h1>OSCar Editor</h1>
-    <p class="tag">oscar · midi · sysex · tauntek cc</p>
+    <h1>{{LOGO}}</h1>
+    <p class="tag">[[fr]]éditeur et librarian pour l'oscar[[en]]editor &amp; librarian for the oscar[[/]]</p>
   </div>
   <div class="vents" aria-hidden="true"></div>
   <nav class="lang" aria-label="[[fr]]Langue[[en]]Language[[/]]">
@@ -420,7 +418,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="[[fr]]Version actuelle[[en]]Current version[[/]]">
   <a class="arrow" href="#news" aria-label="[[fr]]Nouveautés[[en]]What's new[[/]]">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">{{VERSION}}</span><span class="name">OSCAR EDITOR</span><span class="state">[[fr]]GRATUIT[[en]]FREE[[/]]</span></div>
+  <div class="display"><span class="num" id="vfd-version">{{VERSION}}</span><span class="name">OXIDE</span><span class="state">[[fr]]GRATUIT[[en]]FREE[[/]]</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -464,7 +462,7 @@ footer a { color: var(--muted); }
     </div>
 
     <figure class="viewer" aria-label="[[fr]]Les pages du plugin[[en]]The plug-in's pages[[/]]">
-      <div class="screen"><img id="shot" src="{{IMG}}voix.webp" width="1600" height="914" alt="{{FIRST_ALT}}"></div>
+      <div class="screen"><img id="shot" src="{{IMG}}voix.webp" width="1600" height="1029" alt="{{FIRST_ALT}}"></div>
       <div class="minis" role="group" aria-label="[[fr]]Choisir une page du plugin[[en]]Choose a page of the plug-in[[/]]">
 {{PAGE_BUTTONS}}
       </div>
@@ -494,16 +492,16 @@ footer a { color: var(--muted); }
       <span class="step-n" aria-hidden="true">1</span>
       <div class="step-text">
         <h3>[[fr]]Ouvrir l'image disque et glisser les fichiers[[en]]Open the disk image and drag the files[[/]]</h3>
-        <p>[[fr]]Double-clique sur <code>OSCar-Editor-mac.dmg</code>. Dans la fenêtre, glisse chaque fichier sur le dossier en face. macOS peut te demander ton mot de passe.[[en]]Double-click <code>OSCar-Editor-mac.dmg</code>. In its window, drag each file onto the folder opposite. macOS may ask for your password.[[/]]</p>
+        <p>[[fr]]Double-clique sur <code>OXIde-mac.dmg</code>. Dans la fenêtre, glisse chaque fichier sur le dossier en face. macOS peut te demander ton mot de passe.[[en]]Double-click <code>OXIde-mac.dmg</code>. In its window, drag each file onto the folder opposite. macOS may ask for your password.[[/]]</p>
         <p class="note">[[fr]]Logic Pro n'utilise que l'AU ; le VST3 sert aux autres logiciels, l'application marche sans DAW. Déjà installé ? Pas besoin du DMG : le plugin se met à jour lui-même.[[en]]Logic Pro only uses the AU; the VST3 is for other hosts, and the app works without a DAW. Already installed? No need for the disk image: the plug-in updates itself.[[/]]</p>
       </div>
       <div class="step-art">
         <figure class="mini-dmg" aria-label="[[fr]]La fenêtre de l'image disque : chaque fichier à gauche, son dossier à droite[[en]]The disk image window: each file on the left, its folder on the right[[/]]">
-          <div class="md-bar" aria-hidden="true"><i></i><i></i><i></i><span>OSCar Editor</span></div>
+          <div class="md-bar" aria-hidden="true"><i></i><i></i><i></i><span>OXIde</span></div>
           <div class="md-body">
-            <div class="md-row"><span class="md-item"><i class="ic bundle">AU</i>OSCar Editor.component</span><span class="md-arrow" aria-hidden="true"></span><span class="md-item"><i class="ic folder"></i>Components</span></div>
-            <div class="md-row"><span class="md-item"><i class="ic bundle">VST3</i>OSCar Editor.vst3</span><span class="md-arrow" aria-hidden="true"></span><span class="md-item"><i class="ic folder"></i>VST3</span></div>
-            <div class="md-row"><span class="md-item"><i class="ic bundle app">APP</i>OSCar Editor.app</span><span class="md-arrow" aria-hidden="true"></span><span class="md-item"><i class="ic folder"></i>Applications</span></div>
+            <div class="md-row"><span class="md-item"><i class="ic bundle">AU</i>OXIde.component</span><span class="md-arrow" aria-hidden="true"></span><span class="md-item"><i class="ic folder"></i>Components</span></div>
+            <div class="md-row"><span class="md-item"><i class="ic bundle">VST3</i>OXIde.vst3</span><span class="md-arrow" aria-hidden="true"></span><span class="md-item"><i class="ic folder"></i>VST3</span></div>
+            <div class="md-row"><span class="md-item"><i class="ic bundle app">APP</i>OXIde.app</span><span class="md-arrow" aria-hidden="true"></span><span class="md-item"><i class="ic folder"></i>Applications</span></div>
           </div>
         </figure>
       </div>
@@ -514,15 +512,19 @@ footer a { color: var(--muted); }
       <div class="step-text">
         <h3>[[fr]]Débloquer le plugin, une seule fois[[en]]Unblock the plug-in, once[[/]]</h3>
         <p>[[fr]]Le plugin n'est pas notarisé par Apple : tant qu'il n'est pas débloqué, macOS empêche Logic de le charger. Ouvre Terminal (<kbd>⌘</kbd> <kbd>Espace</kbd>, tape « Terminal », Entrée), colle ce texte et appuie sur Entrée. Terminal demande le mot de passe de ta session : rien ne s'affiche pendant la frappe, c'est normal.[[en]]The plug-in isn't notarized by Apple: until it's unblocked, macOS stops Logic from loading it. Open Terminal (<kbd>⌘</kbd> <kbd>Space</kbd>, type "Terminal", Return), paste this text and press Return. Terminal asks for your Mac password: nothing shows while you type, that's normal.[[/]]</p>
-        <p class="note">[[fr]]La dernière ligne doit dire « AU VALIDATION SUCCEEDED. » : Logic Pro peut alors charger le plugin. « No such file » pour un format que tu n'as pas installé est normal. Les mises à jour faites depuis le plugin n'ont pas besoin de ce déblocage.[[en]]The last line should read "AU VALIDATION SUCCEEDED.": Logic Pro can then load the plug-in. "No such file" for a format you didn't install is normal. Updates made from within the plug-in don't need this.[[/]]</p>
+        <p class="note">[[fr]]La dernière ligne doit dire « AU VALIDATION SUCCEEDED. » : Logic Pro peut alors charger le plugin. « No such file » pour un format que tu n'as pas installé est normal. Le début de la commande retire les copies à l'ancien nom (OSCar Editor) s'il en reste : c'est le même plugin, et deux copies embrouillent Logic. Les mises à jour faites depuis le plugin n'ont pas besoin de ce déblocage.[[en]]The last line should read "AU VALIDATION SUCCEEDED.": Logic Pro can then load the plug-in. "No such file" for a format you didn't install is normal. The start of the command removes copies under the old name (OSCar Editor) if any are left: it's the same plug-in, and two copies confuse Logic. Updates made from within the plug-in don't need this.[[/]]</p>
       </div>
       <div class="step-art">
         <div class="inset terminal">
           <div class="term-bar"><span class="cap">Terminal</span><button type="button" class="btn copy" id="copy-cmd"><span>[[fr]]Copier[[en]]Copy[[/]]</span><i class="led"></i></button></div>
-<pre id="cmd">sudo xattr -dr com.apple.quarantine \
+<pre id="cmd">sudo rm -rf \
   "/Library/Audio/Plug-Ins/Components/OSCar Editor.component" \
   "/Library/Audio/Plug-Ins/VST3/OSCar Editor.vst3" \
   "/Applications/OSCar Editor.app"; \
+sudo xattr -dr com.apple.quarantine \
+  "/Library/Audio/Plug-Ins/Components/OXIde.component" \
+  "/Library/Audio/Plug-Ins/VST3/OXIde.vst3" \
+  "/Applications/OXIde.app"; \
 killall -9 AudioComponentRegistrar 2>/dev/null; \
 auval -v aumu Oscr Otls | tail -n 1</pre>
         </div>
@@ -533,12 +535,12 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
       <span class="step-n" aria-hidden="true">3</span>
       <div class="step-text">
         <h3>[[fr]]L'ouvrir dans Logic Pro[[en]]Open it in Logic Pro[[/]]</h3>
-        <p>[[fr]]Relance Logic Pro : il vérifie les nouveaux plugins au démarrage. Crée une piste d'instrument logiciel, clique sur le slot d'instrument et choisis OSCar Editor dans les instruments AU, rubrique OSCarTools.[[en]]Restart Logic Pro: it checks new plug-ins when it starts. Create a software instrument track, click the instrument slot and choose OSCar Editor in the AU instruments, under OSCarTools.[[/]]</p>
-        <p class="note">[[fr]]Il n'apparaît pas ? Logic Pro › Réglages › Gestionnaire de module : sélectionne OSCar Editor, puis « Réinitialiser et réanalyser la sélection ». Le plugin ne produit aucun son : il parle directement à l'OSCar par ton interface MIDI.[[en]]Not there? Logic Pro › Settings › Plug-in Manager: select OSCar Editor, then "Reset & Rescan Selection". The plug-in makes no sound: it talks straight to the OSCar through your MIDI interface.[[/]]</p>
+        <p>[[fr]]Relance Logic Pro : il vérifie les nouveaux plugins au démarrage. Crée une piste d'instrument logiciel, clique sur le slot d'instrument et choisis OXIde dans les instruments AU, rubrique OSCarTools.[[en]]Restart Logic Pro: it checks new plug-ins when it starts. Create a software instrument track, click the instrument slot and choose OXIde in the AU instruments, under OSCarTools.[[/]]</p>
+        <p class="note">[[fr]]Il n'apparaît pas ? Logic Pro › Réglages › Gestionnaire de module : sélectionne OXIde, puis « Réinitialiser et réanalyser la sélection ». Le plugin ne produit aucun son : il parle directement à l'OSCar par ton interface MIDI.[[en]]Not there? Logic Pro › Settings › Plug-in Manager: select OXIde, then "Reset & Rescan Selection". The plug-in makes no sound: it talks straight to the OSCar through your MIDI interface.[[/]]</p>
       </div>
       <div class="step-art">
         <figure>
-          <img class="shot-crop" src="{{IMG}}voix.webp" width="1600" height="914" alt="[[fr]]La fenêtre du plugin, page Voix[[en]]The plug-in window, Voice page[[/]]" loading="lazy">
+          <img class="shot-crop" src="{{IMG}}voix.webp" width="1600" height="1029" alt="[[fr]]La fenêtre du plugin, page Voix[[en]]The plug-in window, Voice page[[/]]" loading="lazy">
           <figcaption>[[fr]]La fenêtre s'ouvre sur la page Voix. En haut à droite, les voyants Live CC et CC DUMP.[[en]]The window opens on the Voice page. Top right: the Live CC and CC DUMP lights.[[/]]</figcaption>
         </figure>
       </div>
@@ -554,7 +556,7 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
       <div class="step-art">
         <div class="inset diagram">{{CABLING}}</div>
         <figure class="ports">
-          <img class="shot-crop" src="{{IMG}}ports.webp" width="900" height="524" alt="[[fr]]Page Réglages : choix de la sortie, de l'entrée et du canal MIDI[[en]]Setup page: MIDI output, input and channel[[/]]" loading="lazy">
+          <img class="shot-crop" src="{{IMG}}ports.webp" width="900" height="526" alt="[[fr]]Page Réglages : choix de la sortie, de l'entrée et du canal MIDI[[en]]Setup page: MIDI output, input and channel[[/]]" loading="lazy">
           <figcaption>[[fr]]Page Réglages : les noms affichés dépendent de ton interface.[[en]]Setup page: the names shown depend on your interface.[[/]]</figcaption>
         </figure>
       </div>
@@ -581,13 +583,13 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
       <div class="step-text">
         <h3>[[fr]]Récupérer tes voix, avant tout le reste[[en]]Fetch your voices before anything else[[/]]</h3>
         <p>[[fr]]Plugin ouvert, sur l'OSCar : maintiens <kbd>INSERT</kbd>, appuie sur <kbd>VOICE</kbd>, puis sur <kbd>SPACE</kbd>. L'OSCar envoie ses 36 voix en moins d'une seconde et le bas de la fenêtre affiche « Voix reçues (36) ».[[en]]With the plug-in open, on the OSCar: hold <kbd>INSERT</kbd>, press <kbd>VOICE</kbd>, then <kbd>SPACE</kbd>. The OSCar sends its 36 voices in under a second and the bottom of the window reads "Voices received (36)".[[/]]</p>
-        <p>[[fr]]Une copie part automatiquement dans <span class="path">Documents › OSCar Editor › Backups</span>. C'est ta sauvegarde : tout se recharge depuis la page Banques.[[en]]A copy goes automatically to <span class="path">Documents › OSCar Editor › Backups</span>. That's your backup: everything reloads from the Banks page.[[/]]</p>
+        <p>[[fr]]Une copie part automatiquement dans <span class="path">Documents › OXIde › Backups</span>. C'est ta sauvegarde : tout se recharge depuis la page Banques.[[en]]A copy goes automatically to <span class="path">Documents › OXIde › Backups</span>. That's your backup: everything reloads from the Banks page.[[/]]</p>
         <p class="note">[[fr]]Rien ne s'affiche ? L'entrée MIDI choisie à l'étape 4 n'est pas la bonne, ou le câble 2 est mal branché.[[en]]Nothing shows up? The MIDI input chosen in step 4 isn't the right one, or cable 2 isn't plugged in properly.[[/]]</p>
       </div>
       <div class="step-art">
         <div class="combo"><kbd>INSERT</kbd><span>[[fr]]maintenir[[en]]hold[[/]]</span><span class="plus">+</span><kbd>VOICE</kbd><span class="plus">[[fr]]puis[[en]]then[[/]]</span><kbd>SPACE</kbd></div>
         <figure>
-          <img class="shot-crop" src="{{IMG}}voix-recues.webp" width="900" height="698" alt="[[fr]]Page Banques : la liste des 36 voix reçues[[en]]Banks page: the 36 voices received[[/]]" loading="lazy">
+          <img class="shot-crop" src="{{IMG}}voix-recues.webp" width="900" height="917" alt="[[fr]]Page Banques : la liste des 36 voix reçues[[en]]Banks page: the 36 voices received[[/]]" loading="lazy">
           <figcaption>[[fr]]Page Banques : les 36 voix reçues, avec leurs noms.[[en]]Banks page: the 36 voices received, with their names.[[/]]</figcaption>
         </figure>
       </div>
@@ -641,10 +643,10 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>[[fr]]Le plugin suit l'OSCar[[en]]The plug-in follows the OSCar[[/]]</h3><p>[[fr]]Choisis une voix sur l'OSCar : le plugin l'affiche telle qu'elle joue, mode Duo ou Arp compris. Il faut le patch CC dump (étape 5).[[en]]Pick a voice on the OSCar: the plug-in shows it as it plays, Duo or Arp mode included. This needs the patch CC dump (step 5).[[/]]</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>[[fr]]Essayer sans risque[[en]]Try things safely[[/]]</h3><p>[[fr]]Le Générateur joue chaque essai sur l'OSCar sans toucher à sa mémoire. « Retour à l'original » annule, « Garder » met le son dans la voix.[[en]]The Generator plays every try on the OSCar without touching its memory. "Back to original" undoes, "Keep" puts the sound in the voice.[[/]]</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>[[fr]]Arpège calé sur Logic[[en]]Arpeggiator in time with Logic[[/]]</h3><p>[[fr]]Page Voix, bloc horloge midi : tourne Sync sur MIDI et choisis une Division (1/16, 1/8T…). Puis, au choix, « Envoyer l'horloge MIDI du DAW à l'OSCar » dans Réglages, ou l'horloge de Logic (Fichier › Réglages du projet › Synchronisation › MIDI, Destination = le port de l'OSCar, case Horloge). Pas les deux.[[en]]Voice page, midi clock block: turn Sync to MIDI and pick a Division (1/16, 1/8T…). Then either "Send the DAW's MIDI clock to the OSCar" in Setup, or Logic's own clock (File › Project Settings › Synchronization › MIDI, Destination = the OSCar's port, Clock box). Not both.[[/]]</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>[[fr]]Jouer l'OSCar depuis Logic[[en]]Play the OSCar from Logic[[/]]</h3><p>[[fr]]Sélectionne la piste OSCar Editor et allume MIDI Thru (en bas de la fenêtre) : ton clavier maître et les régions MIDI de la piste jouent l'OSCar. Laisse-le éteint si tu joues déjà l'OSCar avec le module External Instrument de Logic.[[en]]Select the OSCar Editor track and turn on MIDI Thru (bottom of the window): your controller keyboard and the track's MIDI regions play the OSCar. Leave it off if you already play the OSCar through Logic's External Instrument plug-in.[[/]]</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>[[fr]]Jouer l'OSCar depuis Logic[[en]]Play the OSCar from Logic[[/]]</h3><p>[[fr]]Sélectionne la piste OXIde et allume MIDI Thru (en bas de la fenêtre) : ton clavier maître et les régions MIDI de la piste jouent l'OSCar. Laisse-le éteint si tu joues déjà l'OSCar avec le module External Instrument de Logic.[[en]]Select the OXIde track and turn on MIDI Thru (bottom of the window): your controller keyboard and the track's MIDI regions play the OSCar. Leave it off if you already play the OSCar through Logic's External Instrument plug-in.[[/]]</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>[[fr]]Rien ne se perd[[en]]Nothing gets lost[[/]]</h3><p>[[fr]]Chaque réception et chaque envoi est sauvegardé. « Sauver voix… » range une voix dans Voices, « Enregistrer la banque… » une banque dans Banks. Un double-clic les recharge.[[en]]Every receive and every send is backed up. "Save voice…" files a voice in Voices, "Save bank as…" a bank in Banks. A double-click loads them back.[[/]]</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>[[fr]]Gare aux touches rouges[[en]]Mind the red keys[[/]]</h3><p>[[fr]]Sur la page Raccourcis Tauntek, les touches en rouge (sons d'usine, B, C, zones de sauvegarde) remplacent les 36 voix de l'OSCar. Enregistre une banque avant.[[en]]On the Tauntek keys page, the red keys (factory, B, C sounds, save areas) replace the OSCar's 36 voices. Save a bank first.[[/]]</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>[[fr]]Rien à router dans Logic[[en]]Nothing to route in Logic[[/]]</h3><p>[[fr]]Dans Logic, un instrument AU ne peut pas envoyer de MIDI vers une interface. OSCar Editor parle donc à l'OSCar par ses propres ports MIDI, choisis dans Réglages.[[en]]In Logic, an AU instrument can't send MIDI to an interface. So OSCar Editor talks to the OSCar through its own MIDI ports, chosen in Setup.[[/]]</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>[[fr]]Rien à router dans Logic[[en]]Nothing to route in Logic[[/]]</h3><p>[[fr]]Dans Logic, un instrument AU ne peut pas envoyer de MIDI vers une interface. OXIde parle donc à l'OSCar par ses propres ports MIDI, choisis dans Réglages.[[en]]In Logic, an AU instrument can't send MIDI to an interface. So OXIde talks to the OSCar through its own MIDI ports, chosen in Setup.[[/]]</p></div></div>
   </div>
 </section>
 
@@ -665,7 +667,7 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
     <p class="legend">[[fr]]soutenir[[en]]support[[/]]</p>
     <div class="kofi">
       <h2 id="t-kofi">[[fr]]Un café pour l'atelier[[en]]A coffee for the workshop[[/]]</h2>
-      <p>[[fr]]OSCar Editor est gratuit et le restera. S'il te rend service, tu peux soutenir son développement sur Ko-fi.[[en]]OSCar Editor is free and will stay free. If it helps you, you can support its development on Ko-fi.[[/]]</p>
+      <p>[[fr]]OXIde est gratuit et le restera. S'il te rend service, tu peux soutenir son développement sur Ko-fi.[[en]]OXIde is free and will stay free. If it helps you, you can support its development on Ko-fi.[[/]]</p>
       <div><a class="copper" id="kofi-open" href="{{KOFI}}" target="_blank" rel="noopener">[[fr]]Soutenir sur Ko-fi[[en]]Support on Ko-fi[[/]]</a></div>
     </div>
   </section>
@@ -674,7 +676,7 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
 </main>
 
 <footer>
-  <p>[[fr]]OSCar Editor est un projet indépendant, sans lien avec Oxford Synthesiser Company ni avec Tauntek.[[en]]OSCar Editor is an independent project, not affiliated with Oxford Synthesiser Company or Tauntek.[[/]]</p>
+  <p>[[fr]]OXIde est un projet indépendant, sans lien avec Oxford Synthesiser Company ni avec Tauntek.[[en]]OXIde is an independent project, not affiliated with Oxford Synthesiser Company or Tauntek.[[/]]</p>
   <p>[[fr]]Carte MIDI, firmware et documentation :[[en]]MIDI board, firmware and documentation:[[/]] <a href="{{TAUNTEK}}" target="_blank" rel="noopener">tauntek.com/OSCar.htm</a> · <a href="{{GH}}" target="_blank" rel="noopener">[[fr]]Code source[[en]]Source code[[/]]</a> · <a href="{{KOFI}}" target="_blank" rel="noopener">Ko-fi</a></p>
 </footer>
 
@@ -816,7 +818,7 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
       var lines = block.split("\n").filter(function (l) { return l.trim(); });
       if (!lines.length) return;
       if (/^#{1,6}\s/.test(lines[0]) && lines.length === 1) {
-        if (/OSCar Editor/i.test(lines[0])) return;
+        if (/OSCar Editor|OXIde/i.test(lines[0])) return;
         out.push("<p><strong>" + inline(lines[0].replace(/^#+\s*/, "")) + "</strong></p>"); return;
       }
       if (lines.every(function (l) { return /^\s*[-*]\s/.test(l); })) {
@@ -854,7 +856,8 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
         }
         // the disk image when the latest release has one, otherwise its zip
         var assets = pub[0].assets || [];
-        var file = assets.filter(function (a) { return /\.dmg$/i.test(a.name); })[0] || assets.filter(function (a) { return /mac\.zip$/i.test(a.name); })[0];
+        var pick = function (re) { return assets.filter(function (a) { return re.test(a.name); })[0]; };
+        var file = pick(/^OXIde.*\.dmg$/i) || pick(/\.dmg$/i) || pick(/^OXIde.*mac\.zip$/i) || pick(/mac\.zip$/i);
         if (file) document.getElementById("download-btn").setAttribute("href", file.browser_download_url);
       })
       .catch(function () {});

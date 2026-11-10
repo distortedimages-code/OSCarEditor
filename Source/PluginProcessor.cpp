@@ -151,11 +151,20 @@ juce::PropertiesFile& OscarProcessor::globalSettings()
 
     if (settingsFile == nullptr)
     {
-        juce::PropertiesFile::Options o;
-        o.applicationName = "OSCar Editor";
-        o.filenameSuffix = ".settings";
-        o.folderName = "OSCar Editor";
-        o.osxLibrarySubFolder = "Application Support";
+        const auto options = [] (const char* name)
+        {
+            juce::PropertiesFile::Options o;
+            o.applicationName = name;
+            o.filenameSuffix = ".settings";
+            o.folderName = name;
+            o.osxLibrarySubFolder = "Application Support";
+            return o;
+        };
+        const auto o = options ("OXIde");
+        // 0.4 and older kept their settings under the old name: copied once, the old file stays
+        const auto file = o.getDefaultFile(), before = options ("OSCar Editor").getDefaultFile();
+        if (! file.existsAsFile() && before.existsAsFile() && file.getParentDirectory().createDirectory())
+            before.copyFileTo (file);
         settingsFile = std::make_unique<juce::PropertiesFile> (o);
     }
     return *settingsFile;
@@ -258,15 +267,20 @@ juce::File OscarProcessor::getBackupFolder()
 {
     if (testRoot() != juce::File())
         return testRoot().getChildFile ("Backups");
-    return juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
-               .getChildFile ("OSCar Editor").getChildFile ("Backups");
+    return getUserFolder().getChildFile ("Backups");
 }
 
 juce::File OscarProcessor::getUserFolder()
 {
     if (testRoot() != juce::File())
         return testRoot();
-    return juce::File::getSpecialLocation (juce::File::userDocumentsDirectory).getChildFile ("OSCar Editor");
+    const auto documents = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory);
+    const auto folder = documents.getChildFile ("OXIde");
+    // 0.4 and older: Documents/OSCar Editor. Moved once, with the banks, voices and backups.
+    const auto before = documents.getChildFile ("OSCar Editor");
+    if (! folder.exists() && before.isDirectory())
+        before.moveFileTo (folder);
+    return folder;
 }
 
 juce::File OscarProcessor::getBanksFolder()

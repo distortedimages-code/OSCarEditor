@@ -28,9 +28,11 @@ namespace
             { "bendAmount", "Bend Amount" }, { "mwPitch", "Pitch Amount" }, { "mwFilter", "Filter Amount" },
             { "octaveSet", "Octave" }, { "glideType", "Type" }, { "glideRate", "Time" },
             { "filterFreq", "Frequency" }, { "resonance", "Q" }, { "filterSep", "Separation" },
-            { "envFilter", "Amount" }, { "filterDrive", "Filter Drive" },
+            { "envFilter", "Env Amount" }, { "filterDrive", "Filter Drive" },
             { "lfoWave", "Waveform" }, { "lfoRate", "Rate" }, { "introDelay", "Intro" }, { "lfoPitch", "Pitch Mod" },
-            { "lfoFilter", "Amount" }, { "trigger", "Triggering" }, { "function", "Function" }, { "gateTime", "Gate Time" },
+            { "lfoFilter", "LFO Amount" }, { "trigger", "Triggering" }, { "function", "Function" }, { "gateTime", "Gate Time" },
+            { "filtAttack", "Attack" }, { "filtDecay", "Decay" }, { "filtSustain", "Sustain Level" }, { "filtRelease", "Release" },
+            { "volAttack", "Attack" }, { "volDecay", "Decay" }, { "volSustain", "Sustain Level" }, { "volRelease", "Release" },
         };
         const auto it = words.find (p.id);
         return it != words.end() ? juce::String (it->second) : juce::String (p.name);
@@ -114,7 +116,7 @@ void setupWear (juce::Component& page, WearLayer& wear, std::vector<juce::Rectan
     for (const auto& d : displays)
         rect (d.expanded (2.0f));
     wear.setBounds (page.getLocalBounds());
-    wear.setup (wearLevel, background, std::move (keep), std::move (handled), std::move (plates));
+    wear.setup (wearLevel(), background, std::move (keep), std::move (handled), std::move (plates));
     wear.toFront (false);
 }
 
@@ -127,6 +129,8 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
 
     auto addKnob = [&] (const char* id, KnobStyle style)
     {
+        if (currentFinish() == 1 && style == KnobStyle::Chrome)
+            style = KnobStyle::Knurled;   // the black finish: black knobs throughout
         auto k = std::make_unique<Knob> (panelWord (def (id)), style);
         k->onChange = edit (id);
         k->setTooltip (tr ("%1: stored value 0-254 (sent as CC %2 in Live CC).", { juce::String (def (id).name), juce::String (def (id).cc) }));
@@ -150,6 +154,7 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
         knob (id).setValueText ([] (int v) { return juce::String (v - 128); });
     }
 
+    // both envelopes as faders, side by side
     const std::pair<const char*, const char*> faderIds[] = { { "filtAttack", "Att" }, { "filtDecay", "Dec" }, { "filtSustain", "Sus" },
                                                              { "filtRelease", "Rel" }, { "volAttack", "Att" }, { "volDecay", "Dec" },
                                                              { "volSustain", "Sus" }, { "volRelease", "Rel" } };
@@ -157,27 +162,15 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
     {
         auto f = std::make_unique<Fader> (label);
         f->onChange = edit (id);
-        f->setTooltip (juce::String (def (id).section) + " " + def (id).name + " (0-254)");
+        auto tip = tr ("%1: stored value 0-254 (sent as CC %2 in Live CC).", { juce::String (def (id).section) + " " + def (id).name, juce::String (def (id).cc) });
+        if (std::strcmp (id, "filtSustain") == 0 || std::strcmp (id, "filtRelease") == 0)
+            tip << "\n" << tr ("DELAY: with the filter envelope's Sustain at 0, a short blip comes back at the end of the sound; Release sets how long after the decay.");
+        f->setTooltip (tip);
         addAndMakeVisible (*f);
         faders[id] = std::move (f);
     }
 
     auto tipFor = [] (const ParamDef& d) { return d.labelsVerified ? tr ("Values checked against the Tauntek firmware, names against the Tauntek chart or the OSCar's panel.") : unverifiedText(); };
-    for (auto* id : { "wave1", "wave2" })
-    {
-        const auto& d = def (id);
-        auto s = std::make_unique<Selector> (switchLabel (d));
-        std::vector<Selector::Item> items;
-        const char* shown[6] = { "N", "~saw", "~sqr", "~pulse", "PWM", std::strcmp (id, "wave1") == 0 ? "OFF" : "OSC 1" };
-        for (const auto& c : d.choices)
-            items.push_back ({ c.value, c.value < 6 ? juce::String (shown[c.value]) : "WAVE " + juce::String (3 - c.value) });   // 6..15 = -3..-12
-        s->setItems (items);
-        s->onChange = edit (id);
-        s->setTooltip (tipFor (d));
-        addAndMakeVisible (*s);
-        selectors[id] = std::move (s);
-    }
-
     // Switches: a short printed legend per position; the full names are in the list (rotary) or the tooltip.
     // Four positions or more: a rotary switch (an empty legend is printed only when chosen).
     // Two or three: a button that steps through them, with an LED and a legend for each.
@@ -219,32 +212,51 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
     auto semitones = [] { std::vector<Legend> l;   // value 0 = +7 ... 14 = -7, shown from -7 to +7
                           for (int v = 14; v >= 0; --v) l.push_back ({ v, v == 14 ? "-7" : v == 7 ? "0" : v == 0 ? "+7" : "" });
                           return l; };
+    // the waveforms as on the panel: N, ramp, square, pulse, PWM, off (osc 2: copies osc 1); the
+    // numbered waveforms -3 to -12 point the knob at N and show their number under it
+    for (auto* id : { "wave1", "wave2" })
+    {
+        addRotary (id, { { 0, "N" }, { 1, "~saw" }, { 2, "~sqr" }, { 3, "~pulse" }, { 4, "PWM" },
+                         { 5, std::strcmp (id, "wave1") == 0 ? "OFF" : "OSC\n1" } }, 0.0f, 10.0f);
+        std::vector<RotarySwitch::Item> numbered;
+        for (const auto& c : def (id).choices)
+            if (c.value >= 6)
+                numbered.push_back ({ c.value, juce::String (3 - c.value), c.label });   // 6..15 = -3..-12
+        rotary (id).setMoreValues (numbered, 0);
+    }
     addRotary ("octaveShift", { { 0, "-2" }, { 1, "-1" }, { 2, "0" }, { 3, "+1" }, { 4, "+2" }, { 5, "+3" } });   // as on the panel
     addRotary ("osc2Semi", semitones());
     addRotary ("tuneSemi", semitones());
-    addRotary ("octaveSet", { { 2, "2" }, { 3, "3" }, { 4, "4" }, { 5, "5" }, { 6, "6" } });
+    // the keyboard octave: five LEDs, as on the synth
+    octaveLeds.setLabel (switchLabel (def ("octaveSet")));
+    {
+        std::vector<RotarySwitch::Item> octaves;
+        for (const auto& c : def ("octaveSet").choices)
+            octaves.push_back ({ c.value, {}, c.label });
+        octaveLeds.setItems (octaves);
+    }
+    octaveLeds.onChange = edit ("octaveSet");
+    octaveLeds.setTooltip (tipFor (def ("octaveSet")));
+    addAndMakeVisible (octaveLeds);
     addRotary ("pwmRate", { { 0, "1" }, { 1, "2" }, { 2, "3" }, { 3, "4" } });   // slowest to fastest (names in the list)
     addRotary ("lfoWave", { { 0, "N" }, { 1, "~saw" }, { 2, "~sqr" }, { 3, "FILTER\nENV" }, { 4, "KBD" }, { 5, "R" } }, 0.0f, 9.5f);
-    addRotary ("trigger", { { 0, "SG" }, { 1, "MULT" }, { 2, "RPT1" }, { 3, "RPT2" }, { 4, "RPT1 & 2" }, { 5, "EXT" } }, 0.0f, 10.0f);
+    addRotary ("trigger", { { 0, "SG" }, { 1, "MULT" }, { 2, "RPT1" }, { 3, "RPT2" }, { 4, "RPT1\n& 2" }, { 5, "EXT" } }, 0.0f, 10.0f);
 
-    addLeds ("arpDir", { { 1, "DOWN" }, { 2, "UP" }, { 3, "UP/DN" } }, switchLabel (def ("arpDir")));
-    addLeds ("arpMode", { { 0, "NORM" }, { 1, "DEL" }, { 2, "MEM" } }, switchLabel (def ("arpMode")));
-    addLeds ("function", { { 0, "NORM" }, { 1, "ARP" }, { 2, "DUO" } }, switchLabel (def ("function")),
-             [this] (int v) { editFlagged ("function", v, hold.isLit()); });
-    addLeds ("glideType", { { 0, "N" }, { 1, "AUTO" }, { 2, "GLISS" } }, switchLabel (def ("glideType")),
-             [this] (int v) { editFlagged ("glideType", v, glideFix.isLit()); });
-    addLeds ("filterType", { { 0, "LP" }, { 1, "BP" }, { 2, "HP" } }, {},   // filter type, and keyboard tracking (values 4-6 = without)
-             [this] (int v) { editFlagged ("filterType", v, noTrack.isLit()); });
-
-    hold.setTooltip (tipFor (def ("function")));
-    hold.onClick = [this] { editFlagged ("function", leds ("function").getValue(), ! hold.isLit()); };
-    glideFix.setTooltip (tipFor (def ("glideType")));
-    glideFix.onClick = [this] { editFlagged ("glideType", leds ("glideType").getValue(), ! glideFix.isLit()); };
-    noTrack.setTooltip (tipFor (def ("filterType")));
-    noTrack.onClick = [this] { editFlagged ("filterType", paramValue ("filterType") % 4, ! noTrack.isLit()); };
-    addAndMakeVisible (hold);
-    addAndMakeVisible (glideFix);
-    addAndMakeVisible (noTrack);
+    // under the ARP title: Direction and Mode (Arp Direction and Arp Mode on the panel)
+    auto underArp = [] (const ParamDef& d, const char* word) { return juce::String (word) + (d.labelsVerified ? "" : " ?"); };
+    addLeds ("arpDir", { { 1, "DOWN" }, { 2, "UP" }, { 3, "UP/DN" } }, underArp (def ("arpDir"), "Direction"));
+    addLeds ("arpMode", { { 0, "NORM" }, { 1, "DEL" }, { 2, "MEM" } }, underArp (def ("arpMode"), "Mode"));
+    // Function, Glide type and Filter type as on the panel: one knob with six positions, the last
+    // three under a bracket (HOLD, FIX, NO TRACK) - that half is the flag bit (values 4-6)
+    addRotary ("function", { { 0, "NORM" }, { 1, "ARP" }, { 2, "DUO" }, { 4, "N" }, { 5, "A" }, { 6, "D" } }, 0.0f, 9.5f);
+    addRotary ("glideType", { { 0, "N" }, { 1, "AUTO" }, { 2, "GLISS" }, { 4, "N" }, { 5, "A" }, { 6, "G" } }, 0.0f, 9.5f);
+    addRotary ("filterType", { { 0, "LP" }, { 1, "BP" }, { 2, "HP" }, { 4, "LP" }, { 5, "BP" }, { 6, "HP" } }, 0.0f, 9.5f);
+    for (const auto& [id, name] : { std::pair<const char*, const char*> { "function", "HOLD" }, { "glideType", "FIX" }, { "filterType", "NO TRACK" } })
+    {
+        rotary (id).setBracket (3, name);
+        rotary (id).setExtraTop (12);
+    }
+    rotary ("lfoWave").setExtraTop (8);   // its two-line FILTER ENV at the top
 
     lfoToOsc1.setTooltip (tr ("Tauntek: the LFO also modulates oscillator 1 (same as TUNE/TRANSPOSE + the 'LFO to Oscillator 1' keys)."));
     lfoSync.setTooltip (tr ("Tauntek: LFO hard sync (same as TUNE/TRANSPOSE + the 'LFO Sync' keys)."));
@@ -272,7 +284,7 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
     std::vector<RotarySwitch::Item> divisions;
     for (int z = 0; z < 8; ++z)
         divisions.push_back ({ z, kDivides[z], juce::String (kDivides[z]) + "  (" + kDivisions[z] + ")" });
-    divisionSwitch.setItems (divisions, 300.0f);
+    divisionSwitch.setItems (divisions, 270.0f);
     divisionSwitch.setLegendSize (9.5f);
     divisionSwitch.setTooltip (tr ("Steps of the arpeggiator and the sequencer when the voice follows the MIDI clock (T = triplet). Sets the global Tempo (CC 54, sent with Live CC)."));
     divisionSwitch.onChange = [this] (int z)
@@ -290,7 +302,7 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
 
     addAndMakeVisible (wear);
     layout();
-    setupWear (wearLevel);
+    setupWear (wearLevel());
 }
 
 void VoicePanel::setupWear (int level)
@@ -347,12 +359,12 @@ void VoicePanel::setupWear (int level)
     knobSpot (knob ("filterFreq"), 95.0f);
     for (auto* id : { "resonance", "filterSep", "detune", "lfoRate", "glideRate" })
         knobSpot (knob (id), 48.0f);
-    spot (selector ("wave1"), 50.0f);
-    spot (selector ("wave2"), 44.0f);
+    spot (rotary ("wave1"), 50.0f);
+    spot (rotary ("wave2"), 44.0f);
     spot (rotary ("trigger"), 48.0f);
-    spot (hold, 36.0f);
+    spot (rotary ("function"), 40.0f);
     spot (tempo, 50.0f);
-    spot (*faders.at ("volRelease"), 40.0f);
+    spot (*faders.at ("volRelease"), 30.0f);
 
     wear.setBounds (0, 0, width, height);
     wear.setup (level, background, std::move (keep), std::move (spots), cols);
@@ -429,6 +441,7 @@ void VoicePanel::refresh()
     hold.setLit (getParam (v, def ("function")) >= 4);
     glideFix.setLit (getParam (v, def ("glideType")) >= 4);
     noTrack.setLit (getParam (v, def ("filterType")) >= 4);
+    octaveLeds.setValue (getParam (v, def ("octaveSet")));
     lfoToOsc1.setLit (getParam (v, def ("lfoToOsc1")) == 0);   // 0 = On
     lfoSync.setLit (getParam (v, def ("lfoSync")) == 1);
     refreshClock();
@@ -437,12 +450,14 @@ void VoicePanel::refresh()
 std::pair<int, int> VoicePanel::extent (juce::Component& c) const
 {
     if (auto* k = dynamic_cast<Knob*> (&c))                 return { Knob::centreY (k->getStyle()), Knob::height (k->getStyle()) };
-    if (&c == &divisionSwitch)                              return { RotarySwitch::centreY, 104 };
-    if (dynamic_cast<RotarySwitch*> (&c) != nullptr)        return { RotarySwitch::centreY, 96 };
+    // every control's name sits 37 under its centre line (as under a knob), so a row's names line up
+    if (auto* r = dynamic_cast<RotarySwitch*> (&c))         return { RotarySwitch::centreY + r->getExtraTop(), RotarySwitch::height + r->getExtraTop() };
     if (auto* l = dynamic_cast<LedSelector*> (&c))          return { l->blockHeight() / 2, l->preferredHeight() };
     if (dynamic_cast<VfdNumber*> (&c) != nullptr)           return { VfdNumber::windowHeight / 2, VfdNumber::height };
+    if (&c == &lfoToOsc1 || &c == &lfoSync)                 return { 14, 28 };
     if (dynamic_cast<Selector*> (&c) != nullptr)            return { 14, 46 };
     if (&c == &lfoStack)                                    return { 30, 60 };
+    if (&c == &octaveLeds)                                  return { LedRow::centreY, LedRow::height };
     return { 18, 47 };                                      // LED button, LED below
 }
 
@@ -498,88 +513,192 @@ std::vector<juce::Range<int>> VoicePanel::arrange (juce::Rectangle<int> area, co
 
 void VoicePanel::layout()
 {
-    columns = splitColumns ({ 0, 0, (float) width, (float) height }, { 340, 314, 300, 326 });
-    groups.clear();
-    auto col = [this] (int i) { return columns[(size_t) i].reduced (8.0f).toNearestInt(); };
-    auto inside = [] (juce::Rectangle<int> grp) { return grp.reduced (8, 0).withTrimmedTop (6).withTrimmedBottom (26); };   // the bracket label below
+    // Two floors, each read left to right. Above, the sound: the wheels, then the audio path from the
+    // oscillators through the mix to the filter. Below, what shapes and moves it: LFO, glide,
+    // triggering, arpeggiator, clock, and both envelopes side by side, the amplifier's last (the end
+    // of the audio path). Printed lines show where things go, as on the OSCar's panel: the audio path
+    // runs along the titles' rules, the modulations through the channel between the floors.
+    // Each floor has a row of titles, then two rows of controls; every control of a row sits on the
+    // row's centre line, so names and value windows line up across the whole floor.
+    // span: one control over both rows. top2 / bottom2: a second control beside the first in that row
+    // (the first gets 'split' pixels of the width).
+    struct Column { int w; juce::Component* top; juce::Component* bottom; bool span = false;
+                    juce::Component* top2 = nullptr; juce::Component* bottom2 = nullptr; int split = 0; };
+    struct Title { int first, last; const char* text; };
+    struct Block { std::vector<Column> cols; std::vector<Title> titles; std::vector<int> breaks; };   // breaks: a line after these columns
+    struct Placed { juce::Rectangle<float> area; std::vector<float> starts, ends; };
 
-    // 1: oscillators (pitch row above the tone row) + keyboard
+    constexpr int floorGap = 22, blockGap = 8, pad = 8;          // the gap between the floors: two lanes of lines
+    constexpr int titleH = 26, topRow = 90, bottomRow = 202;   // centre lines, from the floor's top
+    constexpr int faderTop = 52;                               // room above the faders for the DELAY bracket
+    const int floorH = (height - floorGap) / 2;
+    columns.clear();
+    titles.clear();
+    dividers.clear();
+    separators.clear();
+    routes.clear();
+
+    auto doFloor = [&] (int y0, std::vector<Block> blocks)
     {
-        auto c = col (0);
-        auto osc = c.removeFromTop (322);
-        groups.push_back ({ osc.toFloat(), juce::String::fromUTF8 ("osc 1 \xc2\xb7 osc 2 \xc2\xb7 mix") });
-        const int half = (inside (osc).getWidth() - 12) / 2, q = inside (osc).getWidth() / 4 - 1;
-        arrange (inside (osc), { { { &selector ("wave1"), half }, { &selector ("wave2"), half } },
-                                 { { &rotary ("octaveShift"), q }, { &rotary ("pwmRate"), q }, { &rotary ("osc2Semi"), q }, { &rotary ("tuneSemi"), q } },
-                                 { { &knob ("detune"), q }, { &knob ("pulseWidth"), q }, { &knob ("oscBalance"), q }, { &knob ("noiseBalance"), q } } });
-        c.removeFromTop (8);
-        groups.push_back ({ c.toFloat(), "wheels" });
-        arrange (inside (c), { { { &knob ("bendAmount"), q }, { &knob ("mwPitch"), q }, { &knob ("mwFilter"), q }, { &rotary ("octaveSet"), q } } });
-    }
-
-    // 2: filter + MIDI clock
-    {
-        auto c = col (1);
-        auto f = c.removeFromTop (322);
-        groups.push_back ({ f.toFloat(), "filter" });
-        auto g = inside (f);
-        const int topY = g.getY() + 6;
-        auto& type = leds ("filterType");
-        type.setBounds (g.getCentreX() - 92, topY, 92, type.blockHeight());
-        noTrack.setBounds (g.getCentreX() + 12, topY, 74, 45);
-        const int cx = g.getCentreX(), sideW = 76;
-        knob ("filterFreq").setBounds (cx - 65, topY + 64, 130, Knob::height (KnobStyle::Brass));
-        const int line1 = topY + 96, line2 = topY + 206;
-        place (knob ("resonance"), g.getX(), line1, sideW);
-        place (knob ("filterSep"), g.getX(), line2, sideW);
-        place (knob ("envFilter"), g.getRight() - sideW, line1, sideW);
-        place (knob ("filterDrive"), g.getRight() - sideW, line2, sideW);
-
-        c.removeFromTop (8);
-        groups.push_back ({ c.toFloat(), "midi clock" });
-        arrange (inside (c), { { { &syncLeds, 78 }, { &divisionSwitch, 112 }, { &tempo, 92 } } });
-    }
-
-    // 3: envelopes + modulation (the LFO buttons under the LFO wave)
-    {
-        auto c = col (2);
-        auto envs = c.removeFromTop (214);
-        auto fe = envs.removeFromLeft ((envs.getWidth() - 8) / 2);
-        envs.removeFromLeft (8);
-        groups.push_back ({ fe.toFloat(), "filter env" });
-        groups.push_back ({ envs.toFloat(), "amp env" });
-        auto placeFaders = [this] (juce::Rectangle<int> grp, std::initializer_list<const char*> ids)
-        {
-            auto g = grp.reduced (4, 8);
-            const int fw = (g.getWidth() - 6) / 4, total = 4 * fw + 3 * 2;
-            int x = g.getCentreX() - total / 2;
-            for (auto* id : ids)
+        std::vector<Placed> placed;
+        int used = 0, nCols = 0;
+        for (const auto& b : blocks)
+            for (const auto& c : b.cols)
             {
-                faders.at (id)->setBounds (x, g.getY(), fw, juce::jmin (184, g.getHeight()));
-                x += fw + 2;
+                used += c.w;
+                ++nCols;
             }
-        };
-        placeFaders (fe, { "filtAttack", "filtDecay", "filtSustain", "filtRelease" });
-        placeFaders (envs, { "volAttack", "volDecay", "volSustain", "volRelease" });
+        const int nBlocks = (int) blocks.size();
+        const float gap = (float) (width - used - nBlocks * 2 * pad - (nBlocks - 1) * blockGap) / (float) (nCols + nBlocks);
+        float x = 0.0f;
+        for (const auto& b : blocks)
+        {
+            const float bx = x;
+            x += (float) pad + gap;
+            std::vector<float> starts, ends;
+            bool allSpan = true;
+            for (const auto& c : b.cols)
+            {
+                starts.push_back (x);
+                ends.push_back (x + (float) c.w);
+                allSpan = allSpan && c.span;
+                const int cx = juce::roundToInt (x + (float) c.w * 0.5f);
+                auto putIn = [&] (juce::Component* comp, int centre, int left, int cellW)
+                {
+                    if (comp == nullptr)
+                        return;
+                    const auto [top, h] = extent (*comp);
+                    int w = cellW;
+                    if (comp == &lfoToOsc1 || comp == &lfoSync || comp == &tempo)
+                        w = juce::jmin (cellW, 100);
+                    comp->setBounds (left + (cellW - w) / 2, y0 + centre - top, w, h);
+                };
+                auto put = [&] (juce::Component* comp, int centre)
+                {
+                    putIn (comp, centre, juce::roundToInt (x), c.w);
+                };
+                auto putPair = [&] (juce::Component* first, juce::Component* second, int centre)
+                {
+                    if (second == nullptr)
+                        return put (first, centre);
+                    putIn (first, centre, juce::roundToInt (x), c.split);
+                    putIn (second, centre, juce::roundToInt (x) + c.split, c.w - c.split);
+                };
+                if (c.span && dynamic_cast<Fader*> (c.top) != nullptr)
+                {
+                    // from under the title to the bottom row: its name and value line up with that row's
+                    c.top->setBounds (cx - c.w / 2, y0 + faderTop, c.w, bottomRow + 72 - faderTop);
+                }
+                else if (c.span)
+                {
+                    const auto [top, h] = extent (*c.top);
+                    juce::ignoreUnused (top);
+                    c.top->setBounds (cx - c.w / 2, y0 + (topRow - 46 + bottomRow + 74) / 2 - h / 2, c.w, h);
+                }
+                else
+                {
+                    putPair (c.top, c.top2, topRow);
+                    putPair (c.bottom, c.bottom2, bottomRow);
+                }
+                x += (float) c.w + gap;
+            }
+            x += (float) pad;
+            const auto area = juce::Rectangle<float> (bx, (float) y0, x - bx, (float) floorH);
+            columns.push_back (area);
+            placed.push_back ({ area, starts, ends });
 
-        c.removeFromTop (8);
-        groups.push_back ({ c.toFloat(), "lfo" });
-        arrange (inside (c), { { { &rotary ("lfoWave"), 108 }, { &knob ("lfoRate"), 76 }, { &knob ("introDelay"), 76 } },
-                               { { &lfoStack, 108 }, { &knob ("lfoPitch"), 76 }, { &knob ("lfoFilter"), 76 } } });
-        auto stack = lfoStack.getBounds().withSizeKeepingCentre (104, 60);
-        lfoToOsc1.setBounds (stack.removeFromTop (27));
-        lfoSync.setBounds (stack.removeFromBottom (27));
-    }
+            for (const auto& t : b.titles)
+                titles.push_back ({ juce::Rectangle<float> (starts[(size_t) t.first] - gap * 0.5f, (float) y0 + 5.0f,
+                                                            ends[(size_t) t.last] - starts[(size_t) t.first] + gap, 18.0f), t.text });
+            for (auto i : b.breaks)
+            {
+                const float lx = (ends[(size_t) i] + starts[(size_t) i + 1]) * 0.5f;
+                dividers.push_back (juce::Line<float> (lx, (float) y0 + (float) titleH + 10.0f, lx, (float) (y0 + floorH) - 10.0f));
+            }
+            // the line between the two rows, interrupted by a control spanning both
+            if (! allSpan)
+            {
+                const float ly = (float) y0 + (float) (topRow + 52 + bottomRow - 35) * 0.5f;
+                float from = area.getX() + 10.0f;
+                for (size_t i = 0; i < b.cols.size(); ++i)
+                    if (b.cols[i].span)
+                    {
+                        if (starts[i] - 4.0f > from)
+                            separators.push_back ({ juce::Rectangle<float> (from, ly, starts[i] - 4.0f - from, 0.0f), {} });
+                        from = ends[i] + 4.0f;
+                    }
+                if (area.getRight() - 10.0f > from)
+                    separators.push_back ({ juce::Rectangle<float> (from, ly, area.getRight() - 10.0f - from, 0.0f), {} });
+            }
 
-    // 4: performance in three rows: trigger and function, glide, arpeggiator
+            x += (float) blockGap;
+        }
+        return placed;
+    };
+
+    auto* none = (juce::Component*) nullptr;
+    const auto top = doFloor (0, {
+        { { { 86, &knob ("bendAmount"), &rotary ("tuneSemi") }, { 86, &knob ("mwPitch"), &knob ("mwFilter") } },
+          { { 0, 1, "WHEELS" } }, {} },
+        { { { 112, &rotary ("wave1"), &octaveLeds }, { 112, &rotary ("wave2"), &rotary ("octaveShift") },
+            { 86, &rotary ("osc2Semi"), &knob ("detune") }, { 86, &rotary ("pwmRate"), &knob ("pulseWidth") } },
+          { { 0, 0, "OSC 1" }, { 1, 2, "OSC 2" }, { 3, 3, "PWM" } }, { 0, 2 } },
+        { { { 86, &knob ("oscBalance"), &knob ("noiseBalance") } }, { { 0, 0, "MIX" } }, {} },
+        { { { 110, &rotary ("filterType"), &knob ("filterDrive") }, { 136, &knob ("filterFreq"), none, true },
+            { 86, &knob ("resonance"), &knob ("lfoFilter") }, { 86, &knob ("filterSep"), &knob ("envFilter") } },
+          { { 0, 3, "FILTER" } }, {} } });
+
+    const int y1 = floorH + floorGap;
+    std::vector<Column> envelopes;
+    for (auto* id : { "filtAttack", "filtDecay", "filtSustain", "filtRelease", "volAttack", "volDecay", "volSustain", "volRelease" })
+        envelopes.push_back ({ 34, faders.at (id).get(), none, true });
+    const auto bottom = doFloor (y1, {
+        { { { 110, &rotary ("lfoWave"), &knob ("lfoRate") }, { 86, &knob ("lfoPitch"), &knob ("introDelay") },
+            { 96, &lfoToOsc1, &lfoSync } },
+          { { 0, 2, "LFO" } }, { 1 } },
+        { { { 110, &rotary ("glideType"), &knob ("glideRate") } }, { { 0, 0, "GLIDE" } }, {} },
+        // one column each: triggering; the arpeggiator (Function turns it on); the clock and the tempo
+        { { { 106, &rotary ("trigger"), &knob ("gateTime") },
+            { 164, &rotary ("function"), &leds ("arpDir"), false, nullptr, &leds ("arpMode"), 82 },
+            { 164, &syncLeds, &tempo, false, &divisionSwitch, nullptr, 64 } },
+          { { 0, 0, "TRIGGERING" }, { 1, 1, "ARP" }, { 2, 2, "CLOCK" } }, { 0, 1 } },
+        { envelopes, { { 0, 3, "FILTER ENVELOPE" }, { 4, 7, "AMP ENVELOPE" } }, { 3 } } });
+
+    // The printed lines, each from a dot (where it starts) to an arrow (where it goes).
+    // The audio path, in the accent colour, joins the rules under the titles: oscillators -> mix ->
+    // filter, then down the filter's right edge to the amplifier's envelope.
+    const float rule = 26.0f, laneUp = (float) floorH + 7.0f, laneLow = (float) floorH + 15.0f;
+    const float underRow = (float) bottomRow + 75.0f;   // just under the values of a floor's bottom row
+    auto colX = [] (const Placed& b, int i) { return (b.starts[(size_t) i] + b.ends[(size_t) i]) * 0.5f; };
+    auto route = [this] (std::initializer_list<juce::Point<float>> pts, bool audio, bool dot, const char* label = "")
     {
-        auto c = col (3);
-        groups.push_back ({ c.toFloat(), "triggering" });
-        performanceArea = c;
-        performanceRows = arrange (inside (c), { { { &rotary ("trigger"), 140 }, { &leds ("function"), 86, true }, { &hold, 50 } },
-                                                 { { &leds ("glideType"), 92, true }, { &glideFix, 44 }, { &knob ("glideRate"), 124 } },
-                                                 { { &leds ("arpDir"), 76, true }, { &leds ("arpMode"), 72 }, { &knob ("gateTime"), 124 } } });
+        routes.push_back ({ std::vector<juce::Point<float>> (pts), audio, dot, label });
+    };
+    route ({ { top[1].area.getRight() - 12.0f, rule }, { top[2].area.getX() + 12.0f, rule } }, true, false);
+    route ({ { top[2].area.getRight() - 12.0f, rule }, { top[3].area.getX() + 12.0f, rule } }, true, false);
+    const auto& env = bottom[3];
+    {
+        const float edge = top[3].area.getRight() - 5.0f;
+        route ({ { top[3].area.getRight() - 12.0f, rule }, { edge, rule }, { edge, (float) y1 + rule },
+                 { env.area.getRight() - 13.0f, (float) y1 + rule } }, true, false);
     }
+
+    // The modulations, through the channel between the floors, into the amounts in the filter's
+    // bottom row: the filter envelope into Env Amount (lower lane), the LFO into LFO Amount (upper
+    // lane), with a branch up into the oscillators (pitch).
+    const auto& lfo = bottom[0];
+    const float filterEnvX = (env.starts[0] + env.ends[3]) * 0.5f, lfoX = (lfo.starts[0] + lfo.ends[2]) * 0.5f;
+    const float envAmountX = colX (top[3], 3), lfoAmountX = colX (top[3], 2);
+    route ({ { filterEnvX, (float) y1 + 2.0f }, { filterEnvX, laneLow }, { envAmountX, laneLow }, { envAmountX, underRow } }, false, true);
+    route ({ { lfoX, (float) y1 + 2.0f }, { lfoX, laneUp }, { lfoAmountX, laneUp }, { lfoAmountX, underRow } }, false, true);
+    const float pitchX = top[1].area.getCentreX();   // the pitch of both oscillators
+    route ({ { pitchX, laneUp }, { pitchX, (float) floorH - 2.0f } }, false, false, "PITCH");
+    junctions = { { pitchX, laneUp } };
+
+    // DELAY: on the filter envelope, from Sustain to Release
+    const float slot = 3.0f;   // a fader's slot sits a little right of its centre (its scale is on the left)
+    const float sx = (env.starts[2] + env.ends[2]) * 0.5f + slot, rx = (env.starts[3] + env.ends[3]) * 0.5f + slot;
+    delayBracket = { sx, (float) y1 + 36.0f, rx - sx, (float) faderTop - 38.0f };
 }
 
 void VoicePanel::resized() {}
@@ -588,15 +707,77 @@ void VoicePanel::paint (juce::Graphics& g)
 {
     for (const auto& c : columns)
         drawInset (g, c);
-    for (const auto& gr : groups)
-        drawGroup (g, gr.area, gr.label);
 
-    // dividers between the performance rows, named after the row below
-    const juce::String names[] = { {}, "glide", "arpeggiator" };   // as printed: English
-    for (size_t i = 1; i < performanceRows.size() && i < 3; ++i)
+    // titles over a rule, the rule over the whole block
+    for (const auto& c : columns)
     {
-        const float y = (float) (performanceRows[i - 1].getEnd() + performanceRows[i].getStart()) * 0.5f;
-        drawDivider (g, y, (float) performanceArea.getX() + 16.0f, (float) performanceArea.getRight() - 16.0f, names[i]);
+        g.setColour (colours::accent.withAlpha (0.85f));
+        g.drawLine (c.getX() + 12.0f, c.getY() + 26.0f, c.getRight() - 12.0f, c.getY() + 26.0f, 1.6f);
+    }
+    g.setFont (Fonts::bold (14.5f).withExtraKerningFactor (0.10f));
+    g.setColour (colours::text);
+    for (const auto& t : titles)
+        g.drawFittedText (t.text, t.area.toNearestInt(), juce::Justification::centred, 1, 0.8f);
+
+    g.setColour (colours::silkDim.withAlpha (0.4f));
+    for (const auto& d : dividers)
+        g.drawLine (d, 1.0f);
+    for (const auto& s : separators)
+        g.drawHorizontalLine (juce::roundToInt (s.area.getY()), s.area.getX(), s.area.getRight());
+
+    // the printed lines: square corners slightly rounded, a dot where a line starts, an arrow at its end
+    for (const auto& r : routes)
+    {
+        if (r.points.size() < 2)
+            continue;
+        const auto colour = r.audio ? colours::accent : colours::silk;
+        const float thick = r.audio ? 1.6f : 1.4f;
+        const auto tip = r.points.back();
+        const auto dir = (tip - r.points[r.points.size() - 2]);
+        const float len = std::hypot (dir.x, dir.y);
+        if (len < 1.0f)
+            continue;
+        const auto unit = dir / len;
+        const float headL = 7.0f, headW = 3.5f;
+        juce::Path line;
+        line.startNewSubPath (r.points.front());
+        for (size_t i = 1; i + 1 < r.points.size(); ++i)
+            line.lineTo (r.points[i]);
+        line.lineTo (tip - unit * (headL - 1.0f));   // the line stops in the arrow's head
+        g.setColour (colour);
+        g.strokePath (line.createPathWithRoundedCorners (5.0f), juce::PathStrokeType (thick));
+        const juce::Point<float> side (-unit.y, unit.x);
+        juce::Path head;
+        head.addTriangle (tip, tip - unit * headL + side * headW, tip - unit * headL - side * headW);
+        g.fillPath (head);
+        if (r.dot)
+            g.fillEllipse (juce::Rectangle<float> (5.0f, 5.0f).withCentre (r.points.front()));
+        if (r.label.isNotEmpty())   // printed beside the arrow's head
+        {
+            g.setFont (Fonts::bold (9.5f).withExtraKerningFactor (0.10f));
+            g.drawText (r.label, juce::Rectangle<float> (60.0f, 11.0f).withPosition (tip.x + 6.0f, tip.y - 2.0f),
+                        juce::Justification::centredLeft, false);
+        }
+    }
+    g.setColour (colours::silk);
+    for (const auto& j : junctions)
+        g.fillEllipse (juce::Rectangle<float> (5.0f, 5.0f).withCentre (j));
+
+    // DELAY, from Sustain to Release of the filter envelope: down to both, the arrow on Release
+    if (! delayBracket.isEmpty())
+    {
+        const auto& d = delayBracket;
+        g.setFont (Fonts::bold (9.5f).withExtraKerningFactor (0.10f));
+        const juce::String word ("DELAY");
+        const float tw = juce::GlyphArrangement::getStringWidth (g.getCurrentFont(), word) + 8.0f;
+        const float y = d.getY() + 4.0f;
+        g.setColour (colours::silkDim);
+        g.drawLine (d.getX(), d.getBottom(), d.getX(), y, 1.2f);
+        g.drawLine (d.getX(), y, d.getCentreX() - tw * 0.5f, y, 1.2f);
+        g.drawLine (d.getCentreX() + tw * 0.5f, y, d.getRight(), y, 1.2f);
+        g.drawArrow ({ d.getRight(), y, d.getRight(), d.getBottom() + 1.0f }, 1.2f, 6.0f, 5.0f);
+        g.setColour (colours::silk);
+        g.drawText (word, juce::Rectangle<float> (tw, 10.0f).withCentre ({ d.getCentreX(), y }), juce::Justification::centred, false);
     }
 
     // printed legends at both ends of the big filter knob's scale
@@ -722,34 +903,42 @@ void GeneratorPanel::resized()
 
     // A: mode, family, parents
     {
+        // each group's content sits in the middle of the room above its name
+        auto inner = [] (juce::Rectangle<int> group, int contentHeight)
+        {
+            auto r = group.reduced (12, 10).withTrimmedBottom (22);
+            return r.withSizeKeepingCentre (r.getWidth(), contentHeight);
+        };
         auto c = columns[0].reduced (8.0f).toNearestInt();
-        auto m = c.removeFromTop (76);
+        auto m = c.removeFromTop (96);
         groups.push_back ({ m.toFloat(), tr ("mode") });
-        auto row = m.reduced (10, 10).removeFromTop (34);
+        auto row = inner (m, 34);
         const int bw = (row.getWidth() - 16) / 3;
         for (int i = 0; i < modes.size(); ++i)
             modes[i]->setBounds (row.getX() + i * (bw + 8), row.getY(), bw, 34);
 
         c.removeFromTop (8);
-        auto f = c.removeFromTop (148);
+        auto f = c.removeFromTop (178);
         groups.push_back ({ f.toFloat(), tr ("family (new)") });
-        auto padRow = f.reduced (10, 12).removeFromTop (94);
         std::initializer_list<juce::Component*> list { pads[0], pads[1], pads[2], pads[3], pads[4] };
-        spread (list, padRow, 70, 94);
+        spread (list, inner (f, 94), 70, 94);
 
         c.removeFromTop (8);
         groups.push_back ({ c.toFloat(), tr ("parents (breed)") });
-        auto p = c.reduced (12, 14);
-        parentA.setBounds (p.getX(), p.getY(), (p.getWidth() - 12) / 2, 46);
-        parentB.setBounds (p.getRight() - (p.getWidth() - 12) / 2, p.getY(), (p.getWidth() - 12) / 2, 46);
-        parentsNote = p.withTrimmedTop (58).withTrimmedBottom (26).toFloat();
+        auto p = inner (c, 46 + 10 + 46 + 14 + 40);   // A above B, then the note
+        parentA.setBounds (p.removeFromTop (46));
+        p.removeFromTop (10);
+        parentB.setBounds (p.removeFromTop (46));
+        p.removeFromTop (14);
+        parentsNote = p.toFloat();
     }
 
-    // B: amount, generate, history navigation
+    // B: amount, generate, history navigation, in the middle of the column
     {
         auto c = columns[1].reduced (8.0f).toNearestInt();
         groups.push_back ({ c.toFloat(), tr ("generate") });
         auto g = c.reduced (12, 12).withTrimmedBottom (22);
+        g = g.withSizeKeepingCentre (g.getWidth(), 330);
         amount.setBounds (g.getCentreX() - 85, g.getY() + 2, 170, 166);
         amountNote = juce::Rectangle<int> (g.getX(), g.getY() + 174, g.getWidth(), 36).toFloat();
         generateButton.setBounds (g.getCentreX() - 130, g.getY() + 216, 260, 64);
@@ -1080,7 +1269,7 @@ void BanksPanel::loadSelectedEntry()
 
 void BanksPanel::saveBankAs()
 {
-    editor.askText (tr ("Save the bank"), tr ("Name of the bank (saved in Documents > OSCar Editor > Banks, with the voice names)."),
+    editor.askText (tr ("Save the bank"), tr ("Name of the bank (saved in Documents > OXIde > Banks, with the voice names)."),
                     tr ("My bank"), tr ("Save"), [this] (const juce::String& raw)
     {
         auto name = juce::File::createLegalFileName (raw.trim());
@@ -1302,7 +1491,8 @@ void MorphPanel::resized()
     auto c = columns[1].reduced (8.0f).toNearestInt();
     groups.push_back ({ c.toFloat(), tr ("morph") });
     auto g = c.reduced (22, 14).withTrimmedBottom (22);
-    preview = g.removeFromTop (168).toFloat();
+    // the preview takes what the fader row and the bottom row leave
+    preview = g.removeFromTop (g.getHeight() - 12 - 104 - 16 - Knob::height (KnobStyle::Chrome)).toFloat();
     g.removeFromTop (12);
     auto row = g.removeFromTop (104);
     readout = row.removeFromTop (30).withSizeKeepingCentre (64, 28).toFloat();
@@ -1310,7 +1500,7 @@ void MorphPanel::resized()
     letterA = row.removeFromLeft (44).toFloat();
     letterB = row.removeFromRight (44).toFloat();
     fader.setBounds (row.reduced (10, 0).withSizeKeepingCentre (row.getWidth() - 20, 70));
-    g.removeFromTop (6);
+    g.removeFromTop (16);
     auto bottom = g;
     smoothing.setBounds (bottom.removeFromLeft (96).withHeight (Knob::height (KnobStyle::Chrome)));
     keepButton.setBounds (bottom.removeFromRight (210).withSizeKeepingCentre (210, 54));
@@ -1912,14 +2102,19 @@ void SetupPanel::resized()
         }
 
         c.removeFromTop (8);
-        auto upd = c;
-        groups.push_back ({ upd.toFloat(), tr ("midi thru, cc dump and updates") });
-        auto u = upd.reduced (14, 12).withTrimmedBottom (22);
-        thruButton.setBounds (u.removeFromTop (32));
-        u.removeFromTop (6);
-        dumpText = u.removeFromTop (30).toFloat();
-        u.removeFromTop (4);
-        updateText = u.removeFromTop (30).toFloat();
+        auto thru = c.removeFromTop (130);
+        groups.push_back ({ thru.toFloat(), tr ("midi thru and cc dump") });
+        auto t = thru.reduced (14, 12).withTrimmedBottom (22);
+        thruButton.setBounds (t.removeFromTop (32));
+        t.removeFromTop (6);
+        dumpText = t.toFloat();
+
+        c.removeFromTop (8);
+        groups.push_back ({ c.toFloat(), tr ("updates") });
+        auto u = c.reduced (14, 12).withTrimmedBottom (22);
+        u = u.withSizeKeepingCentre (u.getWidth(), 36 + 8 + 34);
+        updateText = u.removeFromTop (36).toFloat();
+        u.removeFromTop (8);
         auto row = u.removeFromTop (34);
         checkButton.setBounds (row.removeFromLeft (120));
         row.removeFromLeft (8);
@@ -1931,7 +2126,7 @@ void SetupPanel::resized()
 
     {
         auto c = cols[1].reduced (8.0f).toNearestInt();
-        auto h = c.removeFromTop (290);
+        auto h = c.removeFromTop (400);
         groups.push_back ({ h.toFloat(), tr ("how it works") });
         help.setBounds (h.reduced (12, 10).withTrimmedBottom (20));
         c.removeFromTop (8);

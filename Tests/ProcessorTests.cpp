@@ -585,7 +585,7 @@ static void testEditor (OscarProcessor& proc, Capture& out)
         return;
     for (auto size : { 1400, 980, 2100 })
     {
-        ed->setSize (size, size * 800 / 1400);
+        ed->setSize (size, size * 900 / 1400);
         for (int page = 0; page < 7; ++page)
         {
             editor->showPage (page);
@@ -791,9 +791,10 @@ int main()
 
     juce::ScopedJuceInitialiser_GUI init;
 
-    // OSCAR_SHOTS=<folder> [OSCAR_SHOTS_SCALE=2] [OSCAR_SHOTS_LANG=fr]: only saves a PNG of each page.
+    // OSCAR_SHOTS=<folder> [OSCAR_SHOTS_SCALE=2] [OSCAR_SHOTS_LANG=fr] [OSCAR_SHOTS_FINISH=0..3]: only saves a PNG of each page.
     if (const auto shots = juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS", {}); shots.isNotEmpty())
     {
+        atelier::applyFinish (juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_FINISH", "0").getIntValue());
         OscarProcessor proc;
         proc.setLanguage (juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_LANG", "en"));
         pump (100);
@@ -812,7 +813,7 @@ int main()
         proc.getMidi().setTestOutput ([] (const juce::MidiMessage&) {});
         proc.setSelectedSlot (juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_SLOT", "12").getIntValue());
         std::unique_ptr<juce::AudioProcessorEditor> ed (proc.createEditor());
-        ed->setSize (1400, 800);
+        ed->setSize (1400, 900);
         const float scale = juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_SCALE", "1").getFloatValue();
         juce::File (shots).createDirectory();
         for (int page = 0; page < 7; ++page)

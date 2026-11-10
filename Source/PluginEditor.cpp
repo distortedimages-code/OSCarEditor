@@ -20,14 +20,14 @@ namespace
         return OscarProcessor::getUserFolder();
     }
 
-    // Layout of the 1400 x 800 window
+    // Layout of the 1400 x 900 window
     constexpr int innerX = 48, innerW = 1304;
     constexpr int headerY = 10, headerH = 60;
     constexpr int displayY = 78, displayH = 44;
     constexpr int tabsY = 130, tabsH = 34;
     constexpr int pageY = 172;
-    constexpr int memoryY = 690, memoryH = 46;
-    constexpr int footerY = 746, footerH = 44;
+    constexpr int memoryY = 790, memoryH = 46;
+    constexpr int footerY = 846, footerH = 44;
 
     const juce::Rectangle<float> leftVents  { 54.0f, 20.0f, 300.0f, 40.0f };
     const juce::Rectangle<float> rightVents { 1046.0f, 20.0f, 300.0f, 40.0f };
@@ -125,11 +125,13 @@ OscarEditor::OscarEditor (OscarProcessor& p)
 
     layout();
     refreshAll();
+    juce::Timer::callAfterDelay (1500, [safe = juce::Component::SafePointer<OscarEditor> (this)]
+                                 { if (safe != nullptr) safe->checkOutdatedCopies(); });
 
     setResizable (true, true);
     if (auto* c = getConstrainer())
         c->setFixedAspectRatio ((double) baseWidth / (double) baseHeight);
-    setResizeLimits (980, 560, 2240, 1280);
+    setResizeLimits (980, 630, 2240, 1440);
     setSize (juce::roundToInt (baseWidth * proc.editorScale), juce::roundToInt (baseHeight * proc.editorScale));
     startTimerHz (10);
 
@@ -209,12 +211,13 @@ void OscarEditor::paintBackdrop (juce::Graphics& g)
     // header
     drawVents (g, leftVents);
     drawVents (g, rightVents);
-    g.setFont (Fonts::title (40.0f));
-    g.setColour (juce::Colour (0xffeeedea));
-    g.drawText (tr ("Voice Editor"), juce::Rectangle<int> (400, headerY + 2, 600, 40), juce::Justification::centred);
+    {
+        const float logoH = 34.0f;
+        drawLogo (g, { (float) baseWidth * 0.5f - logoWidth (logoH) * 0.5f, (float) headerY + 6.0f }, logoH, juce::Colour (0xffeeedea));
+    }
     g.setFont (Fonts::bold (12.0f).withExtraKerningFactor (0.22f));
     g.setColour (juce::Colour (0xffa9acb1));
-    g.drawText (juce::String::fromUTF8 ("OSCAR  \xc2\xb7  MIDI  \xc2\xb7  SYSEX  \xc2\xb7  TAUNTEK CC"), juce::Rectangle<int> (400, headerY + 42, 600, 16), juce::Justification::centred);
+    g.drawText (tr ("EDITOR & LIBRARIAN FOR THE OSCAR"), juce::Rectangle<int> (400, headerY + 45, 600, 16), juce::Justification::centred);
 
     // status lights
     auto& midi = proc.getMidi();
@@ -402,7 +405,7 @@ void OscarEditor::timerCallback()
 
 void OscarEditor::showVoiceMenu()
 {
-    constexpr int initItem = 1000;
+    static constexpr int initItem = 1000;   // static: usable in the callback without a capture (MSVC)
     juce::PopupMenu m;
     m.addItem (initItem, tr ("Init voice %1", { juce::String (slotLabel (proc.getSelectedSlot())) }));
     m.addSeparator();
@@ -512,7 +515,7 @@ juce::File OscarEditor::saveNamed (const juce::File& folder, const juce::String&
     if (file.exists())
         file = folder.getNonexistentChildFile (name, extension, false);
     const auto r = save (file);
-    showResult (r, tr ("Saved %1 in %2.", { file.getFileName(), "Documents > OSCar Editor > " + folder.getFileName() }));
+    showResult (r, tr ("Saved %1 in %2.", { file.getFileName(), "Documents > OXIde > " + folder.getFileName() }));
     libraryChanged();
     return r.wasOk() ? file : juce::File();
 }
@@ -539,7 +542,7 @@ void OscarEditor::exportSelectedVoice()
     auto name = proc.getDocument().getName (slot);
     if (name.isEmpty()) name = tr ("Voice %1", { juce::String (slotLabel (slot)) });
     saveInto (OscarProcessor::getVoicesFolder(), ".oscvoice", tr ("Save the selected voice"),
-              tr ("Name of the voice (saved in Documents > OSCar Editor > Voices)."), name,
+              tr ("Name of the voice (saved in Documents > OXIde > Voices)."), name,
               [this, slot] (const juce::File& f) { return proc.getDocument().exportVoice (slot, f); });   // the slot chosen when asked
 }
 
@@ -568,7 +571,7 @@ void OscarEditor::loadBankFromFile()
 void OscarEditor::exportBankSyx()
 {
     saveInto (OscarProcessor::getBanksFolder(), ".syx", tr ("Export as .syx"),
-              tr ("Name of the .syx file (saved in Documents > OSCar Editor > Banks). A .syx file holds the voices without their names."),
+              tr ("Name of the .syx file (saved in Documents > OXIde > Banks). A .syx file holds the voices without their names."),
               tr ("My bank"), [this] (const juce::File& f) { return exportSyxTo (f); });
 }
 
@@ -630,7 +633,7 @@ void OscarEditor::showUpdateDialog()
    #endif
 
     auto box = opts.withIconType (juce::MessageBoxIconType::InfoIcon)
-                   .withTitle ("OSCar Editor " + rel.version + (rel.title.isNotEmpty() && rel.title != rel.version ? "  -  " + rel.title : juce::String()))
+                   .withTitle ("OXIde " + rel.version + (rel.title.isNotEmpty() && rel.title != rel.version ? "  -  " + rel.title : juce::String()))
                    .withMessage ((notes.isEmpty() ? tr ("No release notes.") : notes)
                                  + (available ? "\n\n" + tr ("You have version %1. The new version replaces the plug-ins and the app on this Mac; quit and reopen your DAW afterwards.", { Updater::currentVersion() })
                                               : juce::String()));
@@ -647,6 +650,41 @@ void OscarEditor::showUpdateDialog()
         if (r == 1)      u.install();
         else if (r == 3) u.skipThisVersion();
     });
+}
+
+//==============================================================================
+void OscarEditor::checkOutdatedCopies()
+{
+   #if JUCE_MAC
+    static bool asked = false;   // once per session, even with several instances open
+    if (asked)
+        return;
+    const auto old = Updater::outdatedCopies();
+    if (old.isEmpty())
+        return;
+    asked = true;
+    juce::StringArray paths;
+    for (const auto& f : old)
+        paths.add (f.getFullPathName());
+    proc.addLog (tr ("Old copies still installed: %1", { paths.joinIntoString (", ") }));
+    const auto box = juce::MessageBoxOptions().withAssociatedComponent (this).withIconType (juce::MessageBoxIconType::WarningIcon)
+                         .withTitle (tr ("An older copy is still installed"))
+                         .withMessage (tr ("These copies still carry the old name (OSCar Editor). They are the same plug-in as OXIde, and two copies confuse Logic:\n\n%1\n\nMove them to the Trash?",
+                                           { paths.joinIntoString ("\n") }))
+                         .withButton (tr ("Move to the Trash")).withButton (tr ("Later"));
+    juce::AlertWindow::showAsync (box, [safe = juce::Component::SafePointer<OscarEditor> (this), old] (int r)
+    {
+        if (safe == nullptr || r != 1)
+            return;
+        juce::StringArray left;
+        for (const auto& f : old)
+            if (! f.moveToTrash())
+                left.add (f.getFullPathName());
+        safe->proc.addLog (left.isEmpty() ? tr ("The old copies are in the Trash. Restart Logic so that it forgets them.")
+                                          : tr ("Couldn't move to the Trash (protected folder): %1. Drag them to the Trash in the Finder.",
+                                                { left.joinIntoString (", ") }));
+    });
+   #endif
 }
 
 //==============================================================================

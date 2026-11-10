@@ -5,7 +5,7 @@ if(APPLE)
     set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Universal binary")
 endif()
 
-project(OSCarEditor VERSION 0.4.2 LANGUAGES C CXX)
+project(OSCarEditor VERSION 0.5.0 LANGUAGES C CXX)
 
 # GitHub repository whose releases the plugin checks for updates (public releases).
 set(OSCAR_UPDATE_REPO "distortedimages-code/OSCarEditor" CACHE STRING "owner/repo checked for updates (empty = no update check)")
@@ -37,7 +37,7 @@ set_target_properties(oscar_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 #==============================================================================
 juce_add_plugin(OSCarEditor
     COMPANY_NAME "OSCarTools"
-    PRODUCT_NAME "OSCar Editor"
+    PRODUCT_NAME "OXIde"
     BUNDLE_ID com.oscartools.oscareditor
     IS_SYNTH TRUE
     NEEDS_MIDI_INPUT TRUE
@@ -132,7 +132,7 @@ if(OSCAR_BUILD_TESTS)
     target_sources(ProcessorTests PRIVATE Tests/ProcessorTests.cpp ${OSCAR_UI_SOURCES})
     target_compile_definitions(ProcessorTests PRIVATE
         ${OSCAR_DEFINITIONS}
-        JucePlugin_Name="OSCar Editor"
+        JucePlugin_Name="OXIde"
         JUCE_MODAL_LOOPS_PERMITTED=1
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0)

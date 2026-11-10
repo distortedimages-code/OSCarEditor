@@ -1,6 +1,6 @@
-# OSCar Editor
+# OXIde
 
-Éditeur / librarian pour l'OSCar (Oxford Synthesiser Company), en plugin AU / VST3 et en appli autonome.
+Éditeur / librarian pour l'OSCar (Oxford Synthesiser Company), en plugin AU / VST3 et en appli autonome. Jusqu'à la version 0.4, il s'appelait *OSCar Editor*.
 Pensé pour un OSCar équipé de la **carte MIDI et du firmware Tauntek** ; fonctionne aussi en librarian avec le MIDI d'usine.
 
 ## Langue
@@ -9,7 +9,7 @@ L'interface est en **français** par défaut, avec **English** au choix dans **R
 
 ## Les pages du plugin
 
-- **Voix** : tous les réglages de la voix choisie (potards, faders d'enveloppe, sélecteurs). Chaque réglage part tout de suite en CC vers l'OSCar (*Live CC*). Tous les paramètres sont aussi exposés au DAW pour l'automation.
+- **Voix** : tous les réglages de la voix choisie (potards, faders d'enveloppe, sélecteurs), sur deux étages. En haut le son : molettes, puis oscillateurs → mix → filtre. En bas ce qui le façonne : LFO, glide, triggering, arpégiateur, horloge et les deux enveloppes côte à côte. Des lignes imprimées montrent le trajet du son (en orange) et les modulations (vers ENV AMOUNT, LFO AMOUNT et la hauteur des oscillateurs). Chaque réglage part tout de suite en CC vers l'OSCar (*Live CC*). Tous les paramètres sont aussi exposés au DAW pour l'automation.
 - **Générateur** : générateur de sons « intelligent ». *Varier* modifie la voix, de subtil à radical. *Nouveau* crée une basse, un lead, un pad, un son percussif ou une texture à partir des plages et des sections de vraies voix d'OSCar. *Croiser* mélange deux voix. Les sections verrouillées ne bougent pas. Tune, molettes, arpégiateur, Function et Gate Time ne sont jamais modifiés. Des règles garantissent que le résultat s'entend (enveloppe d'ampli, filtre pas fermé, résonance raisonnable…). Chaque résultat joue tout de suite sur l'OSCar sans toucher à sa mémoire, et un historique permet de revenir en arrière.
 - **Morphing** : deux voix A et B et un crossfader façon Octatrack. La voix choisie suit le fader : les potards glissent de A vers B, les sélecteurs basculent à mi-course. Le *lissage* fixe le temps le plus court pour aller de A à B : un geste brusque devient un glissement. Avec Live CC, l'OSCar suit en direct ; le plugin n'envoie que les CC qui ont changé, au plus 12 toutes les 33 ms (les plus gros mouvements d'abord), soit environ un tiers d'un câble MIDI, et rien pendant un transfert. *Garder le mélange* valide le résultat, *Annuler* rend la voix d'avant en une fois. Le fader est automatisable dans le DAW (paramètre *Morph A-B*).
 - **Banques** : la banque avec ses noms (renommer, copier, coller, échanger, Init pour partir de zéro, revenir à la version de l'OSCar, enregistrer / importer une voix), et la bibliothèque. Celle-ci rassemble tes banques, tes voix et toutes les sauvegardes automatiques ; un double-clic en charge une.
@@ -23,7 +23,7 @@ Quand tu choisis une voix sur l'OSCar, la carte Tauntek envoie son *patch CC dum
 
 ## Horloge MIDI et arpégiateur
 
-Sur la page **Voix**, le bloc **horloge midi** :
+Sur la page **Voix**, la colonne **CLOCK** :
 
 - **Sync** (sélecteur INT / MIDI) : *Interne*, l'arpégiateur et le séquenceur suivent le **Tempo** (afficheur orange : glisser vers le haut ou le bas sur le nombre, ou molette) ; *Horloge MIDI*, ils avancent sur l'horloge MIDI que reçoit l'OSCar. C'est le réglage **Trigger = Ext** de l'OSCar, enregistré dans la voix. Revenir en *Interne* remet le Trigger d'avant.
 - **Division** : la valeur d'un pas quand la voix suit l'horloge : 1/96, 1/48, 1/32, 1/16T, 1/16, 1/8T, 1/8 ou 1/4T (T = triolet). Le firmware Tauntek la tire du Tempo global (Tempo ÷ 32 donne 1, 2, 3, 4, 6, 8, 12 ou 16 impulsions d'horloge par pas). Le plugin envoie donc la bonne valeur de Tempo (CC 54, avec Live CC), et l'afficheur Tempo montre la division.
@@ -37,16 +37,16 @@ Option (désactivée par défaut) pour jouer l'OSCar depuis la piste du DAW, don
 
 ## Sauvegardes
 
-Tout ce qui est reçu et envoyé est sauvegardé dans `Documents/OSCar Editor/Backups`. Avant chaque envoi, le contenu connu de l'OSCar est aussi sauvegardé. *Enregistrer la banque…* et *Exporter en .syx…* demandent juste un nom et enregistrent directement dans `Documents/OSCar Editor/Banks` ; *Sauver voix…* enregistre la voix sélectionnée dans `Documents/OSCar Editor/Voices`. Rien n'est jamais écrasé (un numéro est ajouté si le nom existe déjà). Tout se recharge depuis la bibliothèque de la page **Banques** (filtres *Mes banques*, *Mes voix*, *Sauvegardes*) : un double-clic sur une banque remplace la banque de l'éditeur, sur une voix la met dans la voix sélectionnée.
+Tout ce qui est reçu et envoyé est sauvegardé dans `Documents/OXIde/Backups`. Avant chaque envoi, le contenu connu de l'OSCar est aussi sauvegardé. *Enregistrer la banque…* et *Exporter en .syx…* demandent juste un nom et enregistrent directement dans `Documents/OXIde/Banks` ; *Sauver voix…* enregistre la voix sélectionnée dans `Documents/OXIde/Voices`. Rien n'est jamais écrasé (un numéro est ajouté si le nom existe déjà). Le dossier `Documents/OSCar Editor` des versions 0.4 et avant est renommé une fois, avec tout son contenu. Tout se recharge depuis la bibliothèque de la page **Banques** (filtres *Mes banques*, *Mes voix*, *Sauvegardes*) : un double-clic sur une banque remplace la banque de l'éditeur, sur une voix la met dans la voix sélectionnée.
 
 ## Mises à jour
 
-Le plugin vérifie au plus une fois par jour les releases publiques de `distortedimages-code/OSCarEditor` (réglable avec `-DOSCAR_UPDATE_REPO=propriétaire/dépôt`). Quand une version plus récente existe, un bouton **Mise à jour** apparaît. Il télécharge la release, vérifie sa somme SHA-256, puis remplace l'AU, le VST3 et l'appli installés sur ce Mac. Il faut ensuite quitter et relancer le DAW. Comme c'est le plugin qui télécharge, macOS ne met pas le fichier en quarantaine. Seuls `api.github.com` et le serveur de téléchargement de GitHub sont contactés. Sous Windows, le bouton ouvre la page de téléchargement.
+Le plugin vérifie au plus une fois par jour les releases publiques de `distortedimages-code/OSCarEditor` (réglable avec `-DOSCAR_UPDATE_REPO=propriétaire/dépôt`). Quand une version plus récente existe, un bouton **Mise à jour** apparaît. Il télécharge la release, vérifie sa somme SHA-256, puis remplace l'AU, le VST3 et l'appli installés sur ce Mac. Une copie encore nommée *OSCar Editor* est remplacée par *OXIde* au même endroit ; si les deux noms se côtoient, le plugin propose au démarrage de mettre l'ancien à la corbeille. Il faut ensuite quitter et relancer le DAW. Comme c'est le plugin qui télécharge, macOS ne met pas le fichier en quarantaine. Seuls `api.github.com` et le serveur de téléchargement de GitHub sont contactés. Sous Windows, le bouton ouvre la page de téléchargement.
 
 **Publier une version** :
-1. Changer `VERSION` dans `CMakeLists.txt` (par ex. `0.3.0`) et écrire les nouveautés dans `RELEASE_NOTES.md`, puis committer sur `main`.
-2. Sur GitHub : onglet *Actions* → **release** → **Run workflow** (branche `main`). Autre possibilité, en ligne de commande : `git tag v0.3.0 && git push origin v0.3.0`.
-3. GitHub compile, teste et crée un **brouillon** de release `v0.3.0` avec `OSCar-Editor-mac.zip` et sa somme `.sha256` (une dizaine de minutes).
+1. Changer `VERSION` dans `CMakeLists.txt` (par ex. `0.5.0`) et écrire les nouveautés dans `RELEASE_NOTES.md`, puis committer sur `main`.
+2. Sur GitHub : onglet *Actions* → **release** → **Run workflow** (branche `main`). Autre possibilité, en ligne de commande : `git tag v0.5.0 && git push origin v0.5.0`.
+3. GitHub compile, teste et crée un **brouillon** de release `v0.5.0` avec `OXIde-mac.dmg`, `OXIde-mac.zip` et sa somme `.sha256`, plus `OSCar-Editor-mac.zip` et sa somme : le même plugin sous les anciens noms de bundles, pour le système de mise à jour des versions 0.4 et avant (une dizaine de minutes).
 4. Sur la page *Releases*, relire les notes puis **Publish release** (le tag est créé à ce moment-là). Les plugins installés la proposent au plus tard le lendemain (ou tout de suite avec *Vérifier*, page **Réglages**).
 
 ## Site web
@@ -71,7 +71,7 @@ Ce qui reste **à confirmer à l'oreille** : les *noms* de certains sélecteurs 
 
 ## Installation sur Mac
 
-**Depuis une release** : ouvrir `OSCar-Editor-mac.dmg` et glisser chaque fichier sur le raccourci de son dossier (Components, VST3, Applications), puis débloquer le plugin une fois avec le texte à coller dans Terminal donné sur le site (il retire la quarantaine et fait valider l'AU par `auval`, comme Logic Pro). L'image disque est construite par `tools/dmg/make_dmg.sh` (dmgbuild) ; son fond se refait avec `tools/dmg/make_background.py`.
+**Depuis une release** : ouvrir `OXIde-mac.dmg` et glisser chaque fichier sur le raccourci de son dossier (Components, VST3, Applications), puis débloquer le plugin une fois avec le texte à coller dans Terminal donné sur le site (il retire les copies à l'ancien nom, la quarantaine, et fait valider l'AU par `auval`, comme Logic Pro). L'image disque est construite par `tools/dmg/make_dmg.sh` (dmgbuild) ; son fond se refait avec `tools/dmg/make_background.py`. Le logo (le même que dans le plugin) est généré en SVG par `tools/logo/make_logo.py`.
 
 **Depuis les sources** :
 
@@ -119,7 +119,7 @@ Sans outils de dev : pousser ce dossier sur GitHub, l'onglet *Actions* compile M
 
 - `Source/core/` : codec SysEx, carte des paramètres, encodage CC, rappel depuis le patch dump, générateur. Sans JUCE.
 - `Source/` : plugin JUCE (modèle, ports MIDI, moteur CC, MIDI Thru, mises à jour).
-- `Source/ui/` : style « Atelier » (bois, potards, faders, voyants…), les six pages et la langue.
+- `Source/ui/` : style « Atelier » (bois, potards, faders, voyants…), les sept pages et la langue.
 - `Resources/Lang/fr.txt` : traduction française.
 - `Tests/` : `CoreTests`, `GeneratorTests`, `DocTests`, `ProcessorTests`, `UpdaterTests`, `check_translations.py`.
 - `.github/workflows/` : `build.yml` (compilation à chaque push), `release.yml` (release sur tag `v*`).

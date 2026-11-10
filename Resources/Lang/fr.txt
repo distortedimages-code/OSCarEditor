@@ -1,13 +1,13 @@
 language: French
 countries: fr be ch lu mc ca
 
-# OSCar Editor - French interface.
+# OXIde - French interface.
 # The names of the OSCar's controls (Detune, Separation, Q, Glide Type...), of its keys
 # (INSERT, VOICE, SPACE, TUNE/TRANSPOSE...) and MIDI terms (Live CC, MIDI Thru, patch CC dump,
 # program change) are deliberately left in English, as on the synth and in Tauntek's documents.
 
 # --- Window
-"Voice Editor" = "Éditeur de voix"
+"EDITOR & LIBRARIAN FOR THE OSCAR" = "ÉDITEUR ET LIBRARIAN POUR L'OSCAR"
 "Voice" = "Voix"
 "Generator" = "Générateur"
 "Banks" = "Banques"
@@ -43,7 +43,7 @@ countries: fr be ch lu mc ca
 "Swap voice %1 with..." = "Échanger la voix %1 avec..."
 "Voice %1" = "Voix %1"
 "Save the selected voice" = "Enregistrer la voix sélectionnée"
-"Name of the voice (saved in Documents > OSCar Editor > Voices)." = "Nom de la voix (enregistrée dans Documents > OSCar Editor > Voices)."
+"Name of the voice (saved in Documents > OXIde > Voices)." = "Nom de la voix (enregistrée dans Documents > OXIde > Voices)."
 "Import a voice into voice %1" = "Importer une voix dans la voix %1"
 "Imported %1 into voice %2 (not yet sent to the OSCar)." = "%1 importé dans la voix %2 (pas encore envoyé à l'OSCar)."
 "Load an OSCar bank" = "Charger une banque OSCar"
@@ -192,13 +192,13 @@ countries: fr be ch lu mc ca
 "Choose a bank, a voice or a backup in the list first." = "Choisis d'abord une banque, une voix ou une sauvegarde dans la liste."
 "Send voices to synth to put it in the OSCar." = "« Envoyer au synthé » pour la mettre dans l'OSCar."
 "Save the bank" = "Enregistrer la banque"
-"Name of the bank (saved in Documents > OSCar Editor > Banks, with the voice names)." = "Nom de la banque (enregistrée dans Documents > OSCar Editor > Banks, avec les noms des voix)."
+"Name of the bank (saved in Documents > OXIde > Banks, with the voice names)." = "Nom de la banque (enregistrée dans Documents > OXIde > Banks, avec les noms des voix)."
 "My bank" = "Ma banque"
 "Save" = "Enregistrer"
 "Saved %1." = "%1 enregistré."
 "Saved %1 in %2." = "%1 enregistré dans %2."
 "Could not create the folder %1." = "Impossible de créer le dossier %1."
-"Name of the .syx file (saved in Documents > OSCar Editor > Banks). A .syx file holds the voices without their names." = "Nom du fichier .syx (enregistré dans Documents > OSCar Editor > Banks). Un fichier .syx contient les voix sans leurs noms."
+"Name of the .syx file (saved in Documents > OXIde > Banks). A .syx file holds the voices without their names." = "Nom du fichier .syx (enregistré dans Documents > OXIde > Banks). Un fichier .syx contient les voix sans leurs noms."
 "Double-click: a bank or a backup replaces the bank in the editor, a voice goes into the selected voice." = "Double-clic : une banque ou une sauvegarde remplace la banque de l'éditeur, une voix va dans la voix sélectionnée."
 "Nothing here yet: \"Save bank as...\" adds your banks, \"Save voice...\" your voices; dumps and sends add backups." = "Rien pour l'instant : « Enregistrer la banque... » ajoute tes banques, « Sauver voix... » tes voix ; les dumps et les envois ajoutent des sauvegardes."
 
@@ -246,7 +246,9 @@ countries: fr be ch lu mc ca
 "Voice > Tauntek > LFO > Osc 1" = "Voix > Tauntek > LFO > Osc 1"
 
 # --- Setup
-"midi thru, cc dump and updates" = "midi thru, cc dump et mises à jour"
+"DELAY: with the filter envelope's Sustain at 0, a short blip comes back at the end of the sound; Release sets how long after the decay." = "DELAY : avec le Sustain de l'enveloppe du filtre à 0, un petit sursaut revient à la fin du son ; Release règle combien de temps après le decay."
+"midi thru and cc dump" = "midi thru et cc dump"
+"updates" = "mises à jour"
 "how it works" = "mode d'emploi"
 "log" = "journal"
 "OUT" = "SORTIE"
@@ -288,7 +290,7 @@ countries: fr be ch lu mc ca
 "This release has no checksum file, so it was not installed." = "Cette version n'a pas de fichier de contrôle : elle n'a pas été installée."
 "The download is damaged (checksum mismatch). Nothing was installed." = "Le téléchargement est abîmé (somme de contrôle différente). Rien n'a été installé."
 "Couldn't write the download to disk." = "Impossible d'écrire le téléchargement sur le disque."
-"OSCar Editor wasn't found in the usual plug-in folders: install this version by hand." = "OSCar Editor n'a pas été trouvé dans les dossiers de plugins habituels : installe cette version à la main."
+"OXIde wasn't found in the usual plug-in folders: install this version by hand." = "OXIde n'a pas été trouvé dans les dossiers de plugins habituels : installe cette version à la main."
 "Version %1 installed (%2 items). Quit and reopen your DAW (or the app) to use it." = "Version %1 installée (%2 éléments). Quitte puis relance ton DAW (ou l'appli) pour l'utiliser."
 "Nothing was installed." = "Rien n'a été installé."
 "Can't reach GitHub (offline?)." = "GitHub injoignable (hors ligne ?)."
@@ -396,3 +398,10 @@ countries: fr be ch lu mc ca
 "Init voice %1" = "Init de la voix %1"
 "Voice %1 is now INIT, a plain starting sound. Undo brings the previous one back." = "La voix %1 est maintenant INIT, un son de départ neutre. Annuler ramène la précédente."
 "A plain starting sound: oscillator 1 alone on sawtooth, filter wide open, no modulation. Undo brings the voice back." = "Un son de départ neutre : l'oscillateur 1 seul en dent de scie, filtre grand ouvert, aucune modulation. Annuler ramène la voix."
+"%1: the copy with the old name couldn't be removed. Delete it by hand." = "%1 : la copie à l'ancien nom n'a pas pu être supprimée. Supprime-la à la main."
+"Old copies still installed: %1" = "Anciennes copies encore installées : %1"
+"An older copy is still installed" = "Une ancienne copie est encore installée"
+"These copies still carry the old name (OSCar Editor). They are the same plug-in as OXIde, and two copies confuse Logic:\n\n%1\n\nMove them to the Trash?" = "Ces copies portent encore l'ancien nom (OSCar Editor). C'est le même plugin qu'OXIde, et deux copies perturbent Logic :\n\n%1\n\nLes mettre à la corbeille ?"
+"Move to the Trash" = "Mettre à la corbeille"
+"The old copies are in the Trash. Restart Logic so that it forgets them." = "Les anciennes copies sont à la corbeille. Relance Logic pour qu'il les oublie."
+"Couldn't move to the Trash (protected folder): %1. Drag them to the Trash in the Finder." = "Impossible de les mettre à la corbeille (dossier protégé) : %1. Glisse-les dans la corbeille depuis le Finder."

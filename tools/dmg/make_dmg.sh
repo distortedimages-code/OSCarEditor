@@ -10,12 +10,12 @@ OUT="$2"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-for b in "OSCar Editor.component" "OSCar Editor.vst3" "OSCar Editor.app"; do
+for b in "OXIde.component" "OXIde.vst3" "OXIde.app"; do
     [ -d "$SRC/$b" ] || { echo "missing: $SRC/$b"; exit 1; }
 done
 cp "$HERE/background.png" "$HERE/background@2x.png" "$WORK/"
 
 rm -f "$OUT"
-python3 -m dmgbuild -s "$HERE/dmg_settings.py" -D src="$SRC" -D work="$WORK" "OSCar Editor" "$OUT"
+python3 -m dmgbuild -s "$HERE/dmg_settings.py" -D src="$SRC" -D work="$WORK" "OXIde" "$OUT"
 hdiutil verify "$OUT"
 echo "built $OUT"

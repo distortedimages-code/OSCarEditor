@@ -3,7 +3,9 @@
 #   - on GitHub: Actions > release > Run workflow (on main), or
 #   - push a tag with the same number:  git tag v0.3.0 && git push origin v0.3.0
 # This builds and tests on a Mac, and creates a DRAFT release v<VERSION> with
-# OSCar-Editor-mac.dmg (for people), OSCar-Editor-mac.zip and its SHA-256 (for the in-plugin updater). Review the notes on GitHub and press "Publish release"
+# OXIde-mac.dmg (for people), OXIde-mac.zip and its SHA-256 (for the in-plugin updater), and
+# OSCar-Editor-mac.zip and its SHA-256 (the same plug-in under the old bundle names, for the
+# updater of 0.4 and older). Review the notes on GitHub and press "Publish release"
 # (that also creates the tag when the workflow was run by hand): installed plugins then offer
 # the update (they only see published, non-prerelease releases).
 name: release
@@ -57,17 +59,23 @@ jobs:
         if: env.SKIP != '1'
         run: |
           ART=build/OSCarEditor_artefacts/Release
-          mkdir -p pkg out
-          for b in "AU/OSCar Editor.component" "VST3/OSCar Editor.vst3" "Standalone/OSCar Editor.app"; do
+          mkdir -p pkg legacy out
+          for b in "AU/OXIde.component" "VST3/OXIde.vst3" "Standalone/OXIde.app"; do
             codesign --force --deep --sign - "$ART/$b"
             cp -R "$ART/$b" pkg/
           done
           # the three bundles at the top of the zip, as the in-plugin updater expects
-          ditto -c -k pkg out/OSCar-Editor-mac.zip
+          ditto -c -k pkg out/OXIde-mac.zip
+          (cd out && shasum -a 256 OXIde-mac.zip > OXIde-mac.zip.sha256)
+          # The updater of 0.4 and older downloads OSCar-Editor-mac.zip and replaces "OSCar Editor.*":
+          # the same bundles under those names (renaming the folder keeps the signature). Once on 0.5,
+          # its own updater installs OXIde.* and removes the old names.
+          for ext in component vst3 app; do cp -R "pkg/OXIde.$ext" "legacy/OSCar Editor.$ext"; done
+          ditto -c -k legacy out/OSCar-Editor-mac.zip
           (cd out && shasum -a 256 OSCar-Editor-mac.zip > OSCar-Editor-mac.zip.sha256)
           # the disk image people download from the web page
           python3 -m pip install --quiet --break-system-packages dmgbuild==1.6.7 || python3 -m pip install --quiet dmgbuild==1.6.7
-          tools/dmg/make_dmg.sh pkg out/OSCar-Editor-mac.dmg
+          tools/dmg/make_dmg.sh pkg out/OXIde-mac.dmg
 
       - name: Create the draft release
         if: env.SKIP != '1'
@@ -75,7 +83,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           NOTES=RELEASE_NOTES.md
-          [ -f "$NOTES" ] || { echo "OSCar Editor $VERSION" > /tmp/notes.md; NOTES=/tmp/notes.md; }
+          [ -f "$NOTES" ] || { echo "OXIde $VERSION" > /tmp/notes.md; NOTES=/tmp/notes.md; }
           # run by hand: the tag v$VERSION is created on this commit when the draft is published
-          gh release create "v$VERSION" out/OSCar-Editor-mac.dmg out/OSCar-Editor-mac.zip out/OSCar-Editor-mac.zip.sha256 \
-            --target "$GITHUB_SHA" --draft --title "OSCar Editor $VERSION" --notes-file "$NOTES"
+          gh release create "v$VERSION" out/OXIde-mac.dmg out/OXIde-mac.zip out/OXIde-mac.zip.sha256 \
+            out/OSCar-Editor-mac.zip out/OSCar-Editor-mac.zip.sha256 \
+            --target "$GITHUB_SHA" --draft --title "OXIde $VERSION" --notes-file "$NOTES"

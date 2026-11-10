@@ -13,8 +13,9 @@ class OscarEditor;
 
 namespace panels
 {
-constexpr int width = 1304, height = 510;   // every page is laid out on this logical size
-constexpr int wearLevel = 1;                 // printed ink rubbed off here and there, fine scratches (0: none)
+constexpr int width = 1304, height = 610;   // every page is laid out on this logical size
+// printed ink rubbed off here and there, fine scratches (0: none); the oxide finish is more worn
+inline int wearLevel() { return atelier::currentFinish() == 2 ? 2 : 1; }
 
 // Puts 'wear' on top of 'page': its children and the given displays are kept clear; 'plates' are the
 // darker column bands (their colour is what rubbed-off ink shows), 'handled' the places touched most.
@@ -64,6 +65,7 @@ private:
     atelier::LedButton lfoToOsc1 { "LFO > Osc 1", atelier::LedButton::LedPlace::Right },
                        lfoSync { "LFO Sync", atelier::LedButton::LedPlace::Right };
     juce::Component lfoStack;   // where the two LFO buttons go, one above the other
+    atelier::LedRow octaveLeds { "Octave" };
     atelier::VfdNumber tempo { "Tempo", 1, 254 };   // dragged up or down, like an old synth display
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> tempoAttachment;
 
@@ -77,10 +79,17 @@ private:
     std::unique_ptr<juce::ParameterAttachment> tempoWatch;
     int lastTrigger = 1;   // Multi
 
-    std::vector<juce::Rectangle<float>> columns;
+    std::vector<juce::Rectangle<float>> columns;       // the four blocks
     std::vector<Group> groups;
-    juce::Rectangle<int> performanceArea;              // its three rows get a divider between them
-    std::vector<juce::Range<int>> performanceRows;
+    struct Text { juce::Rectangle<float> area; juce::String text; };
+    std::vector<Text> titles, separators;              // section titles; the lines between the two rows of a block
+    std::vector<juce::Line<float>> dividers;           // lines between the sub-sections of a block
+    // printed lines: where the sound and the modulations go (the audio path in the accent colour)
+    struct Route { std::vector<juce::Point<float>> points; bool audio = false; bool dot = false; juce::String label; };
+    std::vector<Route> routes;
+    std::vector<juce::Point<float>> junctions;         // where a line branches
+    juce::Rectangle<float> delayBracket;               // the filter envelope's DELAY, from Sustain to Release
+
 
     atelier::WearLayer wear;                           // on top of everything, controls cut out
     void setupWear (int level);

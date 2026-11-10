@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds the OSCar Editor web page served by GitHub Pages, in English (docs/index.html) and
+"""Builds the OXIde web page served by GitHub Pages, in English (docs/index.html) and
 French (docs/fr.html), from template.html.
 
 The template holds both languages side by side as [[fr]]texte[[en]]text[[/]]; the lists below
@@ -15,11 +15,14 @@ import sys
 from pathlib import Path
 from urllib.parse import quote
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "logo"))
+import make_logo as logo   # noqa: E402  (the logo, as the plug-in draws it)
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 REPO = "distortedimages-code/OSCarEditor"
 GH = f"https://github.com/{REPO}"
-DOWNLOAD = f"{GH}/releases/latest/download/OSCar-Editor-mac.dmg"
+DOWNLOAD = f"{GH}/releases/latest/download/OXIde-mac.dmg"
 KOFI = "https://ko-fi.com/amnesy"
 KOFI_EMBED = "https://ko-fi.com/amnesy/?hidefeed=true&widget=true&embed=true&preview=true"
 TAUNTEK = "http://www.tauntek.com/OSCar.htm"
@@ -76,7 +79,7 @@ PAGES = {
         ("reglages", "Setup", "MIDI ports, language, Live CC, MIDI clock, MIDI Thru, updates and log."),
     ],
 }
-PAGE_ALT = {"fr": "OSCar Editor, page {}", "en": "OSCar Editor, {} page"}
+PAGE_ALT = {"fr": "OXIde, page {}", "en": "OXIde, {} page"}
 
 # Tauntek shortcut keys: hold TUNE/TRANSPOSE, press a key (key 0 = lowest C). From Tauntek's
 # control-key chart, as on the plugin's Tauntek keys page.
@@ -288,6 +291,7 @@ def build(lang):
         "{{BUG_URL}}": f"{GH}/issues/new?labels=bug&title={quote(title)}&body={quote(body)}",
         "{{IDEA_URL}}": f"{GH}/issues/new?labels=enhancement&title={quote(idea_title)}&body={quote(idea_body)}",
         "{{CABLING}}": cabling_svg(lang),
+        "{{LOGO}}": logo.svg("currentColor", "logo"),
         "{{KB_PC}}": keyboard_svg(3, "−9 : la 2e touche noire" if lang == "fr" else "−9: the 2nd black key", [(0, "−12"), (3, "−9"), (36, "24")]),
         "{{KB_DUMP}}": keyboard_svg(22, "Enable patch CC dump", [(0, "−12"), (36, "24")]),
         "{{KB_KEYS}}": keyboard_svg(kinds={x[0]: x[1] for x in SHORTCUTS}),

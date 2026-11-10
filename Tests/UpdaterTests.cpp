@@ -26,9 +26,14 @@ static void testVersions()
 
 static juce::String releaseJson (const juce::String& tag, bool draft, bool withSha)
 {
-    juce::String assets = "{ \"name\": \"OSCar-Editor-mac.zip\", \"browser_download_url\": \"https://github.com/o/r/releases/download/" + tag + "/OSCar-Editor-mac.zip\" }";
-    if (withSha)
-        assets << ", { \"name\": \"OSCar-Editor-mac.zip.sha256\", \"browser_download_url\": \"https://github.com/o/r/releases/download/" + tag + "/OSCar-Editor-mac.zip.sha256\" }";
+    // the old name first (for 0.4 updaters), then the one this updater wants
+    juce::String assets;
+    for (const juce::String name : { "OSCar-Editor-mac.zip", "OXIde-mac.zip" })
+    {
+        assets << (assets.isEmpty() ? "" : ", ") << "{ \"name\": \"" << name << "\", \"browser_download_url\": \"https://github.com/o/r/releases/download/" << tag << "/" << name << "\" }";
+        if (withSha)
+            assets << ", { \"name\": \"" << name << ".sha256\", \"browser_download_url\": \"https://github.com/o/r/releases/download/" << tag << "/" << name << ".sha256\" }";
+    }
     return "{ \"tag_name\": \"" + tag + "\", \"name\": \"Big update\", \"draft\": " + juce::String (draft ? "true" : "false")
          + ", \"prerelease\": false, \"html_url\": \"https://github.com/o/r/releases/tag/" + tag + "\", "
            "\"body\": \"- New look\\r\\n- Generator\", \"assets\": [ " + assets + " ] }";
@@ -43,8 +48,8 @@ static void testParsing()
         CHECK (r->version == "0.3.0");
         CHECK (r->title == "Big update");
         CHECK (r->notes == "- New look\n- Generator");
-        CHECK (r->zipUrl.endsWith ("/OSCar-Editor-mac.zip"));
-        CHECK (r->shaUrl.endsWith (".sha256"));
+        CHECK (r->zipUrl.endsWith ("/OXIde-mac.zip"));
+        CHECK (r->shaUrl.endsWith ("/OXIde-mac.zip.sha256"));
         CHECK (r->pageUrl.startsWith ("https://github.com/"));
     }
     CHECK (! Updater::parseLatestRelease (releaseJson ("v0.3.0", true, true), Updater::assetName).has_value());   // draft
@@ -54,7 +59,7 @@ static void testParsing()
     CHECK (! Updater::parseLatestRelease ("{ \"message\": \"Not Found\" }", Updater::assetName).has_value());
 
     const juce::String hex = "3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b";
-    CHECK (Updater::expectedSha (hex + "  OSCar-Editor-mac.zip\n") == hex);
+    CHECK (Updater::expectedSha (hex + "  OXIde-mac.zip\n") == hex);
     CHECK (Updater::expectedSha (hex.toUpperCase()) == hex);
     CHECK (Updater::expectedSha ("nope") == "");
 }
@@ -66,7 +71,7 @@ static void makeBundle (const juce::File& bundle, const juce::String& version, c
     bundle.getChildFile ("Contents/Info.plist").replaceWithText (
         "<plist><dict><key>CFBundleIdentifier</key><string>com.oscartools.oscareditor</string>"
         "<key>CFBundleShortVersionString</key><string>" + version + "</string></dict></plist>");
-    bundle.getChildFile ("Contents/MacOS/OSCar Editor").replaceWithText (payload);
+    bundle.getChildFile ("Contents/MacOS/OXIde").replaceWithText (payload);
 }
 
 static juce::File makeZip (const juce::File& dir, const juce::String& version, juce::StringArray bundleNames)
@@ -98,35 +103,35 @@ static void testInstall()
     const auto dir = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("oscar-updater-test");
     dir.deleteRecursively();
     const auto components = dir.getChildFile ("Components"), vst3 = dir.getChildFile ("VST3");
-    const auto au = components.getChildFile ("OSCar Editor.component"), vst = vst3.getChildFile ("OSCar Editor.vst3");
+    const auto au = components.getChildFile ("OXIde.component"), vst = vst3.getChildFile ("OXIde.vst3");
     makeBundle (au, "0.2.0", "old");
     makeBundle (vst, "0.2.0", "old");
 
     // the normal case: both replaced, nothing left behind
-    auto zip = makeZip (dir, "0.3.0", { "OSCar Editor.component", "OSCar Editor.vst3", "OSCar Editor.app" });
+    auto zip = makeZip (dir, "0.3.0", { "OXIde.component", "OXIde.vst3", "OXIde.app" });
     juce::StringArray installed;
     auto r = Updater::installBundles (zip, { au, vst }, "v0.3.0", unzip, installed);
     CHECK (r.wasOk());
     CHECK (installed.size() == 2);
-    CHECK (au.getChildFile ("Contents/MacOS/OSCar Editor").loadFileAsString() == "new 0.3.0");
+    CHECK (au.getChildFile ("Contents/MacOS/OXIde").loadFileAsString() == "new 0.3.0");
     CHECK (vst.getChildFile ("Contents/Info.plist").loadFileAsString().contains ("0.3.0"));
     CHECK (components.findChildFiles (juce::File::findFilesAndDirectories, false, "*").size() == 1);   // no staging or .old left
     CHECK (components.findChildFiles (juce::File::findFilesAndDirectories | juce::File::ignoreHiddenFiles, false, "*").size() == 1);
 
     // a zip with the wrong version is refused and the installed bundle is kept
-    zip = makeZip (dir, "0.2.5", { "OSCar Editor.component" });
+    zip = makeZip (dir, "0.2.5", { "OXIde.component" });
     installed.clear();
     r = Updater::installBundles (zip, { au }, "0.4.0", unzip, installed);
     CHECK (r.failed() && installed.isEmpty());
-    CHECK (au.getChildFile ("Contents/MacOS/OSCar Editor").loadFileAsString() == "new 0.3.0");
+    CHECK (au.getChildFile ("Contents/MacOS/OXIde").loadFileAsString() == "new 0.3.0");
 
     // a format missing from the release: that one is left alone, the others are updated
-    zip = makeZip (dir, "0.4.0", { "OSCar Editor.component" });
+    zip = makeZip (dir, "0.4.0", { "OXIde.component" });
     installed.clear();
     r = Updater::installBundles (zip, { au, vst }, "0.4.0", unzip, installed);
     CHECK (r.failed() && installed.size() == 1);
-    CHECK (au.getChildFile ("Contents/MacOS/OSCar Editor").loadFileAsString() == "new 0.4.0");
-    CHECK (vst.getChildFile ("Contents/MacOS/OSCar Editor").loadFileAsString() == "new 0.3.0");
+    CHECK (au.getChildFile ("Contents/MacOS/OXIde").loadFileAsString() == "new 0.4.0");
+    CHECK (vst.getChildFile ("Contents/MacOS/OXIde").loadFileAsString() == "new 0.3.0");
 
     // an unreadable download changes nothing
     const auto bad = dir.getChildFile ("bad.zip");
@@ -134,8 +139,37 @@ static void testInstall()
     installed.clear();
     r = Updater::installBundles (bad, { au }, "0.5.0", unzip, installed);
     CHECK (r.failed() && installed.isEmpty());
-    CHECK (au.getChildFile ("Contents/MacOS/OSCar Editor").loadFileAsString() == "new 0.4.0");
+    CHECK (au.getChildFile ("Contents/MacOS/OXIde").loadFileAsString() == "new 0.4.0");
     CHECK (components.findChildFiles (juce::File::findFilesAndDirectories, false, "*").size() == 1);
+
+    dir.deleteRecursively();
+}
+
+// 0.4 and older installed "OSCar Editor.*": the update puts OXIde.* next to it and removes it.
+static void testRename()
+{
+    const auto dir = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("oscar-updater-rename");
+    dir.deleteRecursively();
+    const auto components = dir.getChildFile ("Components"), vst3 = dir.getChildFile ("VST3");
+    const auto oldAu = components.getChildFile ("OSCar Editor.component"), oldVst = vst3.getChildFile ("OSCar Editor.vst3");
+    const auto newAu = components.getChildFile ("OXIde.component"), newVst = vst3.getChildFile ("OXIde.vst3");
+    makeBundle (oldAu, "0.4.2", "old");
+    makeBundle (oldVst, "0.4.2", "old");
+    makeBundle (newVst, "0.5.0", "dmg");   // installed by hand next to the old one: a duplicate
+
+    CHECK (Updater::outdatedCopies ({ oldAu, oldVst, newVst }) == juce::Array<juce::File> { oldVst });   // the AU has no OXIde twin yet
+
+    const auto zip = makeZip (dir, "0.5.1", { "OXIde.component", "OXIde.vst3", "OXIde.app" });
+    juce::StringArray installed;
+    const auto r = Updater::installBundles (zip, { newVst, oldAu, oldVst }, "0.5.1", unzip, installed);
+    CHECK (r.wasOk());
+    CHECK (installed.size() == 2);
+    CHECK (newAu.getChildFile ("Contents/MacOS/OXIde").loadFileAsString() == "new 0.5.1");
+    CHECK (newVst.getChildFile ("Contents/MacOS/OXIde").loadFileAsString() == "new 0.5.1");
+    CHECK (! oldAu.exists() && ! oldVst.exists());
+    CHECK (components.findChildFiles (juce::File::findFilesAndDirectories, false, "*").size() == 1);
+    CHECK (vst3.findChildFiles (juce::File::findFilesAndDirectories, false, "*").size() == 1);
+    CHECK (Updater::outdatedCopies ({ newAu, newVst }).isEmpty());
 
     dir.deleteRecursively();
 }
@@ -158,6 +192,7 @@ int main()
     testVersions();
     testParsing();
     testInstall();
+    testRename();
     testNotesLanguage();
     std::printf ("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;
