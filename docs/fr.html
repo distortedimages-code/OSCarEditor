@@ -170,7 +170,7 @@ p { margin: 0 0 12px; }
   box-shadow: 0 0 0 1px #000, 0 10px 30px rgba(0,0,0,.55), 0 2px 0 rgba(255,255,255,.04);
 }
 .screen img { width: 100%; aspect-ratio: 1600 / 914; object-fit: cover; }
-.minis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.minis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .mini {
   display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 6px 7px; border: 0; border-radius: 4px; cursor: pointer;
   background: linear-gradient(180deg, #35383e, #26282c); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 2px 3px rgba(0,0,0,.5);
@@ -426,7 +426,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Version actuelle">
   <a class="arrow" href="#news" aria-label="Nouveautés">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.3.0</span><span class="name">OSCAR EDITOR</span><span class="state">GRATUIT</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.4.0</span><span class="name">OSCAR EDITOR</span><span class="state">GRATUIT</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -456,7 +456,7 @@ footer a { color: var(--muted); }
         Télécharger pour Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.3.0</dd>
+        <dt>Version</dt><dd id="spec-version">0.4.0</dd>
         <dt>Formats</dt><dd>AU pour Logic Pro, VST3 et application autonome</dd>
         <dt>Système</dt><dd>macOS 11 ou plus récent, Apple Silicon et Intel</dd>
         <dt>Synthé</dt><dd>OSCar avec la carte MIDI Tauntek. Avec le MIDI d'origine, tout marche sauf l'édition en direct.</dd>
@@ -474,10 +474,11 @@ footer a { color: var(--muted); }
       <div class="minis" role="group" aria-label="Choisir une page du plugin">
 <button type="button" class="mini on" id="shot-voix" data-i="0" aria-pressed="true"><span>Voix</span><i class="led"></i></button>
 <button type="button" class="mini" id="shot-generateur" data-i="1" aria-pressed="false"><span>Générateur</span><i class="led"></i></button>
-<button type="button" class="mini" id="shot-banques" data-i="2" aria-pressed="false"><span>Banques</span><i class="led"></i></button>
-<button type="button" class="mini" id="shot-formes-d-onde" data-i="3" aria-pressed="false"><span>Formes d'onde</span><i class="led"></i></button>
-<button type="button" class="mini" id="shot-raccourcis-tauntek" data-i="4" aria-pressed="false"><span>Raccourcis Tauntek</span><i class="led"></i></button>
-<button type="button" class="mini" id="shot-reglages" data-i="5" aria-pressed="false"><span>Réglages</span><i class="led"></i></button>
+<button type="button" class="mini" id="shot-morphing" data-i="2" aria-pressed="false"><span>Morphing</span><i class="led"></i></button>
+<button type="button" class="mini" id="shot-banques" data-i="3" aria-pressed="false"><span>Banques</span><i class="led"></i></button>
+<button type="button" class="mini" id="shot-formes-d-onde" data-i="4" aria-pressed="false"><span>Formes d'onde</span><i class="led"></i></button>
+<button type="button" class="mini" id="shot-raccourcis-tauntek" data-i="5" aria-pressed="false"><span>Raccourcis Tauntek</span><i class="led"></i></button>
+<button type="button" class="mini" id="shot-reglages" data-i="6" aria-pressed="false"><span>Réglages</span><i class="led"></i></button>
       </div>
       <figcaption id="shot-caption">Tous les réglages de la voix choisie. Chaque potard part en CC vers l'OSCar, et tout s'automatise depuis le DAW.</figcaption>
     </figure>
@@ -490,11 +491,11 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Les dernières versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.3.0</span><div class="cap when">dernière version</div></div>
+      <div><span class="vchip">0.4.0</span><div class="cap when">dernière version</div></div>
       <div class="notes">
-        <p><strong>Page Voix redessinée</strong> : graduations sérigraphiées autour des potards, et sélecteurs rotatifs avec une légende par cran pour les modes (trigger, function, glide, arpégiateur, octaves et demi-tons, onde du LFO, PWM rate, sync, division). Clique sur une légende, glisse, ou utilise la molette ; un clic sur le bouton donne la liste des noms complets. Hold, Fix et Kbd track ont leur propre bouton. Potards plus gros, et Octave passe à côté des molettes.</p>
-        <p><strong>Afficheur de tempo</strong> : un afficheur orange remplace le potard. Glisse vers le haut ou le bas sur le nombre, ou utilise la molette.</p>
-        <p><strong>Page Formes d'onde</strong> : les 24 harmoniques en barres lumineuses, avec un oscilloscope qui donne un aperçu de l'onde obtenue.</p>
+        <p><strong>Morphing A ↔ B</strong> : une nouvelle page avec deux voix et un crossfader façon Octatrack. La voix choisie suit le fader : les potards glissent de A vers B, les sélecteurs basculent à mi-course. Le lissage fixe le temps le plus court pour aller de A à B : un geste brusque devient un glissement. Avec Live CC, l'OSCar suit en direct, et le plugin n'envoie que les CC qui ont changé, à un rythme d'environ un tiers d'un câble MIDI. Garde le mélange, ou annule-le d'un coup. Le fader s'automatise dans Logic (Morph A-B).</p>
+        <p><strong>Page Voix finalisée</strong> : boutons à LED pour les modes à deux ou trois positions (function, glide, arpégiateur, type de filtre, sync), sélecteurs rotatifs pour les autres, valeurs dans de petits afficheurs à segments, commandes principales de chaque section encadrées, séparateurs dans la colonne performance, textes plus grands.</p>
+        <p><strong>Une façade qui a vécu</strong> : l'encre est légèrement usée par endroits, avec de fines rayures et un peu de poussière, sur toutes les pages. Les commandes restent intactes.</p>
       </div>
     </article>
   </div>
@@ -758,7 +759,7 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
   } catch (e) {}
 
   // --- the plugin's pages
-  var PAGES = [["voix", "Voix", "Tous les réglages de la voix choisie. Chaque potard part en CC vers l'OSCar, et tout s'automatise depuis le DAW.", "OSCar Editor, page Voix"], ["generateur", "Générateur", "Varier, Nouveau (basse, lead, pad, percu, texture) et Croiser, avec des verrous par section. Chaque essai joue sur l'OSCar sans toucher à sa mémoire.", "OSCar Editor, page Générateur"], ["banques", "Banques", "Les 36 voix avec leurs noms, et la bibliothèque : tes banques, tes voix et toutes les sauvegardes automatiques.", "OSCar Editor, page Banques"], ["formes-d-onde", "Formes d'onde", "Les cinq formes d'onde utilisateur (−8 à −12), à dessiner à la souris.", "OSCar Editor, page Formes d'onde"], ["raccourcis-tauntek", "Raccourcis Tauntek", "Tous les raccourcis TUNE/TRANSPOSE sur le clavier. Les touches qui remplacent les voix en mémoire sont en rouge.", "OSCar Editor, page Raccourcis Tauntek"], ["reglages", "Réglages", "Ports MIDI, langue, Live CC, horloge MIDI, MIDI Thru, mises à jour et journal.", "OSCar Editor, page Réglages"]];
+  var PAGES = [["voix", "Voix", "Tous les réglages de la voix choisie. Chaque potard part en CC vers l'OSCar, et tout s'automatise depuis le DAW.", "OSCar Editor, page Voix"], ["generateur", "Générateur", "Varier, Nouveau (basse, lead, pad, percu, texture) et Croiser, avec des verrous par section. Chaque essai joue sur l'OSCar sans toucher à sa mémoire.", "OSCar Editor, page Générateur"], ["morphing", "Morphing", "Deux voix A et B et un crossfader : les potards glissent de l'une à l'autre, les sélecteurs basculent à mi-course. Un lissage contre les gestes brusques, et le fader s'automatise dans Logic.", "OSCar Editor, page Morphing"], ["banques", "Banques", "Les 36 voix avec leurs noms, et la bibliothèque : tes banques, tes voix et toutes les sauvegardes automatiques.", "OSCar Editor, page Banques"], ["formes-d-onde", "Formes d'onde", "Les cinq formes d'onde utilisateur (−8 à −12), à dessiner à la souris.", "OSCar Editor, page Formes d'onde"], ["raccourcis-tauntek", "Raccourcis Tauntek", "Tous les raccourcis TUNE/TRANSPOSE sur le clavier. Les touches qui remplacent les voix en mémoire sont en rouge.", "OSCar Editor, page Raccourcis Tauntek"], ["reglages", "Réglages", "Ports MIDI, langue, Live CC, horloge MIDI, MIDI Thru, mises à jour et journal.", "OSCar Editor, page Réglages"]];
   var IMG = "img/";
   var shot = document.getElementById("shot"), caption = document.getElementById("shot-caption");
   var minis = Array.prototype.slice.call(document.querySelectorAll(".mini"));

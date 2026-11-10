@@ -88,7 +88,7 @@ OscarEditor::OscarEditor (OscarProcessor& p)
     updateButton.onClick = [this] { showUpdateDialog(); };
     root.addChildComponent (updateButton);
 
-    for (int i = 0; i < 6; ++i)
+    for (int i = 0; i < 7; ++i)
     {
         auto* t = tabs.add (new LedButton ({}));
         t->onClick = [this, i] { showPage (i); };
@@ -112,7 +112,7 @@ OscarEditor::OscarEditor (OscarProcessor& p)
                                                              &thruButton, &sendButton })
         root.addAndMakeVisible (c);
 
-    page = proc.getMidi().isOutputOpen() ? juce::jlimit (0, 5, proc.editorPage) : 5;
+    page = proc.getMidi().isOutputOpen() ? juce::jlimit (0, 6, proc.editorPage) : setupPageIndex;
     applyTexts();
     createPages();
 
@@ -167,7 +167,7 @@ void OscarEditor::layout()
     nextVoice.setBounds (890, displayY, 44, displayH + 3);
     updateButton.setBounds (950, displayY + 4, 180, 36);
 
-    const int tw = (innerW - 12 - 5 * 8) / 6;
+    const int tw = (innerW - 12 - 6 * 8) / 7;
     for (int i = 0; i < tabs.size(); ++i)
         tabs[i]->setBounds (innerX + 6 + i * (tw + 8), tabsY, tw, tabsH + 3);
     int x = innerX + 74;
@@ -263,7 +263,7 @@ void OscarEditor::showPage (int index)
         pages[(size_t) i]->setVisible (i == page);
         tabs[i]->setLit (i == page);
     }
-    if (page == 2)
+    if (page == banksPageIndex)
         banksPage->rescanLibrary();   // also scrolls the bank list to the selected voice
 }
 
@@ -281,7 +281,7 @@ void OscarEditor::changeListenerCallback (juce::ChangeBroadcaster* source)
 void OscarEditor::applyTexts()
 {
     display.setTooltip (tr ("Click to choose a voice. The arrows step through the bank."));
-    const char* tabNames[] = { "Voice", "Generator", "Banks", "Waveforms", "Tauntek keys", "Setup" };
+    const char* tabNames[] = { "Voice", "Generator", "Morph", "Banks", "Waveforms", "Tauntek keys", "Setup" };
     for (int i = 0; i < tabs.size(); ++i)
         tabs[i]->setButtonText (tr (tabNames[i]));
     for (int i = 0; i < memory.size(); ++i)
@@ -302,15 +302,16 @@ void OscarEditor::createPages()
     for (auto* pg : pages)
         root.removeChildComponent (pg);
     pages.clear();
-    voicePage.reset(); generatorPage.reset(); banksPage.reset(); wavesPage.reset(); keysPage.reset(); setupPage.reset();
+    voicePage.reset(); generatorPage.reset(); morphPage.reset(); banksPage.reset(); wavesPage.reset(); keysPage.reset(); setupPage.reset();
 
     voicePage     = std::make_unique<panels::VoicePanel> (proc);
     generatorPage = std::make_unique<panels::GeneratorPanel> (proc);
+    morphPage     = std::make_unique<panels::MorphPanel> (proc);
     banksPage     = std::make_unique<panels::BanksPanel> (proc, *this);
     wavesPage     = std::make_unique<panels::WavesPanel> (proc, *this);
     keysPage      = std::make_unique<panels::KeysPanel>();
     setupPage     = std::make_unique<panels::SetupPanel> (proc, *this);
-    pages = { voicePage.get(), generatorPage.get(), banksPage.get(), wavesPage.get(), keysPage.get(), setupPage.get() };
+    pages = { voicePage.get(), generatorPage.get(), morphPage.get(), banksPage.get(), wavesPage.get(), keysPage.get(), setupPage.get() };
 
     for (auto* pg : pages)
     {
@@ -327,6 +328,7 @@ void OscarEditor::refreshAll()
 
     voicePage->refresh();
     generatorPage->refresh();
+    morphPage->refresh();
     banksPage->refresh();
     wavesPage->refresh();
     setupPage->refresh();
@@ -635,7 +637,7 @@ void OscarEditor::confirmThenSendVoices()
     if (! proc.getMidi().isOutputOpen())
     {
         proc.addLog (tr ("Choose the MIDI output connected to the OSCar's MIDI IN first (Setup page)."));
-        showPage (5);
+        showPage (setupPageIndex);
         return;
     }
 

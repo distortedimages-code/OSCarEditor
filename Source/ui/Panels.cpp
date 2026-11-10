@@ -82,6 +82,31 @@ namespace
 }
 
 //==============================================================================
+// Wear
+//==============================================================================
+void setupWear (juce::Component& page, WearLayer& wear, std::vector<juce::Rectangle<float>> plates,
+                std::vector<juce::Rectangle<float>> displays, std::vector<WearLayer::Spot> handled, std::vector<juce::Path> extraKeepClear)
+{
+    auto background = [plates] (juce::Point<float> p)
+    {
+        for (const auto& c : plates)
+            if (c.contains (p))
+                return colours::inset.interpolatedWith (colours::insetLow, juce::jlimit (0.0f, 1.0f, (p.y - c.getY()) / c.getHeight()));
+        return colours::panel;
+    };
+    std::vector<juce::Path> keep = std::move (extraKeepClear);
+    auto rect = [&keep] (juce::Rectangle<float> r) { juce::Path p; p.addRoundedRectangle (r, 3.0f); keep.push_back (p); };
+    for (auto* c : page.getChildren())
+        if (c != &wear && c->isVisible())
+            rect (c->getBounds().toFloat().expanded (2.0f));
+    for (const auto& d : displays)
+        rect (d.expanded (2.0f));
+    wear.setBounds (page.getLocalBounds());
+    wear.setup (wearLevel, background, std::move (keep), std::move (handled), std::move (plates));
+    wear.toFront (false);
+}
+
+//==============================================================================
 // Voice
 //==============================================================================
 VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
@@ -102,6 +127,9 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
                       "lfoRate", "introDelay", "lfoPitch", "lfoFilter" })
         addKnob (id, KnobStyle::Chrome);
     addKnob ("filterFreq", KnobStyle::Brass);
+    for (auto* id : { "filterFreq", "resonance", "filterSep", "detune", "lfoRate" })   // the main controls: their names framed
+        knob (id).setLabelStyle (LabelStyle::Boxed);
+    knob ("oscBalance").setScale ("1", "2");
 
     const std::pair<const char*, const char*> faderIds[] = { { "filtAttack", "Att" }, { "filtDecay", "Dec" }, { "filtSustain", "Sus" },
                                                              { "filtRelease", "Rel" }, { "volAttack", "Att" }, { "volDecay", "Dec" },
@@ -115,24 +143,24 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
         faders[id] = std::move (f);
     }
 
+    auto tipFor = [] (const ParamDef& d) { return d.labelsVerified ? tr ("Values and names checked against the Tauntek firmware and chart.") : unverifiedText(); };
     for (auto* id : { "wave1", "wave2" })
     {
         const auto& d = def (id);
         auto s = std::make_unique<Selector> (switchLabel (d));
         s->setItems (itemsFor (d));
         s->onChange = edit (id);
-        s->setTooltip (d.labelsVerified ? tr ("Values and names checked against the Tauntek firmware and chart.") : unverifiedText());
+        s->setTooltip (tipFor (d));
         addAndMakeVisible (*s);
         selectors[id] = std::move (s);
     }
 
-    // Rotary switches: a short printed legend per position (an empty one is printed only when chosen);
-    // the list (click on the knob) gives the full names.
+    // Switches: a short printed legend per position; the full names are in the list (rotary) or the tooltip.
+    // Four positions or more: a rotary switch (an empty legend is printed only when chosen).
+    // Two or three: a button that steps through them, with an LED and a legend for each.
     struct Legend { int value; const char* legend; };
-    auto addRotary = [&] (const char* id, std::vector<Legend> legends, float span = 0.0f, float legendSize = 10.0f,
-                          std::function<void (int)> onChange = {})
+    auto itemsOf = [] (const ParamDef& d, const std::vector<Legend>& legends)
     {
-        const auto& d = def (id);
         std::vector<RotarySwitch::Item> items;
         for (const auto& l : legends)
         {
@@ -142,13 +170,28 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
                     name = c.label;
             items.push_back ({ l.value, l.legend, name });
         }
+        return items;
+    };
+    auto addRotary = [&] (const char* id, std::vector<Legend> legends, float span = 0.0f, float legendSize = 10.5f)
+    {
+        const auto& d = def (id);
         auto r = std::make_unique<RotarySwitch> (switchLabel (d));
-        r->setItems (std::move (items), span);
+        r->setItems (itemsOf (d, legends), span);
         r->setLegendSize (legendSize);
-        r->onChange = onChange ? onChange : edit (id);
-        r->setTooltip (d.labelsVerified ? tr ("Values and names checked against the Tauntek firmware and chart.") : unverifiedText());
+        r->onChange = edit (id);
+        r->setTooltip (tipFor (d));
         addAndMakeVisible (*r);
         rotaries[id] = std::move (r);
+    };
+    auto addLeds = [&] (const char* id, std::vector<Legend> legends, const juce::String& label, std::function<void (int)> onChange = {})
+    {
+        const auto& d = def (id);
+        auto l = std::make_unique<LedSelector> (label);
+        l->setItems (itemsOf (d, legends));
+        l->onChange = onChange ? onChange : edit (id);
+        l->setTooltip (tipFor (d));
+        addAndMakeVisible (*l);
+        ledSelectors[id] = std::move (l);
     };
     auto semitones = [] { std::vector<Legend> l;   // value 0 = +7 ... 14 = -7, shown from -7 to +7
                           for (int v = 14; v >= 0; --v) l.push_back ({ v, v == 14 ? "-7" : v == 7 ? "0" : v == 0 ? "+7" : "" });
@@ -157,53 +200,34 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
     addRotary ("osc2Semi", semitones());
     addRotary ("tuneSemi", semitones());
     addRotary ("octaveSet", { { 2, "2" }, { 3, "3" }, { 4, "4" }, { 5, "5" }, { 6, "6" } });
-    addRotary ("pwmRate", { { 0, "SLOWEST" }, { 1, "SLOWER" }, { 2, "NORMAL" }, { 3, "FASTEST" } }, 200.0f, 9.0f);
+    addRotary ("pwmRate", { { 0, "1" }, { 1, "2" }, { 2, "3" }, { 3, "4" } });   // slowest to fastest (names in the list)
     addRotary ("lfoWave", { { 0, "TRI" }, { 1, "SAW" }, { 2, "SQR" }, { 3, "F.ENV" }, { 4, "KBD" }, { 5, "RAND" } });
-    addRotary ("trigger", { { 0, "SINGLE" }, { 1, "MULTI" }, { 2, "RPT 1" }, { 3, "RPT 2" }, { 4, "RPT 1+2" }, { 5, "EXT" } }, 0.0f, 9.5f);
-    addRotary ("arpDir", { { 1, "DOWN" }, { 2, "UP" }, { 3, "UP/DN" } }, 0.0f, 9.5f);
-    addRotary ("arpMode", { { 0, "NORM" }, { 1, "DEL" }, { 2, "MEM" } }, 0.0f, 9.5f);
-    addRotary ("function", { { 0, "NORM" }, { 1, "ARP" }, { 2, "DUO" } }, 0.0f, 9.5f,
-               [this] (int v) { editFlagged ("function", v, hold.isLit()); });
-    addRotary ("glideType", { { 0, "NORM" }, { 1, "AUTO" }, { 2, "GLISS" } }, 0.0f, 9.5f,
-               [this] (int v) { editFlagged ("glideType", v, glideFix.isLit()); });
-    rotary ("function").setLabel ("Function" + juce::String (def ("function").labelsVerified ? "" : " ?"));
-    rotary ("glideType").setLabel ("Glide" + juce::String (def ("glideType").labelsVerified ? "" : " ?"));
+    addRotary ("trigger", { { 0, "SINGLE" }, { 1, "MULTI" }, { 2, "RPT 1" }, { 3, "RPT 2" }, { 4, "RPT 1+2" }, { 5, "EXT" } }, 0.0f, 10.0f);
+
+    const auto unsure = [] (const char* id) { return juce::String (def (id).labelsVerified ? "" : " ?"); };
+    addLeds ("arpDir", { { 1, "DOWN" }, { 2, "UP" }, { 3, "UP/DN" } }, switchLabel (def ("arpDir")));
+    addLeds ("arpMode", { { 0, "NORM" }, { 1, "DEL" }, { 2, "MEM" } }, switchLabel (def ("arpMode")));
+    addLeds ("function", { { 0, "NORM" }, { 1, "ARP" }, { 2, "DUO" } }, "Function" + unsure ("function"),
+             [this] (int v) { editFlagged ("function", v, hold.isLit()); });
+    addLeds ("glideType", { { 0, "NORM" }, { 1, "AUTO" }, { 2, "GLISS" } }, "Glide" + unsure ("glideType"),
+             [this] (int v) { editFlagged ("glideType", v, glideFix.isLit()); });
+    addLeds ("filterType", { { 0, "LP" }, { 1, "BP" }, { 2, "HP" } }, {},   // filter type, and keyboard tracking (values 4-6 = without)
+             [this] (int v) { editFlagged ("filterType", v, ! kbdTrack.isLit()); });
 
     hold.setTooltip (unverifiedText());
-    hold.onClick = [this] { editFlagged ("function", rotary ("function").getValue(), ! hold.isLit()); };
+    hold.onClick = [this] { editFlagged ("function", leds ("function").getValue(), ! hold.isLit()); };
     glideFix.setTooltip (unverifiedText());
-    glideFix.onClick = [this] { editFlagged ("glideType", rotary ("glideType").getValue(), ! glideFix.isLit()); };
+    glideFix.onClick = [this] { editFlagged ("glideType", leds ("glideType").getValue(), ! glideFix.isLit()); };
+    kbdTrack.setTooltip (tipFor (def ("filterType")));
+    kbdTrack.onClick = [this] { editFlagged ("filterType", paramValue ("filterType") % 4, kbdTrack.isLit()); };
     addAndMakeVisible (hold);
     addAndMakeVisible (glideFix);
-
-    // filter type: LP / BP / HP, and keyboard tracking (values 4-6 = without)
-    const auto& ft = def ("filterType");
-    for (const char* name : { "LP", "BP", "HP" })
-    {
-        const int base = filterTypes.size();
-        auto* b = filterTypes.add (new LedButton (name, LedButton::LedPlace::Below));
-        b->setTooltip (juce::String (ft.choices[(size_t) base].label) + (ft.labelsVerified ? juce::String() : ". " + unverifiedText()));
-        b->onClick = [this, base] { editFlagged ("filterType", base, ! kbdTrack.isLit()); };
-        addAndMakeVisible (b);
-    }
-    kbdTrack.setTooltip (ft.labelsVerified ? juce::String() : unverifiedText());
-    kbdTrack.onClick = [this] { editFlagged ("filterType", paramValue ("filterType") % 4, kbdTrack.isLit()); };
     addAndMakeVisible (kbdTrack);
-
-    knob ("oscBalance").setScale ("1", "2");
 
     lfoToOsc1.setTooltip (tr ("Tauntek: the LFO also modulates oscillator 1 (same as TUNE/TRANSPOSE + the 'LFO to Oscillator 1' keys)."));
     lfoSync.setTooltip (tr ("Tauntek: LFO hard sync (same as TUNE/TRANSPOSE + the 'LFO Sync' keys)."));
-    lfoToOsc1.onClick = [this]
-    {
-        const int v = getParam (proc.getDocument().getVoice (proc.getSelectedSlot()), def ("lfoToOsc1"));
-        proc.editParam (proc.getSelectedSlot(), def ("lfoToOsc1"), v == 0 ? 1 : 0);
-    };
-    lfoSync.onClick = [this]
-    {
-        const int v = getParam (proc.getDocument().getVoice (proc.getSelectedSlot()), def ("lfoSync"));
-        proc.editParam (proc.getSelectedSlot(), def ("lfoSync"), v == 0 ? 1 : 0);
-    };
+    lfoToOsc1.onClick = [this] { proc.editParam (proc.getSelectedSlot(), def ("lfoToOsc1"), paramValue ("lfoToOsc1") == 0 ? 1 : 0); };
+    lfoSync.onClick = [this] { proc.editParam (proc.getSelectedSlot(), def ("lfoSync"), paramValue ("lfoSync") == 0 ? 1 : 0); };
     addAndMakeVisible (lfoToOsc1);
     addAndMakeVisible (lfoSync);
 
@@ -220,23 +244,9 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
 
     // Firmware (routine 0x0A35): with Trigger = Ext the arpeggiator and the sequencer step every
     // {1, 2, 3, 4, 6, 8, 12, 16} MIDI clock ticks (24 per quarter note), chosen by Tempo >> 5.
-    syncSwitch.setItems ({ { 0, "INT", tr ("Internal") }, { 1, "MIDI", tr ("MIDI clock") } }, 70.0f);
-    syncSwitch.setTooltip (tr ("MIDI clock: the arpeggiator and the sequencer step on the MIDI clock the OSCar receives (Trigger = Ext, stored in the voice). The clock can come from the DAW (Setup page) or from any MIDI device. Internal: they follow the Tempo knob."));
-    syncSwitch.onChange = [this] (int v)
-    {
-        const int slot = proc.getSelectedSlot();
-        const int trigger = getParam (proc.getDocument().getVoice (slot), def ("trigger"));
-        if (v == 1 && trigger != kExtTrigger)
-        {
-            lastTrigger = trigger;
-            proc.editParam (slot, def ("trigger"), kExtTrigger);
-        }
-        else if (v == 0 && trigger == kExtTrigger)
-        {
-            proc.editParam (slot, def ("trigger"), lastTrigger);
-        }
-        refreshClock();
-    };
+    syncLeds.setItems ({ { 0, "INT", tr ("Internal") }, { 1, "MIDI", tr ("MIDI clock") } });
+    syncLeds.setTooltip (tr ("MIDI clock: the arpeggiator and the sequencer step on the MIDI clock the OSCar receives (Trigger = Ext, stored in the voice). The clock can come from the DAW (Setup page) or from any MIDI device. Internal: they follow the Tempo knob."));
+    syncLeds.onChange = [this] (int v) { setSync (v); };
     std::vector<RotarySwitch::Item> divisions;
     for (int z = 0; z < 8; ++z)
         divisions.push_back ({ z, kDivisions[z], kDivisions[z] });
@@ -248,7 +258,7 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
         if (tempoWatch != nullptr)
             tempoWatch->setValueAsCompleteGesture ((float) (z * 32 + 16));
     };
-    addAndMakeVisible (syncSwitch);
+    addAndMakeVisible (syncLeds);
     addAndMakeVisible (divisionSwitch);
     if (auto* t = proc.getHostParameters().getParameter ("tempo"))
     {
@@ -256,7 +266,75 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
         tempoWatch->sendInitialUpdate();
     }
 
+    addAndMakeVisible (wear);
     layout();
+    setupWear (wearLevel);
+}
+
+void VoicePanel::setupWear (int level)
+{
+    // the panel's colour under a point: the column's gradient (as drawInset paints it)
+    auto cols = columns;
+    auto background = [cols] (juce::Point<float> p)
+    {
+        for (const auto& c : cols)
+            if (c.contains (p))
+                return colours::inset.interpolatedWith (colours::insetLow, juce::jlimit (0.0f, 1.0f, (p.y - c.getY()) / c.getHeight()));
+        return colours::panel;
+    };
+
+    // what the wear must not touch: knobs, switch knobs, buttons, LEDs, windows and readouts
+    std::vector<juce::Path> keep;
+    auto rect = [&keep] (juce::Rectangle<float> r) { juce::Path p; p.addRoundedRectangle (r, 3.0f); keep.push_back (p); };
+    auto circle = [&keep] (juce::Rectangle<float> r) { juce::Path p; p.addEllipse (r); keep.push_back (p); };
+    for (auto* c : getChildren())
+    {
+        if (c == &wear || c == &lfoStack)
+            continue;
+        const auto at = c->getPosition().toFloat();
+        if (auto* k = dynamic_cast<Knob*> (c))
+        {
+            circle (k->slider.getBounds().toFloat().translated (at.x, at.y).expanded (k->getStyle() == KnobStyle::Brass ? 0.0f : 2.0f));
+            rect (k->readoutBounds().translated (at.x, at.y).expanded (1.0f));
+        }
+        else if (auto* f = dynamic_cast<Fader*> (c))
+        {
+            const auto s = f->slider.getBounds().toFloat().translated (at.x, at.y);
+            rect (juce::Rectangle<float> (s.getCentreX() - 11.0f, s.getY() - 8.0f, 28.0f, s.getHeight() + 16.0f));
+            rect (f->readoutBounds().translated (at.x, at.y).expanded (1.0f));
+        }
+        else if (auto* r = dynamic_cast<RotarySwitch*> (c))
+            circle (r->knobBounds().translated (at.x, at.y).expanded (3.0f));
+        else if (auto* l = dynamic_cast<LedSelector*> (c))
+            rect (l->controlBounds().translated (at.x, at.y).expanded (2.0f));
+        else if (dynamic_cast<Selector*> (c) != nullptr || dynamic_cast<VfdNumber*> (c) != nullptr)
+        {
+            juce::Rectangle<int> body;
+            for (auto* inner : c->getChildren())
+                body = body.isEmpty() ? inner->getBounds() : body.getUnion (inner->getBounds());
+            rect (body.toFloat().translated (at.x, at.y).expanded (2.0f));
+        }
+        else
+            rect (c->getBounds().toFloat().expanded (2.0f));   // buttons
+    }
+
+    // handled most: the filter, the main knobs, the waveforms, trigger, hold and tempo
+    std::vector<WearLayer::Spot> spots;
+    auto spot = [&spots] (juce::Component& c, float radius) { spots.push_back ({ c.getBounds().toFloat().getCentre(), radius }); };
+    auto knobSpot = [&spots] (Knob& k, float radius) { spots.push_back ({ k.getPosition().toFloat() + k.slider.getBounds().toFloat().getCentre(), radius }); };
+    knobSpot (knob ("filterFreq"), 95.0f);
+    for (auto* id : { "resonance", "filterSep", "detune", "lfoRate", "glideRate" })
+        knobSpot (knob (id), 48.0f);
+    spot (selector ("wave1"), 50.0f);
+    spot (selector ("wave2"), 44.0f);
+    spot (rotary ("trigger"), 48.0f);
+    spot (hold, 36.0f);
+    spot (tempo, 50.0f);
+    spot (*faders.at ("volRelease"), 40.0f);
+
+    wear.setBounds (0, 0, width, height);
+    wear.setup (level, background, std::move (keep), std::move (spots), cols);
+    wear.toFront (false);
 }
 
 VoicePanel::~VoicePanel()
@@ -268,6 +346,22 @@ VoicePanel::~VoicePanel()
 int VoicePanel::paramValue (const char* id) const
 {
     return getParam (proc.getDocument().getVoice (proc.getSelectedSlot()), def (id));
+}
+
+void VoicePanel::setSync (int v)
+{
+    const int slot = proc.getSelectedSlot();
+    const int trigger = paramValue ("trigger");
+    if (v == 1 && trigger != kExtTrigger)
+    {
+        lastTrigger = trigger;
+        proc.editParam (slot, def ("trigger"), kExtTrigger);
+    }
+    else if (v == 0 && trigger == kExtTrigger)
+    {
+        proc.editParam (slot, def ("trigger"), lastTrigger);
+    }
+    refreshClock();
 }
 
 void VoicePanel::editFlagged (const char* id, int base, bool flag)
@@ -284,7 +378,7 @@ void VoicePanel::refreshClock()
 {
     const bool ext = followsClock();
     const int t = juce::roundToInt (proc.getHostParameters().getRawParameterValue ("tempo")->load());
-    syncSwitch.setValue (ext ? 1 : 0);
+    syncLeds.setValue (ext ? 1 : 0);
     divisionSwitch.setValue (juce::jlimit (0, 7, t >> 5));
     divisionSwitch.setAlpha (ext ? 1.0f : 0.45f);
     tempo.repaint();
@@ -293,6 +387,7 @@ void VoicePanel::refreshClock()
 Knob& VoicePanel::knob (const char* id)              { return *knobs.at (id); }
 Selector& VoicePanel::selector (const char* id)      { return *selectors.at (id); }
 RotarySwitch& VoicePanel::rotary (const char* id)    { return *rotaries.at (id); }
+LedSelector& VoicePanel::leds (const char* id)       { return *ledSelectors.at (id); }
 
 void VoicePanel::refresh()
 {
@@ -302,41 +397,81 @@ void VoicePanel::refresh()
     for (auto& [id, s] : selectors)  s->setValue (getParam (v, def (id.c_str())));
     for (auto& [id, r] : rotaries)   r->setValue (getParam (v, def (id.c_str())));
 
-    // the flag (values 4-6) is shown on its own button
+    // Function, Glide and filter Type: the flag (values 4-6) is shown on its own button
     const auto low = [] (int x) { return x >= 4 ? x - 4 : x; };
-    const int function = getParam (v, def ("function")), glide = getParam (v, def ("glideType")), type = getParam (v, def ("filterType"));
-    rotary ("function").setValue (low (function));
-    rotary ("glideType").setValue (low (glide));
-    hold.setLit (function >= 4);
-    glideFix.setLit (glide >= 4);
-    for (int i = 0; i < filterTypes.size(); ++i)
-        filterTypes[i]->setLit (low (type) == i);
-    kbdTrack.setLit (type < 4);
-
+    for (auto& [id, l] : ledSelectors)
+    {
+        const int raw = getParam (v, def (id.c_str()));
+        l->setValue (id == "arpDir" || id == "arpMode" ? raw : low (raw));
+    }
+    hold.setLit (getParam (v, def ("function")) >= 4);
+    glideFix.setLit (getParam (v, def ("glideType")) >= 4);
+    kbdTrack.setLit (getParam (v, def ("filterType")) < 4);
     lfoToOsc1.setLit (getParam (v, def ("lfoToOsc1")) == 0);   // 0 = On
     lfoSync.setLit (getParam (v, def ("lfoSync")) == 1);
     refreshClock();
 }
 
+std::pair<int, int> VoicePanel::extent (juce::Component& c) const
+{
+    if (auto* k = dynamic_cast<Knob*> (&c))                 return { Knob::centreY (k->getStyle()), Knob::height (k->getStyle()) };
+    if (&c == &divisionSwitch)                              return { RotarySwitch::centreY, 104 };
+    if (dynamic_cast<RotarySwitch*> (&c) != nullptr)        return { RotarySwitch::centreY, 96 };
+    if (auto* l = dynamic_cast<LedSelector*> (&c))          return { l->blockHeight() / 2, l->preferredHeight() };
+    if (dynamic_cast<VfdNumber*> (&c) != nullptr)           return { VfdNumber::windowHeight / 2, VfdNumber::height };
+    if (dynamic_cast<Selector*> (&c) != nullptr)            return { 14, 46 };
+    if (&c == &lfoStack)                                    return { 30, 60 };
+    return { 18, 47 };                                      // LED button, LED below
+}
+
 void VoicePanel::place (juce::Component& c, int x, int centreY, int w)
 {
-    if (auto* k = dynamic_cast<Knob*> (&c))
+    const auto [top, h] = extent (c);
+    c.setBounds (x, centreY - top, w, h);
+}
+
+std::vector<juce::Range<int>> VoicePanel::arrange (juce::Rectangle<int> area, const std::vector<std::vector<Cell>>& rows)
+{
+    std::vector<juce::Range<int>> spans;
+    std::vector<std::pair<int, int>> rowExtents;   // { above the centre line, below it }
+    int total = 0;
+    for (const auto& row : rows)
     {
-        const auto style = (KnobStyle) (int) k->slider.getProperties().getWithDefault ("knobStyle", 0);
-        c.setBounds (x, centreY - Knob::centreY (style), w, Knob::height (style));
+        int above = 0, below = 0;
+        for (const auto& cell : row)
+        {
+            const auto [top, h] = extent (*cell.c);
+            above = juce::jmax (above, top);
+            below = juce::jmax (below, h - top);
+        }
+        rowExtents.push_back ({ above, below });
+        total += above + below;
     }
-    else if (dynamic_cast<RotarySwitch*> (&c) != nullptr)
+    const float vGap = (float) (area.getHeight() - total) / (float) (rows.size() + 1);
+    float y = (float) area.getY();
+    for (size_t r = 0; r < rows.size(); ++r)
     {
-        c.setBounds (x, centreY - RotarySwitch::centreY, w, &c == &divisionSwitch ? 104 : 96);
+        y += vGap;
+        const int centre = juce::roundToInt (y) + rowExtents[r].first;
+        y += (float) (rowExtents[r].first + rowExtents[r].second);
+        spans.push_back ({ centre - rowExtents[r].first, centre + rowExtents[r].second });
+
+        constexpr int joinGap = 4;
+        int width = 0, blocks = 0;
+        for (const auto& cell : rows[r])
+        {
+            width += cell.w + (cell.join ? joinGap : 0);
+            blocks += cell.join ? 0 : 1;
+        }
+        const float hGap = (float) (area.getWidth() - width) / (float) (blocks + 1);
+        float x = (float) area.getX() + hGap;
+        for (const auto& cell : rows[r])
+        {
+            place (*cell.c, juce::roundToInt (x), centre, cell.w);
+            x += (float) cell.w + (cell.join ? (float) joinGap : hGap);
+        }
     }
-    else if (dynamic_cast<VfdNumber*> (&c) != nullptr)
-    {
-        c.setBounds (x, centreY - VfdNumber::windowHeight / 2, w, VfdNumber::height);
-    }
-    else   // LED button: its body centred on the line, the LED below
-    {
-        c.setBounds (x, centreY - 18, w, 47);
-    }
+    return spans;
 }
 
 void VoicePanel::layout()
@@ -344,70 +479,49 @@ void VoicePanel::layout()
     columns = splitColumns ({ 0, 0, (float) width, (float) height }, { 340, 314, 300, 326 });
     groups.clear();
     auto col = [this] (int i) { return columns[(size_t) i].reduced (8.0f).toNearestInt(); };
+    auto inside = [] (juce::Rectangle<int> grp) { return grp.reduced (8, 0).withTrimmedTop (6).withTrimmedBottom (26); };   // the bracket label below
 
-    // 1: oscillators + keyboard (wheels and octave)
+    // 1: oscillators (pitch row above the tone row) + keyboard
     {
         auto c = col (0);
-        auto osc = c.removeFromTop (318);
+        auto osc = c.removeFromTop (322);
         groups.push_back ({ osc.toFloat(), tr ("oscillators") });
-        auto g = osc.reduced (8, 10);
-        const int sw = (g.getWidth() - 8) / 2;
-        selector ("wave1").setBounds (g.getX(), g.getY(), sw, 46);
-        selector ("wave2").setBounds (g.getRight() - sw, g.getY(), sw, 46);
-        const int rw = g.getWidth() / 3;
-        int i = 0;
-        for (auto* id : { "octaveShift", "osc2Semi", "tuneSemi" })
-            place (rotary (id), g.getX() + rw * i++, g.getY() + 104, rw);
-        const int kw = g.getWidth() / 4;
-        i = 0;
-        for (auto* id : { "detune", "pulseWidth", "oscBalance", "noiseBalance" })
-            place (knob (id), g.getX() + kw * i++, g.getY() + 200, kw);
-
+        const int half = (inside (osc).getWidth() - 12) / 2, q = inside (osc).getWidth() / 4 - 1;
+        arrange (inside (osc), { { { &selector ("wave1"), half }, { &selector ("wave2"), half } },
+                                 { { &rotary ("octaveShift"), q }, { &rotary ("pwmRate"), q }, { &rotary ("osc2Semi"), q }, { &rotary ("tuneSemi"), q } },
+                                 { { &knob ("detune"), q }, { &knob ("pulseWidth"), q }, { &knob ("oscBalance"), q }, { &knob ("noiseBalance"), q } } });
         c.removeFromTop (8);
         groups.push_back ({ c.toFloat(), tr ("keyboard") });
-        auto k = c.reduced (8, 10);
-        const int line = k.getY() + 50;
-        i = 0;
-        for (auto* id : { "bendAmount", "mwPitch", "mwFilter" })
-            place (knob (id), k.getX() + 76 * i++, line, 76);
-        place (rotary ("octaveSet"), k.getX() + 228, line, k.getWidth() - 228);
+        arrange (inside (c), { { { &knob ("bendAmount"), q }, { &knob ("mwPitch"), q }, { &knob ("mwFilter"), q }, { &rotary ("octaveSet"), q } } });
     }
 
-    // 2: filter + Tauntek extras
+    // 2: filter + MIDI clock
     {
         auto c = col (1);
-        auto f = c.removeFromTop (316);
+        auto f = c.removeFromTop (322);
         groups.push_back ({ f.toFloat(), tr ("filter") });
-        auto g = f.reduced (8, 10);
-        const int bw = 40, gap = 4, total = 3 * bw + 2 * gap + 14 + 74;
-        int x = g.getCentreX() - total / 2;
-        for (auto* b : filterTypes)
-        {
-            b->setBounds (x, g.getY(), bw, 45);
-            x += bw + gap;
-        }
-        kbdTrack.setBounds (x + 10, g.getY(), 74, 45);
-        const int cx = g.getCentreX();
-        knob ("filterFreq").setBounds (cx - 65, g.getY() + 54, 130, Knob::height (KnobStyle::Brass));
-        const int sideW = 74, top = g.getY() + 86, bottom = g.getY() + 194;
-        place (knob ("resonance"), g.getX(), top, sideW);
-        place (knob ("filterSep"), g.getX(), bottom, sideW);
-        place (knob ("envFilter"), g.getRight() - sideW, top, sideW);
-        place (knob ("filterDrive"), g.getRight() - sideW, bottom, sideW);
+        auto g = inside (f);
+        const int topY = g.getY() + 6;
+        auto& type = leds ("filterType");
+        type.setBounds (g.getCentreX() - 92, topY, 92, type.blockHeight());
+        kbdTrack.setBounds (g.getCentreX() + 12, topY, 74, 45);
+        const int cx = g.getCentreX(), sideW = 76;
+        knob ("filterFreq").setBounds (cx - 65, topY + 64, 130, Knob::height (KnobStyle::Brass));
+        const int line1 = topY + 96, line2 = topY + 206;
+        place (knob ("resonance"), g.getX(), line1, sideW);
+        place (knob ("filterSep"), g.getX(), line2, sideW);
+        place (knob ("envFilter"), g.getRight() - sideW, line1, sideW);
+        place (knob ("filterDrive"), g.getRight() - sideW, line2, sideW);
 
         c.removeFromTop (8);
-        groups.push_back ({ c.toFloat(), "tauntek" });
-        auto t = c.reduced (8, 10).withTrimmedBottom (22);
-        const int line = t.getCentreY() + 2;
-        place (lfoToOsc1, t.getX(), line, 72);
-        place (lfoSync, t.getX() + 78, line, 72);
-        place (rotary ("pwmRate"), t.getRight() - 128, line, 128);
+        groups.push_back ({ c.toFloat(), tr ("midi clock") });
+        arrange (inside (c), { { { &syncLeds, 78 }, { &divisionSwitch, 112 }, { &tempo, 92 } } });
     }
 
-    // 3: envelopes + modulation
+    // 3: envelopes + modulation (the LFO buttons under the LFO wave)
     {
         auto c = col (2);
-        auto envs = c.removeFromTop (220);
+        auto envs = c.removeFromTop (214);
         auto fe = envs.removeFromLeft ((envs.getWidth() - 8) / 2);
         envs.removeFromLeft (8);
         groups.push_back ({ fe.toFloat(), tr ("filter env") });
@@ -419,7 +533,7 @@ void VoicePanel::layout()
             int x = g.getCentreX() - total / 2;
             for (auto* id : ids)
             {
-                faders.at (id)->setBounds (x, g.getY(), fw, 184);
+                faders.at (id)->setBounds (x, g.getY(), fw, juce::jmin (184, g.getHeight()));
                 x += fw + 2;
             }
         };
@@ -428,39 +542,21 @@ void VoicePanel::layout()
 
         c.removeFromTop (8);
         groups.push_back ({ c.toFloat(), tr ("modulation") });
-        auto m = c.reduced (10, 12);
-        const int line1 = m.getY() + 44, line2 = m.getY() + 150;
-        place (rotary ("lfoWave"), m.getX(), line1, 112);
-        place (knob ("lfoRate"), m.getX() + 118, line1, 72);
-        place (knob ("introDelay"), m.getX() + 194, line1, 72);
-        place (knob ("lfoPitch"), m.getX() + 40, line2, 96);
-        place (knob ("lfoFilter"), m.getX() + 148, line2, 96);
+        arrange (inside (c), { { { &rotary ("lfoWave"), 108 }, { &knob ("lfoRate"), 76 }, { &knob ("introDelay"), 76 } },
+                               { { &lfoStack, 108 }, { &knob ("lfoPitch"), 76 }, { &knob ("lfoFilter"), 76 } } });
+        auto stack = lfoStack.getBounds().withSizeKeepingCentre (104, 60);
+        lfoToOsc1.setBounds (stack.removeFromTop (27));
+        lfoSync.setBounds (stack.removeFromBottom (27));
     }
 
-    // 4: performance + MIDI clock
+    // 4: performance in three rows: trigger and function, glide, arpeggiator
     {
         auto c = col (3);
-        auto perf = c.removeFromTop (331);
-        groups.push_back ({ perf.toFloat(), tr ("performance") });
-        auto g = perf.reduced (8, 10);
-        const int x = g.getX(), r1 = g.getY() + 44, r2 = g.getY() + 132, r3 = g.getY() + 248;
-        place (rotary ("trigger"), x, r1, 132);
-        place (rotary ("function"), x + 136, r1, 100);
-        place (hold, x + 240, r1, 52);
-        place (knob ("glideRate"), x + 22, r2, 88);
-        place (knob ("gateTime"), x + 170, r2, 88);
-        place (rotary ("glideType"), x, r3, 88);
-        place (glideFix, x + 86, r3, 40);
-        place (rotary ("arpDir"), x + 126, r3, 82);
-        place (rotary ("arpMode"), x + 218, r3, 80);
-
-        c.removeFromTop (8);
-        groups.push_back ({ c.toFloat(), tr ("midi clock") });
-        auto k = c.reduced (8, 10);
-        const int line = k.getY() + 50;
-        place (syncSwitch, k.getX(), line, 80);
-        place (divisionSwitch, k.getX() + 84, line, 120);
-        place (tempo, k.getX() + 210, line, k.getWidth() - 210);
+        groups.push_back ({ c.toFloat(), tr ("performance") });
+        performanceArea = c;
+        performanceRows = arrange (inside (c), { { { &rotary ("trigger"), 140 }, { &leds ("function"), 86, true }, { &hold, 50 } },
+                                                 { { &leds ("glideType"), 92, true }, { &glideFix, 44 }, { &knob ("glideRate"), 124 } },
+                                                 { { &leds ("arpDir"), 76, true }, { &leds ("arpMode"), 72 }, { &knob ("gateTime"), 124 } } });
     }
 }
 
@@ -473,10 +569,18 @@ void VoicePanel::paint (juce::Graphics& g)
     for (const auto& gr : groups)
         drawGroup (g, gr.area, gr.label);
 
+    // dividers between the performance rows, named after the row below
+    const juce::String names[] = { {}, tr ("glide"), tr ("arpeggiator") };
+    for (size_t i = 1; i < performanceRows.size() && i < 3; ++i)
+    {
+        const float y = (float) (performanceRows[i - 1].getEnd() + performanceRows[i].getStart()) * 0.5f;
+        drawDivider (g, y, (float) performanceArea.getX() + 16.0f, (float) performanceArea.getRight() - 16.0f, names[i]);
+    }
+
     // printed legends at both ends of the big filter knob's scale
     auto& f = knob ("filterFreq");
     const auto c = f.getBounds().toFloat().getCentre().withY ((float) f.getY() + 65.0f);
-    g.setFont (Fonts::bold (10.0f).withExtraKerningFactor (0.06f));
+    g.setFont (Fonts::bold (10.5f).withExtraKerningFactor (0.06f));
     g.setColour (colours::silk);
     g.drawText (lang::upper (tr ("closed")), juce::Rectangle<float> (60.0f, 12.0f).withCentre (c.translated (-48.0f, 60.0f)), juce::Justification::centred);
     g.drawText (lang::upper (tr ("open")), juce::Rectangle<float> (60.0f, 12.0f).withCentre (c.translated (48.0f, 60.0f)), juce::Justification::centred);
@@ -656,6 +760,9 @@ void GeneratorPanel::resized()
         h.removeFromBottom (8);
         historyArea = h.toFloat();
     }
+    addAndMakeVisible (wear);
+    setupWear (*this, wear, columns, { historyArea },
+               { { generateButton.getBounds().toFloat().getCentre(), 90.0f }, { amount.getBounds().toFloat().getCentre().translated (0.0f, -20.0f), 80.0f } });
 }
 
 void GeneratorPanel::paint (juce::Graphics& g)
@@ -1013,6 +1120,12 @@ void BanksPanel::resized()
         }
         groups.push_back ({ libraryList.getBounds().toFloat().expanded (4.0f), {} });
     }
+    std::vector<juce::Rectangle<float>> windows;
+    for (const auto& [area, label] : groups)
+        if (label.isEmpty())
+            windows.push_back (area);
+    addAndMakeVisible (wear);
+    setupWear (*this, wear, {}, windows, {});
 }
 
 void BanksPanel::paint (juce::Graphics& g)
@@ -1033,6 +1146,222 @@ void BanksPanel::paint (juce::Graphics& g)
         g.drawFittedText (tr ("Nothing here yet: \"Save bank as...\" adds your banks, \"Save voice...\" your voices; dumps and sends add backups."),
                           libraryList.getBounds().reduced (20), juce::Justification::centred, 3);
     }
+}
+
+//==============================================================================
+// Morph
+//==============================================================================
+namespace
+{
+    // the 26 knobs of a voice, by section, for the preview
+    struct PreviewSection { const char* name; std::vector<const char*> ids; };
+    const std::vector<PreviewSection>& previewSections()
+    {
+        static const std::vector<PreviewSection> s = {
+            { "oscillators", { "oscBalance", "noiseBalance", "pulseWidth", "detune" } },
+            { "filter",      { "filterFreq", "resonance", "filterSep", "envFilter", "filterDrive" } },
+            { "filter env",  { "filtAttack", "filtDecay", "filtSustain", "filtRelease" } },
+            { "amp env",     { "volAttack", "volDecay", "volSustain", "volRelease" } },
+            { "modulation",  { "lfoRate", "introDelay", "lfoPitch", "lfoFilter" } },
+            { "keyboard",    { "bendAmount", "mwPitch", "mwFilter" } },
+            { "performance", { "glideRate", "gateTime" } } };
+        return s;
+    }
+}
+
+MorphPanel::MorphPanel (OscarProcessor& p) : proc (p)
+{
+    voiceA.setTooltip (tr ("Voice A: the sound at the left end of the fader."));
+    voiceB.setTooltip (tr ("Voice B: the sound at the right end of the fader."));
+    for (auto* s : { &voiceA, &voiceB })
+    {
+        s->onChange = [this] (int) { sourcesChanged(); };
+        addAndMakeVisible (s);
+    }
+    takeA.onClick = [this] { voiceA.setValue (proc.getSelectedSlot()); sourcesChanged(); };
+    takeB.onClick = [this] { voiceB.setValue (proc.getSelectedSlot()); sourcesChanged(); };
+    for (auto* b : { &takeA, &takeB })
+    {
+        b->setTooltip (tr ("Take the voice selected in the editor."));
+        addAndMakeVisible (b);
+    }
+
+    fader.setSliderStyle (juce::Slider::LinearHorizontal);
+    fader.setTextBoxStyle (juce::Slider::NoTextBox, true, 0, 0);
+    fader.getProperties().set ("crossfader", true);
+    fader.setDoubleClickReturnValue (true, 0.5);
+    fader.setTooltip (tr ("Crossfader: A on the left, B on the right. Double-click: half way. Can be automated from the DAW (parameter Morph A-B)."));
+    faderAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (proc.getHostParameters(), "morph", fader);
+    addAndMakeVisible (fader);
+
+    smoothing.setValue (juce::roundToInt (proc.morphSettings().smoothing * 100.0f));
+    smoothing.onChange = [this] (int v) { proc.setMorphSmoothing ((float) v / 100.0f); };
+    smoothing.setValueText ([] (int v) { return juce::String (v * 10); });   // milliseconds
+    smoothing.setScale ("0", "2s");
+    smoothing.setTooltip (tr ("Smoothing, in milliseconds: the shortest time the blend takes from A to B, whatever the fader does. A sudden move becomes a glide, and the CC sent to the OSCar stay spaced out."));
+    addAndMakeVisible (smoothing);
+
+    keepButton.onClick = [this] { proc.morphKeep(); };
+    keepButton.setTooltip (tr ("Keep the blend in the selected voice. The next move starts again from voices A and B."));
+    addAndMakeVisible (keepButton);
+
+    addAndMakeVisible (wear);
+    startTimerHz (30);
+}
+
+MorphPanel::~MorphPanel()
+{
+    stopTimer();
+    faderAttachment.reset();
+}
+
+void MorphPanel::sourcesChanged()
+{
+    proc.setMorphSources (voiceA.getValue(), voiceB.getValue());
+    repaint();
+}
+
+void MorphPanel::refresh()
+{
+    const auto& doc = proc.getDocument();
+    std::vector<Selector::Item> items;
+    for (int i = 0; i < kNumVoices; ++i)
+        items.push_back ({ i, juce::String (slotLabel (i)) + "  " + doc.getDisplayName (i) });
+    voiceA.setItems (items);
+    voiceB.setItems (items);
+    voiceA.setValue (proc.morphSettings().slotA);
+    voiceB.setValue (proc.morphSettings().slotB);
+    repaint();
+}
+
+void MorphPanel::timerCallback()
+{
+    const float pos = proc.getMorphPosition();
+    if (pos != shownPosition)
+    {
+        shownPosition = pos;
+        repaint (readout.toNearestInt().expanded (4));
+    }
+}
+
+void MorphPanel::resized()
+{
+    columns = splitColumns ({ 0, 0, (float) width, (float) height }, { 290, 700, 290 });
+    groups.clear();
+    auto side = [this] (int i, Selector& sel, LedButton& take, juce::Rectangle<float>& big, juce::Rectangle<float>& summary, const juce::String& label)
+    {
+        auto c = columns[(size_t) i].reduced (8.0f).toNearestInt();
+        groups.push_back ({ c.toFloat(), label });
+        auto g = c.reduced (16, 14).withTrimmedBottom (22);
+        big = g.removeFromTop (128).toFloat();
+        sel.setBounds (g.removeFromTop (46));
+        g.removeFromTop (12);
+        take.setBounds (g.removeFromTop (34).withSizeKeepingCentre (190, 34));
+        g.removeFromTop (16);
+        summary = g.toFloat();
+    };
+    side (0, voiceA, takeA, bigA, summaryA, tr ("voice a"));
+    side (2, voiceB, takeB, bigB, summaryB, tr ("voice b"));
+
+    auto c = columns[1].reduced (8.0f).toNearestInt();
+    groups.push_back ({ c.toFloat(), tr ("morph") });
+    auto g = c.reduced (22, 14).withTrimmedBottom (22);
+    preview = g.removeFromTop (168).toFloat();
+    g.removeFromTop (12);
+    auto row = g.removeFromTop (104);
+    readout = row.removeFromTop (30).withSizeKeepingCentre (64, 28).toFloat();
+    row.removeFromTop (4);
+    letterA = row.removeFromLeft (44).toFloat();
+    letterB = row.removeFromRight (44).toFloat();
+    fader.setBounds (row.reduced (10, 0).withSizeKeepingCentre (row.getWidth() - 20, 70));
+    g.removeFromTop (6);
+    auto bottom = g;
+    smoothing.setBounds (bottom.removeFromLeft (96).withHeight (Knob::height (KnobStyle::Chrome)));
+    keepButton.setBounds (bottom.removeFromRight (210).withSizeKeepingCentre (210, 54));
+    info = bottom.reduced (18, 4).toFloat();
+
+    setupWear (*this, wear, columns, { preview, readout, summaryA, summaryB }, { { fader.getBounds().toFloat().getCentre(), 150.0f } });
+}
+
+void MorphPanel::paint (juce::Graphics& g)
+{
+    for (const auto& c : columns)
+        drawInset (g, c);
+    for (const auto& [area, label] : groups)
+        drawGroup (g, area, label);
+
+    g.setFont (Fonts::title (104.0f));
+    g.setColour (colours::label.withAlpha (0.8f));
+    g.drawText ("A", bigA, juce::Justification::centred);
+    g.drawText ("B", bigB, juce::Justification::centred);
+    g.setFont (Fonts::title (34.0f));
+    g.setColour (colours::silk);
+    g.drawText ("A", letterA, juce::Justification::centred);
+    g.drawText ("B", letterB, juce::Justification::centred);
+    drawSegmentReadout (g, readout, juce::String (juce::roundToInt (proc.getMorphPosition() * 100.0f)), 3, true);
+
+    // preview: the 26 knobs of the selected voice, with a mark where A and B are
+    drawVfdWindow (g, preview);
+    const auto& doc = proc.getDocument();
+    const auto& v = doc.getVoice (proc.getSelectedSlot());
+    const auto& a = doc.getVoice (proc.morphSettings().slotA);
+    const auto& b = doc.getVoice (proc.morphSettings().slotB);
+    auto inner = preview.reduced (16.0f, 12.0f);
+    auto labels = inner.removeFromBottom (16.0f);
+    inner.removeFromBottom (6.0f);
+    const float gap = 14.0f, step = (inner.getWidth() - gap * (float) (previewSections().size() - 1)) / 26.0f;
+    float x = inner.getX();
+    for (const auto& section : previewSections())
+    {
+        const float x0 = x;
+        for (auto* id : section.ids)
+        {
+            const auto& d = *findParam (id);
+            auto level = [&d] (const VoiceData& voice) { return (float) getParam (voice, d) / (float) kKnobMaxEditable; };
+            auto col = juce::Rectangle<float> (x, inner.getY(), step, inner.getHeight()).reduced (step * 0.24f, 0.0f);
+            g.setColour (colours::vfd.withAlpha (0.08f));
+            g.fillRect (col);
+            g.setColour (colours::vfd);
+            g.fillRect (col.withTop (col.getBottom() - col.getHeight() * level (v)));
+            g.setColour (colours::vfdDim);                                                     // A: a short dash on the left
+            g.fillRect (col.getX() - 3.0f, col.getBottom() - col.getHeight() * level (a) - 1.0f, col.getWidth() * 0.5f + 3.0f, 2.0f);
+            g.setColour (juce::Colour (0xfff3e2d4));                                          // B: on the right
+            g.fillRect (col.getCentreX(), col.getBottom() - col.getHeight() * level (b) - 1.0f, col.getWidth() * 0.5f + 3.0f, 2.0f);
+            x += step;
+        }
+        g.setFont (Fonts::mono (11.0f));
+        g.setColour (colours::vfdDim);
+        g.drawFittedText (lang::upper (tr (section.name)), juce::Rectangle<float> (x0, labels.getY(), x - x0, 16.0f).toNearestInt(),
+                          juce::Justification::centred, 1, 0.6f);
+        x += gap;
+    }
+
+    // the switches of A and B: they change half way
+    for (const auto& [area, voice] : { std::pair<juce::Rectangle<float>, const VoiceData*> { summaryA, &a }, { summaryB, &b } })
+    {
+        drawVfdWindow (g, area);
+        auto lines = area.reduced (12.0f, 10.0f);
+        const float lineH = lines.getHeight() / 6.0f;
+        for (auto* id : { "wave1", "wave2", "filterType", "trigger", "function", "lfoWave" })
+        {
+            const auto& d = *findParam (id);
+            const int value = getParam (*voice, d);
+            juce::String name = juce::String (value);
+            for (const auto& c : d.choices)
+                if (c.value == value)
+                    name = c.label;
+            auto line = lines.removeFromTop (lineH);
+            g.setFont (Fonts::mono (13.0f));
+            g.setColour (colours::vfdDim);
+            g.drawText (lang::upper (d.name), line, juce::Justification::centredLeft);
+            g.setColour (colours::vfd);
+            g.drawText (lang::upper (name), line, juce::Justification::centredRight);
+        }
+    }
+
+    const int slot = proc.getSelectedSlot();
+    drawText (g, info, tr ("Voice %1 follows the fader: knobs glide from A to B, switches change half way. With Live CC on, the OSCar follows live. Undo brings the voice back. Dashes: where A (left) and B (right) are.",
+                           { juce::String (slotLabel (slot)) + " " + doc.getDisplayName (slot) }), 13.0f, colours::dim, juce::Justification::centredLeft);
 }
 
 //==============================================================================
@@ -1087,6 +1416,10 @@ void WavesPanel::resized()
     scope = area.removeFromRight (300.0f).withTrimmedTop (22.0f).withTrimmedBottom (40.0f);
     area.removeFromRight (24.0f);
     bars = area.withTrimmedLeft (44.0f).withTrimmedTop (22.0f).withTrimmedBottom (26.0f);
+    addAndMakeVisible (wear);
+    setupWear (*this, wear, { juce::Rectangle<float> (0, 0, (float) width, (float) height) },
+               { bars.withTrimmedTop (-22.0f), scope },
+               { { bars.getCentre(), 160.0f } });
 }
 
 void WavesPanel::paint (juce::Graphics& g)
@@ -1265,6 +1598,8 @@ void KeysPanel::resized()
     cards = area.removeFromTop (128.0f).reduced (8.0f, 8.0f);
     keyboard = area.reduced (8.0f, 6.0f);
     tauntekButton.setBounds (cards.getRight() - 210, cards.getY() + 12, 196, 34);
+    addAndMakeVisible (wear);
+    setupWear (*this, wear, { juce::Rectangle<float> (0, 0, (float) width, (float) height) }, { keyboard }, {});
 }
 
 void KeysPanel::paint (juce::Graphics& g)
@@ -1567,6 +1902,8 @@ void SetupPanel::resized()
         groups.push_back ({ c.toFloat(), tr ("log") });
         logView.setBounds (c.reduced (12, 10).withTrimmedBottom (22));
     }
+    addAndMakeVisible (wear);
+    setupWear (*this, wear, {}, {}, {});
 }
 
 void SetupPanel::paint (juce::Graphics& g)

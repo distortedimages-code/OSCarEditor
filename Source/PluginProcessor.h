@@ -102,6 +102,22 @@ public:
     int getGenSlot() const                                  { return genSlot; }
     void addLog (const juce::String& text);
 
+    //==============================================================================
+    // A/B morph (message thread): the selected voice becomes a blend of voices A and B, following the
+    // host parameter "morph" (the crossfader, or DAW automation). Knobs glide from A to B, switches flip
+    // half way. The blend follows the fader at most one full sweep per 'smoothing' seconds, so a sudden
+    // move becomes a glide. The OSCar only gets the CC that changed, at most 12 every 33 ms (the biggest
+    // moves first, the rest on the next steps): about a third of what a MIDI cable carries, which leaves
+    // room for notes, clock and the Tauntek board's own work. Nothing is sent during a SysEx transfer.
+    // Undo brings the voice back in one step.
+    struct MorphSettings { int slotA = 0, slotB = 12; float smoothing = 0.3f; };
+    const MorphSettings& morphSettings() const      { return morph; }
+    void setMorphSources (int slotA, int slotB);
+    void setMorphSmoothing (float seconds)          { morph.smoothing = juce::jlimit (0.0f, 2.0f, seconds); }
+    float getMorphPosition() const                  { return morphPos; }
+    void morphKeep();                               // the blend stays; the next move starts again from A and B
+    static oscar::VoiceData blend (const oscar::VoiceData& a, const oscar::VoiceData& b, float t);
+
     // Set when the user chose "don't ask again" for sending edits (this session only).
     bool sendConfirmedThisSession = false;
 
@@ -224,6 +240,24 @@ private:
         int last = -1;
     };
     std::vector<HostParam> hostList;
+
+    // A/B morph
+    MorphSettings morph;
+    struct MorphTicker : juce::Timer
+    {
+        std::function<void()> tick;
+        void timerCallback() override { tick(); }
+    } morphTicker;
+    void morphTick();
+    void startMorphSession();
+    void applyMorph (const oscar::VoiceData& v);
+    bool flushMorphCc();                    // true while some CC still wait for their turn
+    static constexpr int morphCcPerTick = 12;   // at 30 Hz: about a third of a MIDI cable
+    std::atomic<float>* morphParam = nullptr;
+    float morphTarget = 0.0f, morphPos = 0.0f;
+    bool morphSeen = false, morphMoving = false, morphSession = false, morphPending = false;
+    int morphSlot = -1;
+    oscar::VoiceData morphA {}, morphB {}, morphSent {};
     std::atomic<bool> resyncHost { true };
     std::atomic<int> hostSuspend { 0 };   // > 0 while host values are being restored
 

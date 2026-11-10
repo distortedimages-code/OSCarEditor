@@ -55,11 +55,12 @@ ISSUE = {
 """)},
 }
 
-# The plugin's six pages: picture, name, caption, picture description
+# The plugin's seven pages: picture, name, caption
 PAGES = {
     "fr": [
         ("voix", "Voix", "Tous les réglages de la voix choisie. Chaque potard part en CC vers l'OSCar, et tout s'automatise depuis le DAW."),
         ("generateur", "Générateur", "Varier, Nouveau (basse, lead, pad, percu, texture) et Croiser, avec des verrous par section. Chaque essai joue sur l'OSCar sans toucher à sa mémoire."),
+        ("morphing", "Morphing", "Deux voix A et B et un crossfader : les potards glissent de l'une à l'autre, les sélecteurs basculent à mi-course. Un lissage contre les gestes brusques, et le fader s'automatise dans Logic."),
         ("banques", "Banques", "Les 36 voix avec leurs noms, et la bibliothèque : tes banques, tes voix et toutes les sauvegardes automatiques."),
         ("formes-d-onde", "Formes d'onde", "Les cinq formes d'onde utilisateur (−8 à −12), à dessiner à la souris."),
         ("raccourcis-tauntek", "Raccourcis Tauntek", "Tous les raccourcis TUNE/TRANSPOSE sur le clavier. Les touches qui remplacent les voix en mémoire sont en rouge."),
@@ -68,6 +69,7 @@ PAGES = {
     "en": [
         ("voix", "Voice", "Every setting of the chosen voice. Each knob goes to the OSCar as a CC, and everything can be automated from the DAW."),
         ("generateur", "Generator", "Vary, New (bass, lead, pad, percussive, texture) and Breed, with locks per section. Every try plays on the OSCar without touching its memory."),
+        ("morphing", "Morph", "Two voices A and B and a crossfader: knobs glide from one to the other, switches change half way. Smoothing guards against sudden moves, and the fader can be automated in Logic."),
         ("banques", "Banks", "The 36 voices with their names, and the library: your banks, your voices and every automatic backup."),
         ("formes-d-onde", "Waveforms", "The five user waveforms (−8 to −12), drawn with the mouse."),
         ("raccourcis-tauntek", "Tauntek keys", "Every TUNE/TRANSPOSE shortcut on the keyboard. The keys that replace the voices in memory are red."),

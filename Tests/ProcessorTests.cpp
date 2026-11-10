@@ -586,7 +586,7 @@ static void testEditor (OscarProcessor& proc, Capture& out)
     for (auto size : { 1400, 980, 2100 })
     {
         ed->setSize (size, size * 800 / 1400);
-        for (int page = 0; page < 6; ++page)
+        for (int page = 0; page < 7; ++page)
         {
             editor->showPage (page);
             auto img = ed->createComponentSnapshot (ed->getLocalBounds(), true, 0.5f);
@@ -612,7 +612,7 @@ static void testEditor (OscarProcessor& proc, Capture& out)
     CHECK (bank == banks.getChildFile ("Test bank.syx") && bank.existsAsFile());
     juce::String report;
     CHECK (proc.getDocument().loadFile (bank, report).wasOk());
-    editor->showPage (2);   // the library lists them
+    editor->showPage (OscarEditor::banksPageIndex);   // the library lists them
     auto img = ed->createComponentSnapshot (ed->getLocalBounds(), true, 0.5f);
     CHECK (img.isValid());
     pump (100);
@@ -711,6 +711,71 @@ static void testState (OscarProcessor& proc, Capture&)
     other.getMidi().setTestOutput (nullptr);
 }
 
+// The A/B morph: knobs glide, switches flip half way, the CC are paced, Undo brings the voice back.
+static void testMorph (OscarProcessor& proc, Capture& out)
+{
+    auto& doc = proc.getDocument();
+    const int target = 20, slotA = 3, slotB = 4;
+    VoiceData va = doc.getVoice (slotA), vb = doc.getVoice (slotB);
+    for (const auto& p : allParams())   // A at the bottom of every knob, B at the top; different waves
+        if (p.kind == ParamKind::Knob)
+        {
+            setParam (va, p, 0);
+            setParam (vb, p, kKnobMaxEditable);
+        }
+    setParam (va, *findParam ("wave1"), 0);
+    setParam (vb, *findParam ("wave1"), 2);
+    doc.setVoice (slotA, va);
+    doc.setVoice (slotB, vb);
+    proc.setLiveCc (true);
+    proc.chooseVoice (target);
+    pump (700);
+    out.take();
+    const auto original = doc.getVoice (target);
+
+    proc.setMorphSources (slotA, slotB);
+    proc.setMorphSmoothing (0.0f);   // instant: the pacing alone spreads the CC
+    auto* morph = proc.getHostParameters().getParameter ("morph");
+    morph->setValueNotifyingHost (0.25f);
+    std::vector<size_t> batches;
+    std::vector<juce::MidiMessage> all;
+    for (int i = 0; i < 100; ++i)
+    {
+        pump (10);
+        auto got = out.take();
+        if (! got.empty()) batches.push_back (ccsOf (got).size());
+        all.insert (all.end(), got.begin(), got.end());
+    }
+    const auto& filterFreq = *findParam ("filterFreq");
+    CHECK (getParam (doc.getVoice (target), filterFreq) == 64);                       // a quarter of the way
+    CHECK (getParam (doc.getVoice (target), *findParam ("wave1")) == 0);              // still A's wave
+    CHECK (! batches.empty() && batches.front() <= 24);                               // paced, never all at once
+    size_t total = 0;
+    for (auto n : batches) total += n;
+    CHECK (total >= 26);
+    int lastFreq = -1;
+    for (const auto& [cc, value] : ccsOf (all))
+        if (cc == filterFreq.cc) lastFreq = value;
+    CHECK (lastFreq == ccValueFor (filterFreq.coding, 64));                          // the OSCar got there too
+
+    morph->setValueNotifyingHost (1.0f);
+    pump (1000);
+    out.take();
+    CHECK (getParam (doc.getVoice (target), filterFreq) == kKnobMaxEditable);
+    CHECK (getParam (doc.getVoice (target), *findParam ("wave1")) == 2);              // B's wave past half way
+    CHECK (OscarProcessor::blend (va, vb, 0.5f) != OscarProcessor::blend (va, vb, 0.49f));
+
+    proc.morphKeep();
+    doc.undo();   // the whole move is one step
+    pump (300);
+    CHECK (doc.getVoice (target) == original);
+    morph->setValueNotifyingHost (0.0f);
+    pump (300);
+    doc.undo();
+    pump (200);
+    out.take();
+}
+
 int main()
 {
     // Never run against the user's real settings, MIDI ports or backup folder.
@@ -749,7 +814,7 @@ int main()
         ed->setSize (1400, 800);
         const float scale = juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_SCALE", "1").getFloatValue();
         juce::File (shots).createDirectory();
-        for (int page = 0; page < 6; ++page)
+        for (int page = 0; page < 7; ++page)
         {
             dynamic_cast<OscarEditor*> (ed.get())->showPage (page);
             pump (50);
@@ -780,6 +845,7 @@ int main()
         testState (proc, out);
         testMidiThru (proc, out);
         testMidiClock (proc, out);
+        testMorph (proc, out);
 
         proc.getMidi().setTestOutput (nullptr);
     }

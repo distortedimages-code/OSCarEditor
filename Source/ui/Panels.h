@@ -14,6 +14,13 @@ class OscarEditor;
 namespace panels
 {
 constexpr int width = 1304, height = 510;   // every page is laid out on this logical size
+constexpr int wearLevel = 1;                 // printed ink rubbed off here and there, fine scratches (0: none)
+
+// Puts 'wear' on top of 'page': its children and the given displays are kept clear; 'plates' are the
+// darker column bands (their colour is what rubbed-off ink shows), 'handled' the places touched most.
+void setupWear (juce::Component& page, atelier::WearLayer& wear, std::vector<juce::Rectangle<float>> plates,
+                std::vector<juce::Rectangle<float>> displays, std::vector<atelier::WearLayer::Spot> handled,
+                std::vector<juce::Path> extraKeepClear = {});
 
 //==============================================================================
 class VoicePanel : public juce::Component
@@ -30,25 +37,33 @@ private:
     atelier::Knob& knob (const char* id);
     atelier::Selector& selector (const char* id);
     atelier::RotarySwitch& rotary (const char* id);
-    void place (juce::Component&, int x, int centreY, int w);   // knobs and switches lined up on their knob centre
+    atelier::LedSelector& leds (const char* id);
     void layout();
 
+    // Rows of controls: the rows share the height evenly, the controls of a row its width (a 'join'ed
+    // control sticks to the next one), and every control of a row sits on the same centre line.
+    struct Cell { juce::Component* c; int w; bool join = false; };
+    std::pair<int, int> extent (juce::Component&) const;   // { centre line from the top, height }
+    void place (juce::Component&, int x, int centreY, int w);
+    std::vector<juce::Range<int>> arrange (juce::Rectangle<int> area, const std::vector<std::vector<Cell>>& rows);   // each row's span
+
     // A switch whose high bit is a separate button (Function + Hold, Glide + Fix, filter Type + Kbd track):
-    // the rotary or buttons pick the low part, the button flips 'flag' (values 4-6 = with flag).
+    // the selector picks the low part, the button the flag (values 4-6 = with the flag).
     void editFlagged (const char* id, int base, bool flag);
     int paramValue (const char* id) const;
 
     OscarProcessor& proc;
     std::map<std::string, std::unique_ptr<atelier::Knob>> knobs;
     std::map<std::string, std::unique_ptr<atelier::Fader>> faders;
-    std::map<std::string, std::unique_ptr<atelier::Selector>> selectors;     // waveforms
-    std::map<std::string, std::unique_ptr<atelier::RotarySwitch>> rotaries;
-    juce::OwnedArray<atelier::LedButton> filterTypes;
+    std::map<std::string, std::unique_ptr<atelier::Selector>> selectors;        // waveforms
+    std::map<std::string, std::unique_ptr<atelier::RotarySwitch>> rotaries;     // four positions or more
+    std::map<std::string, std::unique_ptr<atelier::LedSelector>> ledSelectors;  // two or three positions
     atelier::LedButton kbdTrack { "Kbd track", atelier::LedButton::LedPlace::Below },
                        hold { "Hold", atelier::LedButton::LedPlace::Below },
                        glideFix { "Fix", atelier::LedButton::LedPlace::Below };
-    atelier::LedButton lfoToOsc1 { "LFO > Osc 1", atelier::LedButton::LedPlace::Below },
-                       lfoSync { "LFO Sync", atelier::LedButton::LedPlace::Below };
+    atelier::LedButton lfoToOsc1 { "LFO > Osc 1", atelier::LedButton::LedPlace::Right },
+                       lfoSync { "LFO Sync", atelier::LedButton::LedPlace::Right };
+    juce::Component lfoStack;   // where the two LFO buttons go, one above the other
     atelier::VfdNumber tempo { TRANS ("Tempo (global)"), 1, 254 };   // dragged up or down, like an old synth display
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> tempoAttachment;
 
@@ -56,11 +71,19 @@ private:
     // Division picks the steps through the global Tempo.
     void refreshClock();
     bool followsClock() const;
-    atelier::RotarySwitch syncSwitch { TRANS ("Sync") }, divisionSwitch { TRANS ("Division") };
+    void setSync (int v);
+    atelier::LedSelector syncLeds { TRANS ("Sync") };
+    atelier::RotarySwitch divisionSwitch { TRANS ("Division") };
     std::unique_ptr<juce::ParameterAttachment> tempoWatch;
     int lastTrigger = 1;   // Multi
+
     std::vector<juce::Rectangle<float>> columns;
     std::vector<Group> groups;
+    juce::Rectangle<int> performanceArea;              // its three rows get a divider between them
+    std::vector<juce::Range<int>> performanceRows;
+
+    atelier::WearLayer wear;                           // on top of everything, controls cut out
+    void setupWear (int level);
 };
 
 //==============================================================================
@@ -85,6 +108,36 @@ private:
     std::vector<std::pair<juce::Rectangle<float>, juce::String>> groups;
     std::vector<juce::Rectangle<float>> columns;
     juce::Rectangle<float> historyArea, amountNote, parentsNote, locksNote;
+    atelier::WearLayer wear;
+};
+
+//==============================================================================
+// A/B morph: two voices and a crossfader; the selected voice follows the blend.
+class MorphPanel : public juce::Component, private juce::Timer
+{
+public:
+    explicit MorphPanel (OscarProcessor&);
+    ~MorphPanel() override;
+    void refresh();
+    void paint (juce::Graphics&) override;
+    void resized() override;
+
+private:
+    void timerCallback() override;   // follows the gliding blend
+    void sourcesChanged();
+    OscarProcessor& proc;
+    atelier::Selector voiceA { TRANS ("Voice A") }, voiceB { TRANS ("Voice B") };
+    atelier::LedButton takeA { TRANS ("Selected voice"), atelier::LedButton::LedPlace::None },
+                       takeB { TRANS ("Selected voice"), atelier::LedButton::LedPlace::None };
+    juce::Slider fader;   // the crossfader: host parameter "morph"
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> faderAttachment;
+    atelier::Knob smoothing { TRANS ("Smoothing"), atelier::KnobStyle::Chrome, 200 };
+    atelier::CopperButton keepButton { TRANS ("Keep the blend") };
+    std::vector<std::pair<juce::Rectangle<float>, juce::String>> groups;
+    std::vector<juce::Rectangle<float>> columns;
+    juce::Rectangle<float> preview, readout, info, letterA, letterB, bigA, bigB, summaryA, summaryB;   // summaries: the switches, which flip half way
+    float shownPosition = -1.0f;
+    atelier::WearLayer wear;
 };
 
 //==============================================================================
@@ -137,6 +190,7 @@ private:
                        factoryButton { TRANS ("Factory voices") }, folderButton { TRANS ("Open folder") }, sequencesButton { TRANS ("Send sequences...") };
     std::vector<std::pair<juce::Rectangle<float>, juce::String>> groups;
     juce::Rectangle<float> libraryNote;
+    atelier::WearLayer wear;
 };
 
 //==============================================================================
@@ -159,6 +213,7 @@ private:
     juce::Rectangle<float> group, bars, scope, infoArea;   // bars: the slots only (values above, numbers below)
     juce::String info;
     int table = 0;
+    atelier::WearLayer wear;
 };
 
 //==============================================================================
@@ -172,6 +227,7 @@ public:
 private:
     atelier::LedButton tauntekButton { TRANS ("Tauntek OSCar page") };
     juce::Rectangle<float> keyboard, cards;
+    atelier::WearLayer wear;
 };
 
 //==============================================================================
@@ -202,6 +258,7 @@ private:
     juce::TextEditor help, logView;
     std::vector<std::pair<juce::Rectangle<float>, juce::String>> groups;
     juce::Rectangle<float> portsLabels, dumpText, updateText;
+    atelier::WearLayer wear;
 };
 
 } // namespace panels

@@ -1,15 +1,15 @@
 ## English
 
-**Voice page, redrawn**: printed scales around the knobs, and rotary switches with a legend at each position for the modes (trigger, function, glide, arpeggiator, octaves and semitones, LFO wave, PWM rate, sync, division). Click a legend, drag, or use the mouse wheel; a click on the knob lists the full names. Hold, Fix and Kbd track have their own buttons. Bigger knobs, and Octave now sits next to the wheels.
+**Morph A ↔ B**: a new page with two voices and an Octatrack-style crossfader. The selected voice follows the fader: knobs glide from A to B, switches change half way. Smoothing sets the shortest time from A to B, so a sudden move becomes a glide. With Live CC the OSCar follows live, and the plug-in only sends the CC that changed, paced to about a third of a MIDI cable. Keep the blend, or Undo it in one step. The fader can be automated in Logic (Morph A-B).
 
-**Tempo display**: an orange display instead of the knob. Drag up or down on the number, or use the wheel.
+**Voice page, finished**: buttons with LEDs for two- or three-position modes (function, glide, arpeggiator, filter type, sync), rotary switches for the others, values in small segment readouts, the main controls of each section framed, dividers in the performance column, larger lettering.
 
-**Waveforms page**: the 24 harmonics as lit bars, with a scope that previews the resulting wave.
+**A panel with a past**: the printed ink is lightly worn in places, with fine scratches and a little dust, on every page. The controls themselves stay clean.
 
 ## Français
 
-**Page Voix redessinée** : graduations sérigraphiées autour des potards, et sélecteurs rotatifs avec une légende par cran pour les modes (trigger, function, glide, arpégiateur, octaves et demi-tons, onde du LFO, PWM rate, sync, division). Clique sur une légende, glisse, ou utilise la molette ; un clic sur le bouton donne la liste des noms complets. Hold, Fix et Kbd track ont leur propre bouton. Potards plus gros, et Octave passe à côté des molettes.
+**Morphing A ↔ B** : une nouvelle page avec deux voix et un crossfader façon Octatrack. La voix choisie suit le fader : les potards glissent de A vers B, les sélecteurs basculent à mi-course. Le lissage fixe le temps le plus court pour aller de A à B : un geste brusque devient un glissement. Avec Live CC, l'OSCar suit en direct, et le plugin n'envoie que les CC qui ont changé, à un rythme d'environ un tiers d'un câble MIDI. Garde le mélange, ou annule-le d'un coup. Le fader s'automatise dans Logic (Morph A-B).
 
-**Afficheur de tempo** : un afficheur orange remplace le potard. Glisse vers le haut ou le bas sur le nombre, ou utilise la molette.
+**Page Voix finalisée** : boutons à LED pour les modes à deux ou trois positions (function, glide, arpégiateur, type de filtre, sync), sélecteurs rotatifs pour les autres, valeurs dans de petits afficheurs à segments, commandes principales de chaque section encadrées, séparateurs dans la colonne performance, textes plus grands.
 
-**Page Formes d'onde** : les 24 harmoniques en barres lumineuses, avec un oscilloscope qui donne un aperçu de l'onde obtenue.
+**Une façade qui a vécu** : l'encre est légèrement usée par endroits, avec de fines rayures et un peu de poussière, sur toutes les pages. Les commandes restent intactes.

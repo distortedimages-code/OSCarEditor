@@ -98,6 +98,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout OscarProcessor::createHostLa
     }
 
     layout.add (std::make_unique<juce::AudioParameterInt> (juce::ParameterID { "tempo", 1 }, "Tempo (global)", 1, 254, 128));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (juce::ParameterID { "morph", 1 }, "Morph A-B", juce::NormalisableRange<float> (0.0f, 1.0f), 0.0f));
     return layout;
 }
 
@@ -125,12 +126,17 @@ OscarProcessor::OscarProcessor()
     document.addChangeListener (this);
     juce::Timer::startTimer (40);
     juce::HighResolutionTimer::startTimer (2);
+
+    morphParam = hostParams.getRawParameterValue ("morph");
+    morphTicker.tick = [this] { morphTick(); };
+    morphTicker.startTimerHz (30);
 }
 
 OscarProcessor::~OscarProcessor()
 {
     juce::HighResolutionTimer::stopTimer();   // waits for a running callback
     juce::Timer::stopTimer();
+    morphTicker.stopTimer();
     document.removeChangeListener (this);
     midi.closeAll();
 }
@@ -349,6 +355,9 @@ void OscarProcessor::pushDifferencesToOscar()
 void OscarProcessor::changeListenerCallback (juce::ChangeBroadcaster*)
 {
     // Undo, paste, revert, file loads...: keep what the OSCar plays equal to the editor.
+    // (Not while a morph is under way: it paces its own CC.)
+    if (morphMoving || morphPending)
+        return;
     pushDifferencesToOscar();
 }
 
@@ -436,6 +445,143 @@ void OscarProcessor::hiResTimerCallback()
     const juce::ScopedLock sl (outboxLock);
     if (! outbox.empty() && midi.sendControllers (channel, outbox))
         outbox.clear();
+}
+
+//==============================================================================
+// A/B morph
+//==============================================================================
+VoiceData OscarProcessor::blend (const VoiceData& a, const VoiceData& b, float t)
+{
+    t = juce::jlimit (0.0f, 1.0f, t);
+    VoiceData v = t < 0.5f ? a : b;   // bits no parameter owns come from the nearer voice
+    for (const auto& p : allParams())
+    {
+        const int va = getParam (a, p), vb = getParam (b, p);
+        setParam (v, p, p.kind == ParamKind::Knob ? juce::roundToInt ((float) va + (float) (vb - va) * t) : (t < 0.5f ? va : vb));
+    }
+    return v;
+}
+
+void OscarProcessor::setMorphSources (int slotA, int slotB)
+{
+    morph.slotA = juce::jlimit (0, kNumVoices - 1, slotA);
+    morph.slotB = juce::jlimit (0, kNumVoices - 1, slotB);
+    morphSession = false;   // the next move blends the new pair
+}
+
+void OscarProcessor::morphKeep()
+{
+    if (morphSession)
+        addLog (tr ("Morph kept in voice %1.", { juce::String (slotLabel (morphSlot)) }));
+    morphSession = false;
+}
+
+void OscarProcessor::startMorphSession()
+{
+    morphSlot = selectedSlot;
+    const auto current = document.getVoice (morphSlot);   // the slot's own sound, when it is A or B
+    morphA = morph.slotA == morphSlot ? current : document.getVoice (morph.slotA);
+    morphB = morph.slotB == morphSlot ? current : document.getVoice (morph.slotB);
+    morphSent = (oscarSound && oscarSlot == morphSlot) ? *oscarSound : current;   // what the OSCar plays
+    morphSession = true;
+}
+
+void OscarProcessor::morphTick()
+{
+    if (morphParam == nullptr)
+        return;
+    const float target = juce::jlimit (0.0f, 1.0f, morphParam->load());
+    if (! morphSeen)   // a project being loaded moves nothing
+    {
+        morphSeen = true;
+        morphTarget = morphPos = target;
+        return;
+    }
+    if (target != morphTarget)
+    {
+        morphTarget = target;
+        morphMoving = true;
+    }
+    if (! morphMoving)
+    {
+        if (morphPending)
+            morphPending = flushMorphCc();
+        return;
+    }
+
+    if (! morphSession || morphSlot != selectedSlot)
+        startMorphSession();
+    const float maxStep = morph.smoothing <= 0.01f ? 1.0f : (1.0f / 30.0f) / morph.smoothing;
+    morphPos += juce::jlimit (-maxStep, maxStep, morphTarget - morphPos);
+    if (std::abs (morphTarget - morphPos) < 1.0e-4f)
+    {
+        morphPos = morphTarget;
+        morphMoving = false;
+    }
+    applyMorph (blend (morphA, morphB, morphPos));
+}
+
+void OscarProcessor::applyMorph (const VoiceData& v)
+{
+    if (v != document.getVoice (morphSlot))
+        document.setVoice (morphSlot, v, "morph");   // one undo step for the whole move
+    morphPending = flushMorphCc();
+}
+
+bool OscarProcessor::flushMorphCc()
+{
+    const int slot = morphSlot;
+    if (! liveCc || slot != selectedSlot || (oscarSlot >= 0 && oscarSlot != slot))   // never touch another voice the OSCar is playing
+        return false;
+    if (! midi.isOutputOpen() || midi.isBusy())
+        return true;   // after the transfer
+
+    // what the OSCar still lacks, the biggest moves first
+    const auto& v = document.getVoice (slot);
+    struct Pending { std::vector<const ParamDef*> params; std::vector<CcMessage> msgs; int size; };
+    std::vector<Pending> pending;
+    bool arpDone = false;
+    for (const auto& p : allParams())
+    {
+        if (p.cc < 0)
+            continue;
+        Pending e;
+        if (p.coding == CcCoding::ArpNibble)   // direction and mode share one CC
+        {
+            if (arpDone) continue;
+            arpDone = true;
+            for (const auto& q : allParams())
+                if (q.coding == CcCoding::ArpNibble)
+                    e.params.push_back (&q);
+        }
+        else
+        {
+            e.params.push_back (&p);
+        }
+        e.msgs = ccMessagesFor (p, v);
+        const auto before = ccMessagesFor (p, morphSent);
+        if (e.msgs == before)
+            continue;
+        e.size = (e.msgs.empty() || before.empty()) ? 127 : std::abs (e.msgs.front().second - before.front().second);
+        pending.push_back (std::move (e));
+    }
+    std::stable_sort (pending.begin(), pending.end(), [] (const Pending& a, const Pending& b) { return a.size > b.size; });
+
+    std::vector<CcMessage> out;
+    size_t done = 0;
+    for (const auto& e : pending)
+    {
+        if ((int) (out.size() + e.msgs.size()) > morphCcPerTick)
+            break;
+        out.insert (out.end(), e.msgs.begin(), e.msgs.end());
+        for (auto* q : e.params)
+            setParam (morphSent, *q, getParam (v, *q));
+        ++done;
+    }
+    queueCc (out);
+    if (oscarSlot == slot)
+        oscarSound = morphSent;
+    return done < pending.size();
 }
 
 //==============================================================================

@@ -44,6 +44,7 @@ public:
     void exportBankSyx();
     void showUpdateDialog();
     void showPage (int index);
+    static constexpr int banksPageIndex = 3, setupPageIndex = 6;   // Voice, Generator, Morph, Banks, Waveforms, Tauntek keys, Setup
 
 private:
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
@@ -86,6 +87,7 @@ private:
     juce::OwnedArray<atelier::LedButton> tabs;
     std::unique_ptr<panels::VoicePanel> voicePage;
     std::unique_ptr<panels::GeneratorPanel> generatorPage;
+    std::unique_ptr<panels::MorphPanel> morphPage;
     std::unique_ptr<panels::BanksPanel> banksPage;
     std::unique_ptr<panels::WavesPanel> wavesPage;
     std::unique_ptr<panels::KeysPanel> keysPage;

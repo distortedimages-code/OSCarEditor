@@ -38,13 +38,23 @@ void drawWoodCheek (juce::Graphics&, juce::Rectangle<float> area, bool leftSide,
 void drawVents (juce::Graphics&, juce::Rectangle<float> area);
 void drawInset (juce::Graphics&, juce::Rectangle<float> area);                       // darker column band
 void drawGroup (juce::Graphics&, juce::Rectangle<float> area, const juce::String& bracketLabel);
+void drawDivider (juce::Graphics&, float y, float x0, float x1, const juce::String& label);   // a line across a group, label in the middle
 void drawBracketLabel (juce::Graphics&, juce::Rectangle<float> row, const juce::String& text);
 void drawLed (juce::Graphics&, juce::Point<float> centre, float diameter, bool on);
 void drawVfdWindow (juce::Graphics&, juce::Rectangle<float> area);
+// Seven-segment digits (0-9, '-' and spaces) in 'area', one cell per character, unlit segments faintly visible.
+void drawSegments (juce::Graphics&, juce::Rectangle<float> area, const juce::String& text, juce::Colour lit, bool glow);
+// A small framed readout: dark window with right-aligned segment digits.
+void drawSegmentReadout (juce::Graphics&, juce::Rectangle<float> window, const juce::String& text, int digits, bool bright);
 void drawHardButton (juce::Graphics&, juce::Rectangle<float> area, bool down, bool highlighted);
 void drawCopper (juce::Graphics&, juce::Rectangle<float> area, float corner, bool lit, bool down);
 
 enum class KnobStyle { Knurled, Chrome, Brass };
+
+// How a control's name is printed: plain, or framed (the main controls of a section).
+enum class LabelStyle { Plain, Boxed };
+void drawControlLabel (juce::Graphics&, juce::Rectangle<int> area, const juce::String& text, const juce::Font&,
+                       LabelStyle, juce::Colour plainColour, int maxLines = 1);
 void drawKnob (juce::Graphics&, juce::Rectangle<float> area, float proportion, KnobStyle);
 void drawSwitchKnob (juce::Graphics&, juce::Point<float> centre, float radius, float angleFromTop);   // pointer knob of a rotary switch
 
@@ -57,7 +67,7 @@ public:
     void drawRotarySlider (juce::Graphics&, int x, int y, int w, int h, float pos, float start, float end, juce::Slider&) override;
     void drawLinearSlider (juce::Graphics&, int x, int y, int w, int h, float pos, float min, float max,
                            juce::Slider::SliderStyle, juce::Slider&) override;
-    int getSliderThumbRadius (juce::Slider&) override { return 7; }
+    int getSliderThumbRadius (juce::Slider& s) override { return (bool) s.getProperties().getWithDefault ("crossfader", false) ? 26 : 7; }
     void drawButtonBackground (juce::Graphics&, juce::Button&, const juce::Colour&, bool highlighted, bool down) override;
     void drawButtonText (juce::Graphics&, juce::TextButton&, bool highlighted, bool down) override;
     juce::Font getTextButtonFont (juce::TextButton&, int height) override;
@@ -89,6 +99,9 @@ public:
     void setValueText (std::function<juce::String (int)> f) { valueText = std::move (f); repaint(); }
     void setTooltip (const juce::String& t)         { slider.setTooltip (t); }
     void setScale (const juce::String& low, const juce::String& high) { scaleLow = low; scaleHigh = high; repaint(); }
+    void setLabelStyle (LabelStyle s)               { labelStyle = s; repaint(); }
+    void mouseEnter (const juce::MouseEvent&) override { repaint(); }   // the value lights up under the mouse
+    void mouseExit (const juce::MouseEvent&) override  { repaint(); }
 
     juce::Slider slider;                            // public: for host-parameter attachments
 
@@ -96,13 +109,16 @@ public:
     void paint (juce::Graphics&) override;
 
     static constexpr int knobSize (KnobStyle s)     { return s == KnobStyle::Brass ? 130 : (s == KnobStyle::Knurled ? 56 : 54); }
+    KnobStyle getStyle() const                      { return style; }
     static constexpr int topRoom (KnobStyle s)      { return s == KnobStyle::Brass ? 0 : 8; }      // for the printed scale
-    static constexpr int height (KnobStyle s)       { return s == KnobStyle::Brass ? 166 : topRoom (s) + knobSize (s) + 41; }
+    static constexpr int height (KnobStyle s)       { return s == KnobStyle::Brass ? 178 : topRoom (s) + knobSize (s) + 47; }
     static constexpr int centreY (KnobStyle s)      { return topRoom (s) + knobSize (s) / 2; }
+    juce::Rectangle<float> readoutBounds() const;   // the value's segment readout
 
 private:
     juce::String labelText, scaleLow { "0" }, scaleHigh { "10" };
     KnobStyle style;
+    LabelStyle labelStyle = LabelStyle::Plain;
     std::function<juce::String (int)> valueText;
     bool updating = false;
 };
@@ -112,6 +128,7 @@ class Fader : public juce::Component
 {
 public:
     explicit Fader (const juce::String& labelText);
+    juce::Rectangle<float> readoutBounds() const;
     void setValue (int v);
     std::function<void (int)> onChange;
     void setTooltip (const juce::String& t)         { slider.setTooltip (t); }
@@ -206,6 +223,7 @@ public:
     void setLabel (const juce::String& t)           { labelText = t; repaint(); }
 
     static constexpr float radius = 20.0f, legendRoom = 26.0f;            // room above the knob for legends
+    juce::Rectangle<float> knobBounds() const       { return juce::Rectangle<float> (2.0f * radius, 2.0f * radius).withCentre (centre()); }
     static constexpr int centreY = (int) (legendRoom + radius);           // knob centre from the top
 
     void paint (juce::Graphics&) override;
@@ -225,9 +243,44 @@ private:
 
     juce::String labelText;
     std::vector<Item> items;
-    float span = 90.0f, legendSize = 10.0f;
+    float span = 90.0f, legendSize = 10.5f;
     int value = 0, dragFrom = -1;
     bool dragged = false, pickedLegend = false;
+};
+
+// Selector for two or three positions: a push button that steps through them, and a column of LEDs
+// with their printed legends; a click on a legend picks it directly.
+class LedSelector : public juce::Component, public juce::SettableTooltipClient
+{
+public:
+    explicit LedSelector (const juce::String& labelText);
+    void setItems (std::vector<RotarySwitch::Item> items);
+    void setValue (int v);
+    int getValue() const                            { return value; }
+    std::function<void (int)> onChange;
+    void setLabel (const juce::String& t)           { labelText = t; repaint(); }
+
+    static constexpr int rowHeight = 16, buttonWidth = 24, buttonHeight = 22;
+    int blockHeight() const                         { return juce::jmax (buttonHeight, (int) items.size() * rowHeight); }
+    int preferredHeight() const                     { return blockHeight() + 22; }
+    juce::Rectangle<float> controlBounds() const;   // the button and the LEDs (not the legends)
+
+    void paint (juce::Graphics&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+    void mouseEnter (const juce::MouseEvent&) override { repaint(); }
+    void mouseExit (const juce::MouseEvent&) override  { repaint(); }
+
+private:
+    float blockLeft() const;
+    juce::Rectangle<float> buttonArea() const;
+    juce::Rectangle<float> rowArea (int index) const;
+    void choose (int index);
+
+    juce::String labelText;
+    std::vector<RotarySwitch::Item> items;
+    int value = 0;
+    bool pressed = false;
 };
 
 // Push button with an LED: inside on the right (wide) or underneath (small).
@@ -266,6 +319,28 @@ public:
 
 private:
     bool lit = false;
+};
+
+// Wear over a panel: ink rubbed off in places (more where hands go), fine scratches, a little polish
+// around the most handled controls, grime in the corners. The controls themselves are cut out of it.
+// Rendered once per size and display scale. Level 0 shows nothing.
+class WearLayer : public juce::Component
+{
+public:
+    struct Spot { juce::Point<float> centre; float radius; };   // handled often
+    WearLayer() { setInterceptsMouseClicks (false, false); }
+    void setup (int level, std::function<juce::Colour (juce::Point<float>)> background, std::vector<juce::Path> keepClear,
+                std::vector<Spot> handled, std::vector<juce::Rectangle<float>> plates);
+    void paint (juce::Graphics&) override;
+
+private:
+    juce::Image render (int pw, int ph, float scale) const;
+    int level = 0;
+    std::function<juce::Colour (juce::Point<float>)> background;
+    std::vector<juce::Path> keepClear;
+    std::vector<Spot> spots;
+    std::vector<juce::Rectangle<float>> plates;
+    juce::Image cache;
 };
 
 // Wood side cheek (procedural grain, cached per size).
