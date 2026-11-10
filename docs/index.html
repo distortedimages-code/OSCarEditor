@@ -426,7 +426,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Current version">
   <a class="arrow" href="#news" aria-label="What's new">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.2.1</span><span class="name">OSCAR EDITOR</span><span class="state">FREE</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.3.0</span><span class="name">OSCAR EDITOR</span><span class="state">FREE</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -456,7 +456,7 @@ footer a { color: var(--muted); }
         Download for Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.2.1</dd>
+        <dt>Version</dt><dd id="spec-version">0.3.0</dd>
         <dt>Formats</dt><dd>AU for Logic Pro, VST3 and standalone app</dd>
         <dt>System</dt><dd>macOS 11 or later, Apple silicon and Intel</dd>
         <dt>Synth</dt><dd>OSCar with the Tauntek MIDI board. With the original MIDI, everything works except live editing.</dd>
@@ -490,10 +490,11 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Latest versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.2.1</span><div class="cap when">latest version</div></div>
+      <div><span class="vchip">0.3.0</span><div class="cap when">latest version</div></div>
       <div class="notes">
-        <p><strong>Disk image installer</strong>: download OSCar-Editor-mac.dmg and drag each file onto the folder shown next to it. Then unblock the plug-in once with the text to paste into Terminal, from the install guide on the website: it also checks the plug-in for Logic Pro.</p>
-        <p><strong>Release notes in your language</strong>: the update window shows these notes in the plug-in's language.</p>
+        <p><strong>Voice page, redrawn</strong>: printed scales around the knobs, and rotary switches with a legend at each position for the modes (trigger, function, glide, arpeggiator, octaves and semitones, LFO wave, PWM rate, sync, division). Click a legend, drag, or use the mouse wheel; a click on the knob lists the full names. Hold, Fix and Kbd track have their own buttons. Bigger knobs, and Octave now sits next to the wheels.</p>
+        <p><strong>Tempo display</strong>: an orange display instead of the knob. Drag up or down on the number, or use the wheel.</p>
+        <p><strong>Waveforms page</strong>: the 24 harmonics as lit bars, with a scope that previews the resulting wave.</p>
       </div>
     </article>
   </div>
@@ -686,7 +687,7 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>The sound changes live</h3><p>With Live CC on, every knob goes straight to the OSCar. It's only stored in its memory with "Send voices to synth", which writes all 36 voices at once.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>The plug-in follows the OSCar</h3><p>Pick a voice on the OSCar: the plug-in shows it as it plays, Duo or Arp mode included. This needs the patch CC dump (step 5).</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Try things safely</h3><p>The Generator plays every try on the OSCar without touching its memory. "Back to original" undoes, "Keep" puts the sound in the voice.</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Arpeggiator in time with Logic</h3><p>Voice page, midi clock block: Sync on MIDI clock and a Division (1/16, 1/8T…). Then either "Send the DAW's MIDI clock to the OSCar" in Setup, or Logic's own clock (File › Project Settings › Synchronization › MIDI, Destination = the OSCar's port, Clock box). Not both.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Arpeggiator in time with Logic</h3><p>Voice page, midi clock block: turn Sync to MIDI and pick a Division (1/16, 1/8T…). Then either "Send the DAW's MIDI clock to the OSCar" in Setup, or Logic's own clock (File › Project Settings › Synchronization › MIDI, Destination = the OSCar's port, Clock box). Not both.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Play the OSCar from Logic</h3><p>Select the OSCar Editor track and turn on MIDI Thru (bottom of the window): your controller keyboard and the track's MIDI regions play the OSCar. Leave it off if you already play the OSCar through Logic's External Instrument plug-in.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Nothing gets lost</h3><p>Every receive and every send is backed up. "Save voice…" files a voice in Voices, "Save bank as…" a bank in Banks. A double-click loads them back.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Mind the red keys</h3><p>On the Tauntek keys page, the red keys (factory, B, C sounds, save areas) replace the OSCar's 36 voices. Save a bank first.</p></div></div>

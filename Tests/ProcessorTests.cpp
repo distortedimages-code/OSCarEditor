@@ -725,6 +725,46 @@ int main()
 
     juce::ScopedJuceInitialiser_GUI init;
 
+    // OSCAR_SHOTS=<folder> [OSCAR_SHOTS_SCALE=2] [OSCAR_SHOTS_LANG=fr]: only saves a PNG of each page.
+    if (const auto shots = juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS", {}); shots.isNotEmpty())
+    {
+        OscarProcessor proc;
+        proc.setLanguage (juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_LANG", "en"));
+        pump (100);
+        oscar::DumpContents demo;   // some waveforms, so the Waveforms page has something to show
+        oscar::WaveBank w;
+        for (int t = 0; t < kNumWaveTables; ++t)
+            for (int h = 0; h < kNumHarmonics; ++h)
+                w.setHarmonic (t, h, juce::jlimit (0, 255, juce::roundToInt (255.0 / std::pow (h + 1.0, 0.8 + 0.15 * t)
+                                                                               * (h % 2 == 0 || t == 0 ? 1.0 : 0.35 + 0.5 * std::sin (h * 0.9) * std::sin (h * 0.9)))));
+        demo.waves = w;
+        oscar::VoiceBank voices;   // and as if the OSCar had just sent its voices, with a MIDI output open
+        for (int i = 0; i < kNumVoices; ++i)
+            voices.voices[(size_t) i] = proc.getDocument().getVoice (i);
+        demo.voices = voices;
+        proc.getDocument().receiveDump (demo);
+        proc.getMidi().setTestOutput ([] (const juce::MidiMessage&) {});
+        proc.setSelectedSlot (juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_SLOT", "12").getIntValue());
+        std::unique_ptr<juce::AudioProcessorEditor> ed (proc.createEditor());
+        ed->setSize (1400, 800);
+        const float scale = juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_SCALE", "1").getFloatValue();
+        juce::File (shots).createDirectory();
+        for (int page = 0; page < 6; ++page)
+        {
+            dynamic_cast<OscarEditor*> (ed.get())->showPage (page);
+            pump (50);
+            auto img = ed->createComponentSnapshot (ed->getLocalBounds(), true, scale);
+            juce::FileOutputStream os (juce::File (shots).getChildFile ("page" + juce::String (page) + ".png"));
+            os.setPosition (0);
+            os.truncate();
+            juce::PNGImageFormat().writeImageToStream (img, os);
+        }
+        ed.reset();
+        proc.getMidi().setTestOutput (nullptr);
+        pump (100);
+        return 0;
+    }
+
     {
         OscarProcessor proc;
         Capture out;

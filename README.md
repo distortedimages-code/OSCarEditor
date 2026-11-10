@@ -24,8 +24,8 @@ Quand tu choisis une voix sur l'OSCar, la carte Tauntek envoie son *patch CC dum
 
 Sur la page **Voix**, le bloc **horloge midi** :
 
-- **Sync** : *Interne*, l'arpégiateur et le séquenceur suivent le potard **Tempo** ; *Horloge MIDI*, ils avancent sur l'horloge MIDI que reçoit l'OSCar. C'est le réglage **Trigger = Ext** de l'OSCar, enregistré dans la voix. Revenir en *Interne* remet le Trigger d'avant.
-- **Division** : la valeur d'un pas quand la voix suit l'horloge : 1/96, 1/48, 1/32, 1/16T, 1/16, 1/8T, 1/8 ou 1/4T (T = triolet). Le firmware Tauntek la tire du Tempo global (Tempo ÷ 32 donne 1, 2, 3, 4, 6, 8, 12 ou 16 impulsions d'horloge par pas). Le plugin envoie donc la bonne valeur de Tempo (CC 54, avec Live CC), et le potard Tempo affiche la division.
+- **Sync** (sélecteur INT / MIDI) : *Interne*, l'arpégiateur et le séquenceur suivent le **Tempo** (afficheur orange : glisser vers le haut ou le bas sur le nombre, ou molette) ; *Horloge MIDI*, ils avancent sur l'horloge MIDI que reçoit l'OSCar. C'est le réglage **Trigger = Ext** de l'OSCar, enregistré dans la voix. Revenir en *Interne* remet le Trigger d'avant.
+- **Division** : la valeur d'un pas quand la voix suit l'horloge : 1/96, 1/48, 1/32, 1/16T, 1/16, 1/8T, 1/8 ou 1/4T (T = triolet). Le firmware Tauntek la tire du Tempo global (Tempo ÷ 32 donne 1, 2, 3, 4, 6, 8, 12 ou 16 impulsions d'horloge par pas). Le plugin envoie donc la bonne valeur de Tempo (CC 54, avec Live CC), et l'afficheur Tempo montre la division.
 - En *Interne*, un Tempo en dessous de 32 fait aussi avancer l'arpégiateur à chaque impulsion d'horloge MIDI (comportement du firmware).
 
 L'horloge peut venir de n'importe quel appareil branché sur l'OSCar, ou du DAW : l'option **Envoyer l'horloge MIDI du DAW à l'OSCar** (page **Réglages**, désactivée par défaut) envoie 24 impulsions par noire au tempo du DAW, avec Start (depuis le début), Continue (en cours de morceau) et Stop. Les impulsions sont placées à leur position exacte dans chaque bloc audio. Rien ne part pendant un export hors ligne ni pendant un transfert de banque. À laisser désactivé si le DAW envoie déjà l'horloge sur le port de l'OSCar.

@@ -19,6 +19,7 @@ namespace colours
     const juce::Colour copper     { 0xffe0703a }, copperLight { 0xfff7a36e }, copperDark { 0xff8f3c18 };
     const juce::Colour warn       { 0xffffb347 }, ok { 0xff8fd18a };
     const juce::Colour groupLine  { 0x33ffffff };
+    const juce::Colour silk       { 0xffb4b8be }, silkDim { 0xff80848a };   // printed scales and legends
 }
 
 //==============================================================================
@@ -45,6 +46,7 @@ void drawCopper (juce::Graphics&, juce::Rectangle<float> area, float corner, boo
 
 enum class KnobStyle { Knurled, Chrome, Brass };
 void drawKnob (juce::Graphics&, juce::Rectangle<float> area, float proportion, KnobStyle);
+void drawSwitchKnob (juce::Graphics&, juce::Point<float> centre, float radius, float angleFromTop);   // pointer knob of a rotary switch
 
 //==============================================================================
 class Look : public juce::LookAndFeel_V4
@@ -74,7 +76,7 @@ public:
 //==============================================================================
 // Widgets
 
-// Rotary knob with its label above... below, and its value underneath.
+// Rotary knob with a printed scale around it, its label below and its value underneath.
 class Knob : public juce::Component
 {
 public:
@@ -86,16 +88,20 @@ public:
     void setLabel (const juce::String& t)           { labelText = t; repaint(); }
     void setValueText (std::function<juce::String (int)> f) { valueText = std::move (f); repaint(); }
     void setTooltip (const juce::String& t)         { slider.setTooltip (t); }
+    void setScale (const juce::String& low, const juce::String& high) { scaleLow = low; scaleHigh = high; repaint(); }
 
     juce::Slider slider;                            // public: for host-parameter attachments
 
     void resized() override;
     void paint (juce::Graphics&) override;
 
-    static constexpr int knobSize (KnobStyle s)     { return s == KnobStyle::Brass ? 130 : (s == KnobStyle::Knurled ? 54 : 52); }
+    static constexpr int knobSize (KnobStyle s)     { return s == KnobStyle::Brass ? 130 : (s == KnobStyle::Knurled ? 56 : 54); }
+    static constexpr int topRoom (KnobStyle s)      { return s == KnobStyle::Brass ? 0 : 8; }      // for the printed scale
+    static constexpr int height (KnobStyle s)       { return s == KnobStyle::Brass ? 166 : topRoom (s) + knobSize (s) + 41; }
+    static constexpr int centreY (KnobStyle s)      { return topRoom (s) + knobSize (s) / 2; }
 
 private:
-    juce::String labelText;
+    juce::String labelText, scaleLow { "0" }, scaleHigh { "10" };
     KnobStyle style;
     std::function<juce::String (int)> valueText;
     bool updating = false;
@@ -163,6 +169,65 @@ private:
     int value = 0;
     Window window;
     Arrow prev { true }, next { false };
+};
+
+// A number in an orange display window (tempo): drag up or down on it, or use the wheel.
+class VfdNumber : public juce::Component
+{
+public:
+    VfdNumber (const juce::String& labelText, int minValue, int maxValue);
+    void setValueText (std::function<juce::String (int)> f) { valueText = std::move (f); repaint(); }
+    void setTooltip (const juce::String& t)         { slider.setTooltip (t); }
+
+    juce::Slider slider;                            // invisible, over the window: for host-parameter attachments
+
+    static constexpr int windowHeight = 46, height = windowHeight + 20;
+    void resized() override;
+    void paint (juce::Graphics&) override;
+
+private:
+    juce::String labelText;
+    std::function<juce::String (int)> valueText;
+};
+
+// Rotary switch: a pointer knob with a printed legend at each position; the chosen one is lit.
+// Click a legend to choose it, drag or use the wheel to turn, click the knob for the full list.
+class RotarySwitch : public juce::Component, public juce::SettableTooltipClient
+{
+public:
+    struct Item { int value; juce::String legend, name; };   // an empty legend is printed only when chosen
+
+    explicit RotarySwitch (const juce::String& labelText);
+    void setItems (std::vector<Item> items, float spanDegrees = 0.0f);   // 0: from the number of positions
+    void setLegendSize (float h)                    { legendSize = h; repaint(); }
+    void setValue (int v);
+    int getValue() const                            { return value; }
+    std::function<void (int)> onChange;
+    void setLabel (const juce::String& t)           { labelText = t; repaint(); }
+
+    static constexpr float radius = 20.0f, legendRoom = 26.0f;            // room above the knob for legends
+    static constexpr int centreY = (int) (legendRoom + radius);           // knob centre from the top
+
+    void paint (juce::Graphics&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+    void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
+
+private:
+    juce::Point<float> centre() const               { return { (float) getWidth() * 0.5f, (float) centreY }; }
+    float angleOf (int index) const;
+    juce::String shownLegend (int index) const;
+    juce::Rectangle<float> legendBox (int index) const;
+    int indexOf (int v) const;
+    void choose (int index);
+    void showList();
+
+    juce::String labelText;
+    std::vector<Item> items;
+    float span = 90.0f, legendSize = 10.0f;
+    int value = 0, dragFrom = -1;
+    bool dragged = false, pickedLegend = false;
 };
 
 // Push button with an LED: inside on the right (wide) or underneath (small).

@@ -80,7 +80,8 @@ countries: fr be ch lu mc ca
 "filter env" = "env. filtre"
 "amp env" = "env. ampli"
 "modulation" = "modulation"
-"wheels" = "molettes"
+"keyboard" = "clavier"
+"Drag up or down on the number, or use the mouse wheel." = "Glisser vers le haut ou le bas sur le nombre, ou utiliser la molette de la souris."
 "performance" = "performance"
 "closed" = "fermé"
 "open" = "ouvert"
@@ -218,6 +219,7 @@ countries: fr be ch lu mc ca
 "Edited, not sent. 24 harmonic levels per user waveform (raw 0-255, to be confirmed on hardware). Drag to draw." = "Modifiées, pas envoyées. 24 niveaux d'harmoniques par forme d'onde utilisateur (valeur brute 0-255, à confirmer sur la machine). Glisse pour dessiner."
 "Same as in the OSCar. 24 harmonic levels per user waveform (raw 0-255, to be confirmed on hardware). Drag to draw." = "Identiques à l'OSCar. 24 niveaux d'harmoniques par forme d'onde utilisateur (valeur brute 0-255, à confirmer sur la machine). Glisse pour dessiner."
 "Dump the waveforms from the OSCar to edit them here." = "Fais un dump des formes d'onde de l'OSCar pour les modifier ici."
+"Preview (sum of sines)" = "Aperçu (somme de sinus)"
 
 # --- Tauntek keys
 "tauntek shortcuts on the oscar" = "raccourcis tauntek sur l'oscar"

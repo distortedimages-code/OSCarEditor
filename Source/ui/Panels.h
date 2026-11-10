@@ -28,24 +28,35 @@ public:
 private:
     struct Group { juce::Rectangle<float> area; juce::String label; };
     atelier::Knob& knob (const char* id);
-    atelier::Selector& selector (const char* id, bool labelLeft = false);
+    atelier::Selector& selector (const char* id);
+    atelier::RotarySwitch& rotary (const char* id);
+    void place (juce::Component&, int x, int centreY, int w);   // knobs and switches lined up on their knob centre
     void layout();
+
+    // A switch whose high bit is a separate button (Function + Hold, Glide + Fix, filter Type + Kbd track):
+    // the rotary or buttons pick the low part, the button flips 'flag' (values 4-6 = with flag).
+    void editFlagged (const char* id, int base, bool flag);
+    int paramValue (const char* id) const;
 
     OscarProcessor& proc;
     std::map<std::string, std::unique_ptr<atelier::Knob>> knobs;
     std::map<std::string, std::unique_ptr<atelier::Fader>> faders;
-    std::map<std::string, std::unique_ptr<atelier::Selector>> selectors;
+    std::map<std::string, std::unique_ptr<atelier::Selector>> selectors;     // waveforms
+    std::map<std::string, std::unique_ptr<atelier::RotarySwitch>> rotaries;
     juce::OwnedArray<atelier::LedButton> filterTypes;
+    atelier::LedButton kbdTrack { "Kbd track", atelier::LedButton::LedPlace::Below },
+                       hold { "Hold", atelier::LedButton::LedPlace::Below },
+                       glideFix { "Fix", atelier::LedButton::LedPlace::Below };
     atelier::LedButton lfoToOsc1 { "LFO > Osc 1", atelier::LedButton::LedPlace::Below },
                        lfoSync { "LFO Sync", atelier::LedButton::LedPlace::Below };
-    atelier::Knob tempo { TRANS ("Tempo (global)"), atelier::KnobStyle::Knurled };
+    atelier::VfdNumber tempo { TRANS ("Tempo (global)"), 1, 254 };   // dragged up or down, like an old synth display
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> tempoAttachment;
 
     // MIDI clock: Sync sets Trigger to Ext (arp and sequencer step on the MIDI clock),
     // Division picks the steps through the global Tempo.
     void refreshClock();
     bool followsClock() const;
-    atelier::Selector syncSelector { TRANS ("Sync") }, divisionSelector { TRANS ("Division") };
+    atelier::RotarySwitch syncSwitch { TRANS ("Sync") }, divisionSwitch { TRANS ("Division") };
     std::unique_ptr<juce::ParameterAttachment> tempoWatch;
     int lastTrigger = 1;   // Multi
     std::vector<juce::Rectangle<float>> columns;
@@ -145,7 +156,7 @@ private:
     OscarEditor& editor;
     juce::OwnedArray<atelier::LedButton> tables;
     atelier::CopperButton sendButton { TRANS ("Send waveforms") };
-    juce::Rectangle<float> group, bars, infoArea;
+    juce::Rectangle<float> group, bars, scope, infoArea;   // bars: the slots only (values above, numbers below)
     juce::String info;
     int table = 0;
 };

@@ -426,7 +426,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Version actuelle">
   <a class="arrow" href="#news" aria-label="Nouveautés">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.2.1</span><span class="name">OSCAR EDITOR</span><span class="state">GRATUIT</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.3.0</span><span class="name">OSCAR EDITOR</span><span class="state">GRATUIT</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -456,7 +456,7 @@ footer a { color: var(--muted); }
         Télécharger pour Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.2.1</dd>
+        <dt>Version</dt><dd id="spec-version">0.3.0</dd>
         <dt>Formats</dt><dd>AU pour Logic Pro, VST3 et application autonome</dd>
         <dt>Système</dt><dd>macOS 11 ou plus récent, Apple Silicon et Intel</dd>
         <dt>Synthé</dt><dd>OSCar avec la carte MIDI Tauntek. Avec le MIDI d'origine, tout marche sauf l'édition en direct.</dd>
@@ -490,10 +490,11 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Les dernières versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.2.1</span><div class="cap when">dernière version</div></div>
+      <div><span class="vchip">0.3.0</span><div class="cap when">dernière version</div></div>
       <div class="notes">
-        <p><strong>Installation par image disque</strong> : télécharge OSCar-Editor-mac.dmg et glisse chaque fichier sur le dossier affiché en face. Débloque ensuite le plugin une fois avec le texte à coller dans Terminal, donné dans le guide d'installation du site : il vérifie aussi le plugin pour Logic Pro.</p>
-        <p><strong>Notes de version dans ta langue</strong> : la fenêtre de mise à jour affiche ces notes dans la langue du plugin.</p>
+        <p><strong>Page Voix redessinée</strong> : graduations sérigraphiées autour des potards, et sélecteurs rotatifs avec une légende par cran pour les modes (trigger, function, glide, arpégiateur, octaves et demi-tons, onde du LFO, PWM rate, sync, division). Clique sur une légende, glisse, ou utilise la molette ; un clic sur le bouton donne la liste des noms complets. Hold, Fix et Kbd track ont leur propre bouton. Potards plus gros, et Octave passe à côté des molettes.</p>
+        <p><strong>Afficheur de tempo</strong> : un afficheur orange remplace le potard. Glisse vers le haut ou le bas sur le nombre, ou utilise la molette.</p>
+        <p><strong>Page Formes d'onde</strong> : les 24 harmoniques en barres lumineuses, avec un oscilloscope qui donne un aperçu de l'onde obtenue.</p>
       </div>
     </article>
   </div>
@@ -686,7 +687,7 @@ auval -v aumu Oscr Otls | tail -n 1</pre>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Le son change en direct</h3><p>Avec Live CC allumé, chaque potard part tout de suite vers l'OSCar. Ce n'est enregistré dans sa mémoire qu'avec « Envoyer au synthé », qui écrit les 36 voix d'un coup.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Le plugin suit l'OSCar</h3><p>Choisis une voix sur l'OSCar : le plugin l'affiche telle qu'elle joue, mode Duo ou Arp compris. Il faut le patch CC dump (étape 5).</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Essayer sans risque</h3><p>Le Générateur joue chaque essai sur l'OSCar sans toucher à sa mémoire. « Retour à l'original » annule, « Garder » met le son dans la voix.</p></div></div>
-    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Arpège calé sur Logic</h3><p>Page Voix, bloc horloge midi : Sync sur Horloge MIDI et une Division (1/16, 1/8T…). Puis, au choix, « Envoyer l'horloge MIDI du DAW à l'OSCar » dans Réglages, ou l'horloge de Logic (Fichier › Réglages du projet › Synchronisation › MIDI, Destination = le port de l'OSCar, case Horloge). Pas les deux.</p></div></div>
+    <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Arpège calé sur Logic</h3><p>Page Voix, bloc horloge midi : tourne Sync sur MIDI et choisis une Division (1/16, 1/8T…). Puis, au choix, « Envoyer l'horloge MIDI du DAW à l'OSCar » dans Réglages, ou l'horloge de Logic (Fichier › Réglages du projet › Synchronisation › MIDI, Destination = le port de l'OSCar, case Horloge). Pas les deux.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Jouer l'OSCar depuis Logic</h3><p>Sélectionne la piste OSCar Editor et allume MIDI Thru (en bas de la fenêtre) : ton clavier maître et les régions MIDI de la piste jouent l'OSCar. Laisse-le éteint si tu joues déjà l'OSCar avec le module External Instrument de Logic.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Rien ne se perd</h3><p>Chaque réception et chaque envoi est sauvegardé. « Sauver voix… » range une voix dans Voices, « Enregistrer la banque… » une banque dans Banks. Un double-clic les recharge.</p></div></div>
     <div class="tip"><i class="led on" aria-hidden="true"></i><div><h3>Gare aux touches rouges</h3><p>Sur la page Raccourcis Tauntek, les touches en rouge (sons d'usine, B, C, zones de sauvegarde) remplacent les 36 voix de l'OSCar. Enregistre une banque avant.</p></div></div>

@@ -115,11 +115,10 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
         faders[id] = std::move (f);
     }
 
-    for (auto* id : { "wave1", "wave2", "octaveShift", "osc2Semi", "pwmRate", "trigger", "glideType", "function",
-                      "arpDir", "arpMode", "octaveSet", "tuneSemi", "lfoWave" })
+    for (auto* id : { "wave1", "wave2" })
     {
         const auto& d = def (id);
-        auto s = std::make_unique<Selector> (switchLabel (d), std::string (id) == "lfoWave");
+        auto s = std::make_unique<Selector> (switchLabel (d));
         s->setItems (itemsFor (d));
         s->onChange = edit (id);
         s->setTooltip (d.labelsVerified ? tr ("Values and names checked against the Tauntek firmware and chart.") : unverifiedText());
@@ -127,15 +126,71 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
         selectors[id] = std::move (s);
     }
 
-    const auto& ft = def ("filterType");
-    for (const auto& c : ft.choices)
+    // Rotary switches: a short printed legend per position (an empty one is printed only when chosen);
+    // the list (click on the knob) gives the full names.
+    struct Legend { int value; const char* legend; };
+    auto addRotary = [&] (const char* id, std::vector<Legend> legends, float span = 0.0f, float legendSize = 10.0f,
+                          std::function<void (int)> onChange = {})
     {
-        auto* b = filterTypes.add (new LedButton (juce::String (c.label).replace ("no kb", "nk"), LedButton::LedPlace::Below));
-        b->setTooltip (juce::String (c.label) + (ft.labelsVerified ? juce::String() : ". " + unverifiedText()));
-        const int value = c.value;
-        b->onClick = [this, value] { proc.editParam (proc.getSelectedSlot(), def ("filterType"), value); };
+        const auto& d = def (id);
+        std::vector<RotarySwitch::Item> items;
+        for (const auto& l : legends)
+        {
+            juce::String name = juce::String (l.value);
+            for (const auto& c : d.choices)
+                if (c.value == l.value)
+                    name = c.label;
+            items.push_back ({ l.value, l.legend, name });
+        }
+        auto r = std::make_unique<RotarySwitch> (switchLabel (d));
+        r->setItems (std::move (items), span);
+        r->setLegendSize (legendSize);
+        r->onChange = onChange ? onChange : edit (id);
+        r->setTooltip (d.labelsVerified ? tr ("Values and names checked against the Tauntek firmware and chart.") : unverifiedText());
+        addAndMakeVisible (*r);
+        rotaries[id] = std::move (r);
+    };
+    auto semitones = [] { std::vector<Legend> l;   // value 0 = +7 ... 14 = -7, shown from -7 to +7
+                          for (int v = 14; v >= 0; --v) l.push_back ({ v, v == 14 ? "-7" : v == 7 ? "0" : v == 0 ? "+7" : "" });
+                          return l; };
+    addRotary ("octaveShift", { { 0, "0" }, { 1, "1" }, { 2, "2" }, { 3, "3" }, { 4, "4" }, { 5, "5" } });
+    addRotary ("osc2Semi", semitones());
+    addRotary ("tuneSemi", semitones());
+    addRotary ("octaveSet", { { 2, "2" }, { 3, "3" }, { 4, "4" }, { 5, "5" }, { 6, "6" } });
+    addRotary ("pwmRate", { { 0, "SLOWEST" }, { 1, "SLOWER" }, { 2, "NORMAL" }, { 3, "FASTEST" } }, 200.0f, 9.0f);
+    addRotary ("lfoWave", { { 0, "TRI" }, { 1, "SAW" }, { 2, "SQR" }, { 3, "F.ENV" }, { 4, "KBD" }, { 5, "RAND" } });
+    addRotary ("trigger", { { 0, "SINGLE" }, { 1, "MULTI" }, { 2, "RPT 1" }, { 3, "RPT 2" }, { 4, "RPT 1+2" }, { 5, "EXT" } }, 0.0f, 9.5f);
+    addRotary ("arpDir", { { 1, "DOWN" }, { 2, "UP" }, { 3, "UP/DN" } }, 0.0f, 9.5f);
+    addRotary ("arpMode", { { 0, "NORM" }, { 1, "DEL" }, { 2, "MEM" } }, 0.0f, 9.5f);
+    addRotary ("function", { { 0, "NORM" }, { 1, "ARP" }, { 2, "DUO" } }, 0.0f, 9.5f,
+               [this] (int v) { editFlagged ("function", v, hold.isLit()); });
+    addRotary ("glideType", { { 0, "NORM" }, { 1, "AUTO" }, { 2, "GLISS" } }, 0.0f, 9.5f,
+               [this] (int v) { editFlagged ("glideType", v, glideFix.isLit()); });
+    rotary ("function").setLabel ("Function" + juce::String (def ("function").labelsVerified ? "" : " ?"));
+    rotary ("glideType").setLabel ("Glide" + juce::String (def ("glideType").labelsVerified ? "" : " ?"));
+
+    hold.setTooltip (unverifiedText());
+    hold.onClick = [this] { editFlagged ("function", rotary ("function").getValue(), ! hold.isLit()); };
+    glideFix.setTooltip (unverifiedText());
+    glideFix.onClick = [this] { editFlagged ("glideType", rotary ("glideType").getValue(), ! glideFix.isLit()); };
+    addAndMakeVisible (hold);
+    addAndMakeVisible (glideFix);
+
+    // filter type: LP / BP / HP, and keyboard tracking (values 4-6 = without)
+    const auto& ft = def ("filterType");
+    for (const char* name : { "LP", "BP", "HP" })
+    {
+        const int base = filterTypes.size();
+        auto* b = filterTypes.add (new LedButton (name, LedButton::LedPlace::Below));
+        b->setTooltip (juce::String (ft.choices[(size_t) base].label) + (ft.labelsVerified ? juce::String() : ". " + unverifiedText()));
+        b->onClick = [this, base] { editFlagged ("filterType", base, ! kbdTrack.isLit()); };
         addAndMakeVisible (b);
     }
+    kbdTrack.setTooltip (ft.labelsVerified ? juce::String() : unverifiedText());
+    kbdTrack.onClick = [this] { editFlagged ("filterType", paramValue ("filterType") % 4, kbdTrack.isLit()); };
+    addAndMakeVisible (kbdTrack);
+
+    knob ("oscBalance").setScale ("1", "2");
 
     lfoToOsc1.setTooltip (tr ("Tauntek: the LFO also modulates oscillator 1 (same as TUNE/TRANSPOSE + the 'LFO to Oscillator 1' keys)."));
     lfoSync.setTooltip (tr ("Tauntek: LFO hard sync (same as TUNE/TRANSPOSE + the 'LFO Sync' keys)."));
@@ -152,21 +207,22 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
     addAndMakeVisible (lfoToOsc1);
     addAndMakeVisible (lfoSync);
 
-    tempo.setTooltip (tr ("Global tempo (CC 54, sent with Live CC). Not stored in voices; can be automated from the DAW. When the voice follows the MIDI clock, it sets the division. In Internal, below 32 the arpeggiator steps on every MIDI clock tick."));
+    tempo.setTooltip (tr ("Global tempo (CC 54, sent with Live CC). Not stored in voices; can be automated from the DAW. When the voice follows the MIDI clock, it sets the division. In Internal, below 32 the arpeggiator steps on every MIDI clock tick.")
+                      + "\n" + tr ("Drag up or down on the number, or use the mouse wheel."));
     tempoAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (proc.getHostParameters(), "tempo", tempo.slider);
     tempo.setValueText ([this] (int t)
     {
         if (followsClock())
             return juce::String (kDivisions[juce::jlimit (0, 7, t >> 5)]);
-        return t < 32 ? juce::String ("MIDI 1/96") : juce::String (t);
+        return juce::String (t);
     });
     addAndMakeVisible (tempo);
 
     // Firmware (routine 0x0A35): with Trigger = Ext the arpeggiator and the sequencer step every
     // {1, 2, 3, 4, 6, 8, 12, 16} MIDI clock ticks (24 per quarter note), chosen by Tempo >> 5.
-    syncSelector.setItems ({ { 0, tr ("Internal") }, { 1, tr ("MIDI clock") } });
-    syncSelector.setTooltip (tr ("MIDI clock: the arpeggiator and the sequencer step on the MIDI clock the OSCar receives (Trigger = Ext, stored in the voice). The clock can come from the DAW (Setup page) or from any MIDI device. Internal: they follow the Tempo knob."));
-    syncSelector.onChange = [this] (int v)
+    syncSwitch.setItems ({ { 0, "INT", tr ("Internal") }, { 1, "MIDI", tr ("MIDI clock") } }, 70.0f);
+    syncSwitch.setTooltip (tr ("MIDI clock: the arpeggiator and the sequencer step on the MIDI clock the OSCar receives (Trigger = Ext, stored in the voice). The clock can come from the DAW (Setup page) or from any MIDI device. Internal: they follow the Tempo knob."));
+    syncSwitch.onChange = [this] (int v)
     {
         const int slot = proc.getSelectedSlot();
         const int trigger = getParam (proc.getDocument().getVoice (slot), def ("trigger"));
@@ -181,18 +237,19 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
         }
         refreshClock();
     };
-    std::vector<Selector::Item> divisions;
+    std::vector<RotarySwitch::Item> divisions;
     for (int z = 0; z < 8; ++z)
-        divisions.push_back ({ z, kDivisions[z] });
-    divisionSelector.setItems (divisions);
-    divisionSelector.setTooltip (tr ("Steps of the arpeggiator and the sequencer when the voice follows the MIDI clock (T = triplet). Sets the global Tempo (CC 54, sent with Live CC)."));
-    divisionSelector.onChange = [this] (int z)
+        divisions.push_back ({ z, kDivisions[z], kDivisions[z] });
+    divisionSwitch.setItems (divisions, 300.0f);
+    divisionSwitch.setLegendSize (9.5f);
+    divisionSwitch.setTooltip (tr ("Steps of the arpeggiator and the sequencer when the voice follows the MIDI clock (T = triplet). Sets the global Tempo (CC 54, sent with Live CC)."));
+    divisionSwitch.onChange = [this] (int z)
     {
         if (tempoWatch != nullptr)
             tempoWatch->setValueAsCompleteGesture ((float) (z * 32 + 16));
     };
-    addAndMakeVisible (syncSelector);
-    addAndMakeVisible (divisionSelector);
+    addAndMakeVisible (syncSwitch);
+    addAndMakeVisible (divisionSwitch);
     if (auto* t = proc.getHostParameters().getParameter ("tempo"))
     {
         tempoWatch = std::make_unique<juce::ParameterAttachment> (*t, [this] (float) { refreshClock(); });
@@ -208,23 +265,34 @@ VoicePanel::~VoicePanel()
     tempoAttachment.reset();
 }
 
+int VoicePanel::paramValue (const char* id) const
+{
+    return getParam (proc.getDocument().getVoice (proc.getSelectedSlot()), def (id));
+}
+
+void VoicePanel::editFlagged (const char* id, int base, bool flag)
+{
+    proc.editParam (proc.getSelectedSlot(), def (id), juce::jlimit (0, 2, base) + (flag ? 4 : 0));
+}
+
 bool VoicePanel::followsClock() const
 {
-    return getParam (proc.getDocument().getVoice (proc.getSelectedSlot()), def ("trigger")) == kExtTrigger;
+    return paramValue ("trigger") == kExtTrigger;
 }
 
 void VoicePanel::refreshClock()
 {
     const bool ext = followsClock();
     const int t = juce::roundToInt (proc.getHostParameters().getRawParameterValue ("tempo")->load());
-    syncSelector.setValue (ext ? 1 : 0);
-    divisionSelector.setValue (juce::jlimit (0, 7, t >> 5));
-    divisionSelector.setAlpha (ext ? 1.0f : 0.45f);
+    syncSwitch.setValue (ext ? 1 : 0);
+    divisionSwitch.setValue (juce::jlimit (0, 7, t >> 5));
+    divisionSwitch.setAlpha (ext ? 1.0f : 0.45f);
     tempo.repaint();
 }
 
-Knob& VoicePanel::knob (const char* id)            { return *knobs.at (id); }
-Selector& VoicePanel::selector (const char* id, bool) { return *selectors.at (id); }
+Knob& VoicePanel::knob (const char* id)              { return *knobs.at (id); }
+Selector& VoicePanel::selector (const char* id)      { return *selectors.at (id); }
+RotarySwitch& VoicePanel::rotary (const char* id)    { return *rotaries.at (id); }
 
 void VoicePanel::refresh()
 {
@@ -232,70 +300,108 @@ void VoicePanel::refresh()
     for (auto& [id, k] : knobs)      k->setValue (getParam (v, def (id.c_str())));
     for (auto& [id, f] : faders)     f->setValue (getParam (v, def (id.c_str())));
     for (auto& [id, s] : selectors)  s->setValue (getParam (v, def (id.c_str())));
+    for (auto& [id, r] : rotaries)   r->setValue (getParam (v, def (id.c_str())));
 
-    const int type = getParam (v, def ("filterType"));
-    const auto& ft = def ("filterType");
+    // the flag (values 4-6) is shown on its own button
+    const auto low = [] (int x) { return x >= 4 ? x - 4 : x; };
+    const int function = getParam (v, def ("function")), glide = getParam (v, def ("glideType")), type = getParam (v, def ("filterType"));
+    rotary ("function").setValue (low (function));
+    rotary ("glideType").setValue (low (glide));
+    hold.setLit (function >= 4);
+    glideFix.setLit (glide >= 4);
     for (int i = 0; i < filterTypes.size(); ++i)
-        filterTypes[i]->setLit (ft.choices[(size_t) i].value == type);
+        filterTypes[i]->setLit (low (type) == i);
+    kbdTrack.setLit (type < 4);
+
     lfoToOsc1.setLit (getParam (v, def ("lfoToOsc1")) == 0);   // 0 = On
     lfoSync.setLit (getParam (v, def ("lfoSync")) == 1);
     refreshClock();
 }
 
+void VoicePanel::place (juce::Component& c, int x, int centreY, int w)
+{
+    if (auto* k = dynamic_cast<Knob*> (&c))
+    {
+        const auto style = (KnobStyle) (int) k->slider.getProperties().getWithDefault ("knobStyle", 0);
+        c.setBounds (x, centreY - Knob::centreY (style), w, Knob::height (style));
+    }
+    else if (dynamic_cast<RotarySwitch*> (&c) != nullptr)
+    {
+        c.setBounds (x, centreY - RotarySwitch::centreY, w, &c == &divisionSwitch ? 104 : 96);
+    }
+    else if (dynamic_cast<VfdNumber*> (&c) != nullptr)
+    {
+        c.setBounds (x, centreY - VfdNumber::windowHeight / 2, w, VfdNumber::height);
+    }
+    else   // LED button: its body centred on the line, the LED below
+    {
+        c.setBounds (x, centreY - 18, w, 47);
+    }
+}
+
 void VoicePanel::layout()
 {
-    columns = splitColumns ({ 0, 0, (float) width, (float) height }, { 306, 314, 362, 300 });
+    columns = splitColumns ({ 0, 0, (float) width, (float) height }, { 340, 314, 300, 326 });
     groups.clear();
     auto col = [this] (int i) { return columns[(size_t) i].reduced (8.0f).toNearestInt(); };
 
-    // 1: oscillators + wheels
+    // 1: oscillators + keyboard (wheels and octave)
     {
         auto c = col (0);
-        auto osc = c.removeFromTop (243);
+        auto osc = c.removeFromTop (318);
         groups.push_back ({ osc.toFloat(), tr ("oscillators") });
         auto g = osc.reduced (8, 10);
-        const int sw = (g.getWidth() - 10) / 2;
+        const int sw = (g.getWidth() - 8) / 2;
         selector ("wave1").setBounds (g.getX(), g.getY(), sw, 46);
         selector ("wave2").setBounds (g.getRight() - sw, g.getY(), sw, 46);
-        selector ("octaveShift").setBounds (g.getX(), g.getY() + 54, sw, 46);
-        selector ("osc2Semi").setBounds (g.getRight() - sw, g.getY() + 54, sw, 46);
-        spread ({ &knob ("detune"), &knob ("pulseWidth"), &knob ("oscBalance"), &knob ("noiseBalance") },
-                { g.getX(), g.getY() + 110, g.getWidth(), 99 }, 64, 99);
+        const int rw = g.getWidth() / 3;
+        int i = 0;
+        for (auto* id : { "octaveShift", "osc2Semi", "tuneSemi" })
+            place (rotary (id), g.getX() + rw * i++, g.getY() + 104, rw);
+        const int kw = g.getWidth() / 4;
+        i = 0;
+        for (auto* id : { "detune", "pulseWidth", "oscBalance", "noiseBalance" })
+            place (knob (id), g.getX() + kw * i++, g.getY() + 200, kw);
 
         c.removeFromTop (8);
-        groups.push_back ({ c.toFloat(), tr ("wheels") });
-        auto w = c.reduced (12, 10).withTrimmedBottom (22);
-        spread ({ &knob ("bendAmount"), &knob ("mwPitch"), &knob ("mwFilter") }, w.withSizeKeepingCentre (w.getWidth(), 97), 70, 97);
+        groups.push_back ({ c.toFloat(), tr ("keyboard") });
+        auto k = c.reduced (8, 10);
+        const int line = k.getY() + 50;
+        i = 0;
+        for (auto* id : { "bendAmount", "mwPitch", "mwFilter" })
+            place (knob (id), k.getX() + 76 * i++, line, 76);
+        place (rotary ("octaveSet"), k.getX() + 228, line, k.getWidth() - 228);
     }
 
-    // 2: filter + Tauntek
+    // 2: filter + Tauntek extras
     {
         auto c = col (1);
-        auto f = c.removeFromTop (277);
+        auto f = c.removeFromTop (316);
         groups.push_back ({ f.toFloat(), tr ("filter") });
         auto g = f.reduced (8, 10);
-        const int bw = 40, gap = 5, total = filterTypes.size() * bw + (filterTypes.size() - 1) * gap;
+        const int bw = 40, gap = 4, total = 3 * bw + 2 * gap + 14 + 74;
         int x = g.getCentreX() - total / 2;
         for (auto* b : filterTypes)
         {
-            b->setBounds (x, g.getY(), bw, 34);
+            b->setBounds (x, g.getY(), bw, 45);
             x += bw + gap;
         }
-        auto area = juce::Rectangle<int> (g.getX(), g.getY() + 42, g.getWidth(), 200);
-        const int cx = area.getCentreX();
-        knob ("filterFreq").setBounds (cx - 65, area.getY() + 10, 130, 166);
-        knob ("resonance").setBounds (cx - 65 - 8 - 70, area.getY(), 70, 97);
-        knob ("filterSep").setBounds (cx - 65 - 8 - 70, area.getY() + 103, 70, 97);
-        knob ("envFilter").setBounds (cx + 65 + 8, area.getY(), 70, 97);
-        knob ("filterDrive").setBounds (cx + 65 + 8, area.getY() + 103, 70, 97);
+        kbdTrack.setBounds (x + 10, g.getY(), 74, 45);
+        const int cx = g.getCentreX();
+        knob ("filterFreq").setBounds (cx - 65, g.getY() + 54, 130, Knob::height (KnobStyle::Brass));
+        const int sideW = 74, top = g.getY() + 86, bottom = g.getY() + 194;
+        place (knob ("resonance"), g.getX(), top, sideW);
+        place (knob ("filterSep"), g.getX(), bottom, sideW);
+        place (knob ("envFilter"), g.getRight() - sideW, top, sideW);
+        place (knob ("filterDrive"), g.getRight() - sideW, bottom, sideW);
 
         c.removeFromTop (8);
         groups.push_back ({ c.toFloat(), "tauntek" });
-        auto t = c.reduced (10, 10).withTrimmedBottom (22);
-        auto row = t.withSizeKeepingCentre (t.getWidth(), 46);
-        lfoToOsc1.setBounds (row.getX(), row.getY() + 4, 70, 36);
-        lfoSync.setBounds (row.getX() + 78, row.getY() + 4, 70, 36);
-        selector ("pwmRate").setBounds (row.getRight() - 120, row.getY(), 120, 46);
+        auto t = c.reduced (8, 10).withTrimmedBottom (22);
+        const int line = t.getCentreY() + 2;
+        place (lfoToOsc1, t.getX(), line, 72);
+        place (lfoSync, t.getX() + 78, line, 72);
+        place (rotary ("pwmRate"), t.getRight() - 128, line, 128);
     }
 
     // 3: envelopes + modulation
@@ -306,10 +412,10 @@ void VoicePanel::layout()
         envs.removeFromLeft (8);
         groups.push_back ({ fe.toFloat(), tr ("filter env") });
         groups.push_back ({ envs.toFloat(), tr ("amp env") });
-        auto place = [this] (juce::Rectangle<int> grp, std::initializer_list<const char*> ids)
+        auto placeFaders = [this] (juce::Rectangle<int> grp, std::initializer_list<const char*> ids)
         {
-            auto g = grp.reduced (6, 8);
-            const int fw = 38, total = 4 * fw + 3 * 2;
+            auto g = grp.reduced (4, 8);
+            const int fw = (g.getWidth() - 6) / 4, total = 4 * fw + 3 * 2;
             int x = g.getCentreX() - total / 2;
             for (auto* id : ids)
             {
@@ -317,37 +423,44 @@ void VoicePanel::layout()
                 x += fw + 2;
             }
         };
-        place (fe, { "filtAttack", "filtDecay", "filtSustain", "filtRelease" });
-        place (envs, { "volAttack", "volDecay", "volSustain", "volRelease" });
+        placeFaders (fe, { "filtAttack", "filtDecay", "filtSustain", "filtRelease" });
+        placeFaders (envs, { "volAttack", "volDecay", "volSustain", "volRelease" });
 
         c.removeFromTop (8);
         groups.push_back ({ c.toFloat(), tr ("modulation") });
-        auto m = c.reduced (10, 12).withTrimmedBottom (22);
-        selector ("lfoWave").setBounds (m.getCentreX() - 125, m.getY(), 250, 30);
-        auto knobsRow = m.withTrimmedTop (40);
-        spread ({ &knob ("lfoRate"), &knob ("introDelay"), &knob ("lfoPitch"), &knob ("lfoFilter") },
-                knobsRow.withSizeKeepingCentre (knobsRow.getWidth(), 97), 70, 97);
+        auto m = c.reduced (10, 12);
+        const int line1 = m.getY() + 44, line2 = m.getY() + 150;
+        place (rotary ("lfoWave"), m.getX(), line1, 112);
+        place (knob ("lfoRate"), m.getX() + 118, line1, 72);
+        place (knob ("introDelay"), m.getX() + 194, line1, 72);
+        place (knob ("lfoPitch"), m.getX() + 40, line2, 96);
+        place (knob ("lfoFilter"), m.getX() + 148, line2, 96);
     }
 
     // 4: performance + MIDI clock
     {
         auto c = col (3);
-        auto clock = c.removeFromBottom (88);
-        c.removeFromBottom (8);
-        groups.push_back ({ clock.toFloat(), tr ("midi clock") });
-        auto k = clock.reduced (8, 10).withTrimmedBottom (22);
-        const int kw = (k.getWidth() - 8) / 2;
-        syncSelector.setBounds (k.getX(), k.getY(), kw, 46);
-        divisionSelector.setBounds (k.getRight() - kw, k.getY(), kw, 46);
+        auto perf = c.removeFromTop (331);
+        groups.push_back ({ perf.toFloat(), tr ("performance") });
+        auto g = perf.reduced (8, 10);
+        const int x = g.getX(), r1 = g.getY() + 44, r2 = g.getY() + 132, r3 = g.getY() + 248;
+        place (rotary ("trigger"), x, r1, 132);
+        place (rotary ("function"), x + 136, r1, 100);
+        place (hold, x + 240, r1, 52);
+        place (knob ("glideRate"), x + 22, r2, 88);
+        place (knob ("gateTime"), x + 170, r2, 88);
+        place (rotary ("glideType"), x, r3, 88);
+        place (glideFix, x + 86, r3, 40);
+        place (rotary ("arpDir"), x + 126, r3, 82);
+        place (rotary ("arpMode"), x + 218, r3, 80);
 
-        groups.push_back ({ c.toFloat(), tr ("performance") });
-        auto g = c.reduced (8, 12).withTrimmedBottom (22);
-        const int sw = (g.getWidth() - 8) / 2;
-        const char* ids[] = { "trigger", "glideType", "function", "octaveSet", "arpDir", "arpMode", "tuneSemi" };
-        for (int i = 0; i < 7; ++i)
-            selector (ids[i]).setBounds (g.getX() + (i % 2) * (sw + 8), g.getY() + (i / 2) * 56, sw, 46);
-        auto row = juce::Rectangle<int> (g.getX(), g.getY() + 4 * 56 + 16, g.getWidth(), 99);
-        spread ({ &knob ("glideRate"), &knob ("gateTime"), &tempo }, row, 70, 99);
+        c.removeFromTop (8);
+        groups.push_back ({ c.toFloat(), tr ("midi clock") });
+        auto k = c.reduced (8, 10);
+        const int line = k.getY() + 50;
+        place (syncSwitch, k.getX(), line, 80);
+        place (divisionSwitch, k.getX() + 84, line, 120);
+        place (tempo, k.getX() + 210, line, k.getWidth() - 210);
     }
 }
 
@@ -360,12 +473,13 @@ void VoicePanel::paint (juce::Graphics& g)
     for (const auto& gr : groups)
         drawGroup (g, gr.area, gr.label);
 
-    // big-knob tick legend
+    // printed legends at both ends of the big filter knob's scale
     auto& f = knob ("filterFreq");
-    g.setFont (Fonts::label (10.5f));
-    g.setColour (colours::faint);
-    g.drawText (tr ("closed"), f.getX() - 10, f.getY() + 112, 50, 12, juce::Justification::centredLeft);
-    g.drawText (tr ("open"), f.getRight() - 40, f.getY() + 112, 50, 12, juce::Justification::centredRight);
+    const auto c = f.getBounds().toFloat().getCentre().withY ((float) f.getY() + 65.0f);
+    g.setFont (Fonts::bold (10.0f).withExtraKerningFactor (0.06f));
+    g.setColour (colours::silk);
+    g.drawText (lang::upper (tr ("closed")), juce::Rectangle<float> (60.0f, 12.0f).withCentre (c.translated (-48.0f, 60.0f)), juce::Justification::centred);
+    g.drawText (lang::upper (tr ("open")), juce::Rectangle<float> (60.0f, 12.0f).withCentre (c.translated (48.0f, 60.0f)), juce::Justification::centred);
 }
 
 //==============================================================================
@@ -969,7 +1083,10 @@ void WavesPanel::resized()
     g.removeFromTop (8);
     infoArea = g.removeFromTop (22).toFloat();
     g.removeFromTop (8);
-    bars = g.toFloat();
+    auto area = g.toFloat();
+    scope = area.removeFromRight (300.0f).withTrimmedTop (22.0f).withTrimmedBottom (40.0f);
+    area.removeFromRight (24.0f);
+    bars = area.withTrimmedLeft (44.0f).withTrimmedTop (22.0f).withTrimmedBottom (26.0f);
 }
 
 void WavesPanel::paint (juce::Graphics& g)
@@ -977,38 +1094,108 @@ void WavesPanel::paint (juce::Graphics& g)
     drawInset (g, { 0, 0, (float) width, (float) height });
     drawGroup (g, group, tr ("harmonics"));
     drawText (g, infoArea, info, 13.0f, colours::dim, juce::Justification::centredLeft);
-    drawVfdWindow (g, bars);
 
     const auto& waves = proc.getDocument().getWaves();
-    auto area = bars.reduced (12.0f, 10.0f);
-    if (! waves)
+    const float step = bars.getWidth() / (float) kNumHarmonics, slotW = 16.0f;
+
+    // printed scale on the left
+    g.setColour (colours::silkDim);
+    for (int i = 0; i <= 10; ++i)
     {
-        g.setFont (Fonts::mono (15.0f));
-        g.setColour (colours::vfdDim);
-        g.drawText (tr ("Dump the waveforms from the OSCar to edit them here."), bars, juce::Justification::centred);
-        return;
+        const float y = bars.getBottom() - bars.getHeight() * (float) i / 10.0f;
+        const bool major = i % 5 == 0;
+        g.fillRect (bars.getX() - (major ? 14.0f : 10.0f), y - 0.5f, major ? 9.0f : 5.0f, 1.0f);
     }
-    const float w = area.getWidth() / (float) kNumHarmonics;
+    g.setFont (Fonts::bold (10.0f));
+    g.setColour (colours::silk);
+    g.drawText ("255", juce::Rectangle<float> (bars.getX() - 46.0f, bars.getY() - 6.0f, 30.0f, 12.0f), juce::Justification::centredRight);
+    g.drawText ("0", juce::Rectangle<float> (bars.getX() - 46.0f, bars.getBottom() - 6.0f, 30.0f, 12.0f), juce::Justification::centredRight);
+
+    std::array<float, kNumHarmonics> levels {};
     for (int h = 0; h < kNumHarmonics; ++h)
     {
-        const int v = waves->getHarmonic (table, h);
-        auto col = juce::Rectangle<float> (area.getX() + (float) h * w, area.getY(), w, area.getHeight() - 18.0f).reduced (3.0f, 0.0f);
-        g.setColour (colours::vfd.withAlpha (0.08f));
-        g.fillRect (col);
-        const float bh = col.getHeight() * (float) v / 255.0f;
-        // segmented, like a LED meter
-        for (float y = col.getBottom() - 4.0f; y > col.getBottom() - bh; y -= 6.0f)
+        const int v = waves ? waves->getHarmonic (table, h) : 0;
+        levels[(size_t) h] = (float) v / 255.0f;
+        const float cx = bars.getX() + step * ((float) h + 0.5f);
+        auto slot = juce::Rectangle<float> (slotW, bars.getHeight()).withCentre ({ cx, bars.getCentreY() });
+
+        // the slot, sunk in the panel
+        g.setColour (juce::Colour (0xff060607));
+        g.fillRoundedRectangle (slot.expanded (2.0f), 3.0f);
+        g.setGradientFill (juce::ColourGradient (juce::Colour (0xff120806), slot.getX(), slot.getY(), juce::Colour (0xff0a0504), slot.getRight(), slot.getY(), false));
+        g.fillRoundedRectangle (slot, 2.0f);
+        g.setColour (juce::Colours::white.withAlpha (0.07f));
+        g.drawHorizontalLine (juce::roundToInt (slot.getBottom() + 2.5f), slot.getX(), slot.getRight());
+
+        // the lit part, from the bottom, like a lamp behind a red filter
+        if (v > 0)
         {
-            g.setColour (colours::vfd);
-            g.fillRect (col.getX(), y, col.getWidth(), 4.0f);
+            auto lit = slot.reduced (2.0f).withTop (slot.getBottom() - 2.0f - (slot.getHeight() - 4.0f) * levels[(size_t) h]);
+            g.setColour (colours::ledOn.withAlpha (0.18f));
+            g.fillRoundedRectangle (lit.expanded (4.0f, 3.0f), 4.0f);
+            g.setGradientFill (juce::ColourGradient (juce::Colour (0xffff5a3a), lit.getX(), lit.getY(), juce::Colour (0xffc81c0e), lit.getRight(), lit.getY(), false));
+            g.fillRoundedRectangle (lit, 1.5f);
+            g.setColour (juce::Colour (0xffffc0a0).withAlpha (0.7f));
+            g.fillRect (lit.getX() + lit.getWidth() * 0.32f, lit.getY() + 1.0f, 2.0f, lit.getHeight() - 2.0f);
         }
+
         g.setFont (Fonts::mono (11.0f));
-        g.setColour (colours::vfdDim);
-        g.drawText (juce::String (h + 1), juce::Rectangle<float> (col.getX(), col.getBottom() + 3.0f, col.getWidth(), 14.0f),
-                    juce::Justification::centred);
-        g.setColour (colours::vfd);
-        g.drawText (juce::String (v), col.withHeight (14.0f), juce::Justification::centred);
+        g.setColour (waves ? colours::vfd : colours::vfdDim.withAlpha (0.4f));
+        g.drawText (waves ? juce::String (v) : juce::String ("-"), juce::Rectangle<float> (step, 14.0f).withCentre ({ cx, bars.getY() - 12.0f }), juce::Justification::centred);
+        g.setFont (Fonts::bold (11.5f));
+        g.setColour (colours::label);
+        g.drawText (juce::String (h + 1), juce::Rectangle<float> (step, 14.0f).withCentre ({ cx, bars.getBottom() + 14.0f }), juce::Justification::centred);
     }
+
+    // oscilloscope: one period of the sum of the harmonics (sines), as a preview
+    drawVfdWindow (g, scope);
+    auto screen = scope.reduced (10.0f);
+    g.setColour (colours::vfd.withAlpha (0.12f));
+    for (int i = 1; i < 4; ++i)
+        g.drawVerticalLine (juce::roundToInt (screen.getX() + screen.getWidth() * (float) i / 4.0f), screen.getY(), screen.getBottom());
+    for (int i = 1; i < 4; ++i)
+        g.drawHorizontalLine (juce::roundToInt (screen.getY() + screen.getHeight() * (float) i / 4.0f), screen.getX(), screen.getRight());
+    g.setColour (colours::vfd.withAlpha (0.25f));
+    g.drawHorizontalLine (juce::roundToInt (screen.getCentreY()), screen.getX(), screen.getRight());
+
+    g.setFont (Fonts::mono (15.0f));
+    g.setColour (colours::vfdDim);
+    g.drawText (juce::String (-8 - table), screen.withHeight (18.0f), juce::Justification::topRight);
+
+    if (waves)
+    {
+        constexpr int points = 240;
+        std::array<float, points + 1> ys {};
+        float peak = 0.0f;
+        for (int k = 0; k <= points; ++k)
+        {
+            float sum = 0.0f;
+            for (int h = 0; h < kNumHarmonics; ++h)
+                sum += levels[(size_t) h] * std::sin (juce::MathConstants<float>::twoPi * (float) ((h + 1) * k) / (float) points);
+            ys[(size_t) k] = sum;
+            peak = juce::jmax (peak, std::abs (sum));
+        }
+        juce::Path trace;
+        for (int k = 0; k <= points; ++k)
+        {
+            const float x = screen.getX() + screen.getWidth() * (float) k / (float) points;
+            const float y = screen.getCentreY() - (peak > 0.0f ? ys[(size_t) k] / peak : 0.0f) * screen.getHeight() * 0.42f;
+            if (k == 0) trace.startNewSubPath (x, y); else trace.lineTo (x, y);
+        }
+        g.setColour (colours::vfd.withAlpha (0.25f));
+        g.strokePath (trace, juce::PathStrokeType (4.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        g.setColour (colours::vfd);
+        g.strokePath (trace, juce::PathStrokeType (1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    }
+    else
+    {
+        g.setFont (Fonts::mono (13.0f));
+        g.setColour (colours::vfdDim);
+        g.drawFittedText (tr ("Dump the waveforms from the OSCar to edit them here."), screen.reduced (16.0f).toNearestInt(), juce::Justification::centred, 3);
+    }
+    g.setFont (Fonts::label (11.5f).withExtraKerningFactor (0.05f));
+    g.setColour (colours::label);
+    g.drawText (lang::upper (tr ("Preview (sum of sines)")), scope.withY (scope.getBottom() + 6.0f).withHeight (16.0f), juce::Justification::centred);
 }
 
 void WavesPanel::mouseDown (const juce::MouseEvent& e) { draw (e); }
@@ -1016,12 +1203,11 @@ void WavesPanel::mouseDrag (const juce::MouseEvent& e) { draw (e); }
 
 void WavesPanel::draw (const juce::MouseEvent& e)
 {
-    auto area = bars.reduced (12.0f, 10.0f);
-    if (! proc.getDocument().getWaves() || e.position.x < area.getX() || e.position.x >= area.getRight())
+    if (! proc.getDocument().getWaves() || e.position.x < bars.getX() || e.position.x >= bars.getRight()
+        || e.position.y < bars.getY() - 30.0f || e.position.y > bars.getBottom() + 10.0f)
         return;
-    const int h = juce::jlimit (0, kNumHarmonics - 1, (int) ((e.position.x - area.getX()) / (area.getWidth() / (float) kNumHarmonics)));
-    const float usable = area.getHeight() - 18.0f;
-    const int v = juce::jlimit (0, 255, juce::roundToInt ((1.0f - (e.position.y - area.getY()) / usable) * 255.0f));
+    const int h = juce::jlimit (0, kNumHarmonics - 1, (int) ((e.position.x - bars.getX()) / (bars.getWidth() / (float) kNumHarmonics)));
+    const int v = juce::jlimit (0, 255, juce::roundToInt ((bars.getBottom() - 2.0f - e.position.y) / (bars.getHeight() - 4.0f) * 255.0f));
     proc.getDocument().setHarmonic (table, h, v);
 }
 

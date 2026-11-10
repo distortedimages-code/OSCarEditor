@@ -1,11 +1,15 @@
 ## English
 
-**Disk image installer**: download OSCar-Editor-mac.dmg and drag each file onto the folder shown next to it. Then unblock the plug-in once with the text to paste into Terminal, from the install guide on the website: it also checks the plug-in for Logic Pro.
+**Voice page, redrawn**: printed scales around the knobs, and rotary switches with a legend at each position for the modes (trigger, function, glide, arpeggiator, octaves and semitones, LFO wave, PWM rate, sync, division). Click a legend, drag, or use the mouse wheel; a click on the knob lists the full names. Hold, Fix and Kbd track have their own buttons. Bigger knobs, and Octave now sits next to the wheels.
 
-**Release notes in your language**: the update window shows these notes in the plug-in's language.
+**Tempo display**: an orange display instead of the knob. Drag up or down on the number, or use the wheel.
+
+**Waveforms page**: the 24 harmonics as lit bars, with a scope that previews the resulting wave.
 
 ## Français
 
-**Installation par image disque** : télécharge OSCar-Editor-mac.dmg et glisse chaque fichier sur le dossier affiché en face. Débloque ensuite le plugin une fois avec le texte à coller dans Terminal, donné dans le guide d'installation du site : il vérifie aussi le plugin pour Logic Pro.
+**Page Voix redessinée** : graduations sérigraphiées autour des potards, et sélecteurs rotatifs avec une légende par cran pour les modes (trigger, function, glide, arpégiateur, octaves et demi-tons, onde du LFO, PWM rate, sync, division). Clique sur une légende, glisse, ou utilise la molette ; un clic sur le bouton donne la liste des noms complets. Hold, Fix et Kbd track ont leur propre bouton. Potards plus gros, et Octave passe à côté des molettes.
 
-**Notes de version dans ta langue** : la fenêtre de mise à jour affiche ces notes dans la langue du plugin.
+**Afficheur de tempo** : un afficheur orange remplace le potard. Glisse vers le haut ou le bas sur le nombre, ou utilise la molette.
+
+**Page Formes d'onde** : les 24 harmoniques en barres lumineuses, avec un oscilloscope qui donne un aperçu de l'onde obtenue.

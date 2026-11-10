@@ -389,8 +389,7 @@ void drawKnob (juce::Graphics& g, juce::Rectangle<float> area, float proportion,
     }
     else if (style == KnobStyle::Chrome)
     {
-        ticks (g, c, R - 0.5f, R * 0.09f, R * 0.14f, juce::Colour (0xff8a8d92), 1.2f);
-        auto cap = juce::Rectangle<float> (R * 1.38f, R * 1.38f).withCentre (c);
+        auto cap = juce::Rectangle<float> (R * 1.62f, R * 1.62f).withCentre (c);
         dropShadow (g, cap, R * 0.18f, 0.75f);
         fillConic (g, cap, { { 0.0f, juce::Colour (0xfff4f4f4) }, { 0.17f, juce::Colour (0xff9a9ca0) },
                              { 0.33f, juce::Colour (0xffe6e7e9) }, { 0.5f, juce::Colour (0xff7d8085) },
@@ -398,12 +397,12 @@ void drawKnob (juce::Graphics& g, juce::Rectangle<float> area, float proportion,
                              { 1.0f, juce::Colour (0xfff4f4f4) } }, 0.35f);
         g.setColour (juce::Colour (0xff111111));
         g.drawEllipse (cap.reduced (0.5f), 1.0f);
-        auto face = juce::Rectangle<float> (R * 0.92f, R * 0.92f).withCentre (c);
+        auto face = juce::Rectangle<float> (R * 1.08f, R * 1.08f).withCentre (c);
         g.setGradientFill (juce::ColourGradient (juce::Colours::white, face.getX() + face.getWidth() * 0.4f, face.getY() + face.getHeight() * 0.35f,
                                                  juce::Colour (0xffa3a6aa), face.getRight(), face.getBottom(), true));
         g.fillEllipse (face);
         g.setColour (juce::Colour (0xff1a1a1a));
-        g.drawLine (juce::Line<float> (polar (c, R * 0.30f, angle), polar (c, R * 0.64f, angle)), juce::jmax (1.6f, R * 0.08f));
+        g.drawLine (juce::Line<float> (polar (c, R * 0.36f, angle), polar (c, R * 0.76f, angle)), juce::jmax (1.6f, R * 0.08f));
     }
     else // Brass
     {
@@ -448,6 +447,47 @@ void drawKnob (juce::Graphics& g, juce::Rectangle<float> area, float proportion,
     }
 }
 
+void drawSwitchKnob (juce::Graphics& g, juce::Point<float> c, float R, float angle)
+{
+    // round knurled base with a bar on top: a pointer knob, so switches read apart from knobs
+    auto base = juce::Rectangle<float> (2 * R, 2 * R).withCentre (c);
+    dropShadow (g, base, R * 0.24f, 0.7f);
+    const int ridges = 28;
+    for (int i = 0; i < ridges; ++i)
+    {
+        juce::Path p;
+        const float a0 = 2.0f * pi * (float) i / (float) ridges;
+        p.addPieSegment (base, a0, a0 + 2.0f * pi / (float) ridges + 0.005f, 0.0f);
+        g.setColour ((i % 2 == 0) ? juce::Colour (0xff2c2d31) : juce::Colour (0xff0c0c0d));
+        g.fillPath (p);
+    }
+    g.setColour (juce::Colours::black);
+    g.drawEllipse (base.reduced (0.5f), 1.0f);
+    auto face = base.reduced (R * 0.2f);
+    g.setGradientFill (juce::ColourGradient (juce::Colour (0xff3a3c40), face.getX() + face.getWidth() * 0.4f, face.getY() + face.getHeight() * 0.3f,
+                                             juce::Colour (0xff111214), face.getRight(), face.getBottom(), true));
+    g.fillEllipse (face);
+
+    const auto t = juce::AffineTransform::rotation (angle).translated (c);
+    juce::Path bar;
+    bar.startNewSubPath (-R * 0.16f, -R * 1.02f);
+    bar.lineTo (R * 0.16f, -R * 1.02f);
+    bar.lineTo (R * 0.34f, R * 0.62f);
+    bar.quadraticTo (0.0f, R * 0.86f, -R * 0.34f, R * 0.62f);
+    bar.closeSubPath();
+    g.setColour (juce::Colours::black.withAlpha (0.55f));
+    g.fillPath (bar, t.translated (0.0f, R * 0.12f));
+    g.setGradientFill (juce::ColourGradient (juce::Colour (0xff4a4c51), c.x - R * 0.3f, c.y - R * 0.6f,
+                                             juce::Colour (0xff17181a), c.x + R * 0.3f, c.y + R * 0.7f, false));
+    g.fillPath (bar, t);
+    g.setColour (juce::Colours::white.withAlpha (0.16f));
+    g.strokePath (bar, juce::PathStrokeType (0.8f), t);
+    juce::Path line;
+    line.addRoundedRectangle (-R * 0.05f, -R * 0.92f, R * 0.1f, R * 0.62f, R * 0.04f);
+    g.setColour (juce::Colour (0xfff2f2f2));
+    g.fillPath (line, t);
+}
+
 //==============================================================================
 // LookAndFeel
 //==============================================================================
@@ -487,6 +527,8 @@ Look::Look()
 
 void Look::drawRotarySlider (juce::Graphics& g, int x, int y, int w, int h, float pos, float, float, juce::Slider& s)
 {
+    if ((bool) s.getProperties().getWithDefault ("vfdNumber", false))
+        return;   // VfdNumber paints its own window
     const auto style = (KnobStyle) (int) s.getProperties().getWithDefault ("knobStyle", 0);
     drawKnob (g, juce::Rectangle<float> ((float) x, (float) y, (float) w, (float) h), pos, style);
 }
@@ -618,18 +660,40 @@ void Knob::setValue (int v)
 void Knob::resized()
 {
     const int k = knobSize (style);
-    slider.setBounds (getLocalBounds().removeFromTop (k).withSizeKeepingCentre (k, k));
+    slider.setBounds (getLocalBounds().withTrimmedTop (topRoom (style)).removeFromTop (k).withSizeKeepingCentre (k, k));
 }
 
 void Knob::paint (juce::Graphics& g)
 {
     const int k = knobSize (style);
-    auto area = getLocalBounds().withTrimmedTop (k + 4);
     const bool big = style == KnobStyle::Brass;
+    if (! big)
+    {
+        // printed scale: a tick every tenth, longer at both ends and in the middle, numbers at the ends
+        const auto c = slider.getBounds().toFloat().getCentre();
+        const float R = (float) k * 0.5f;
+        for (int i = 0; i <= 10; ++i)
+        {
+            const float a = knobAngle ((float) i / 10.0f);
+            const bool major = i == 0 || i == 5 || i == 10;
+            g.setColour (major ? colours::silk : colours::silkDim);
+            g.drawLine (juce::Line<float> (polar (c, R + 2.5f, a), polar (c, R + (major ? 7.5f : 5.5f), a)), major ? 1.3f : 1.0f);
+        }
+        g.setFont (Fonts::bold (10.0f).withExtraKerningFactor (0.04f));
+        g.setColour (colours::silk);
+        for (const auto& [text, side] : { std::pair<juce::String, float> { scaleLow, -1.0f }, { scaleHigh, 1.0f } })
+        {
+            const auto p = polar (c, R + 11.0f, knobAngle (side > 0 ? 1.0f : 0.0f));
+            g.drawText (text, juce::Rectangle<float> (40.0f, 11.0f).withCentre (p.translated (side * 5.0f, 2.0f)), juce::Justification::centred);
+        }
+    }
+
+    auto area = getLocalBounds().withTrimmedTop (topRoom (style) + k + (big ? 4 : 10));
     g.setFont (big ? Fonts::bold (13.0f).withExtraKerningFactor (0.08f) : Fonts::label (11.5f).withExtraKerningFactor (0.04f));
     g.setColour (big ? juce::Colour (0xffdcdee1) : colours::label);
-    const int labelH = big ? 16 : 26;
-    g.drawFittedText (lang::upper (labelText), area.removeFromTop (labelH), juce::Justification::centredTop, 2, 0.9f);
+    const bool twoLines = ! big && area.getHeight() >= 26 + 14 + 10;
+    const int labelH = big ? 16 : (twoLines ? 26 : 15);
+    g.drawFittedText (lang::upper (labelText), area.removeFromTop (labelH), juce::Justification::centredTop, twoLines ? 2 : 1, 0.8f);
     area.removeFromTop (big ? 2 : 1);
     g.setFont (Fonts::mono (big ? 15.0f : 12.5f));
     g.setColour (big ? colours::vfd : colours::valueText);
@@ -810,6 +874,207 @@ void Selector::Arrow::paintButton (juce::Graphics& g, bool highlighted, bool dow
     else        tri.addTriangle (c.x - 3.0f, c.y - 4.0f, c.x - 3.0f, c.y + 4.0f, c.x + 3.0f, c.y);
     g.setColour (isEnabled() ? juce::Colour (0xffb9bbbf) : colours::faint);
     g.fillPath (tri);
+}
+
+//==============================================================================
+// VfdNumber
+//==============================================================================
+VfdNumber::VfdNumber (const juce::String& l, int minValue, int maxValue) : labelText (l)
+{
+    slider.setSliderStyle (juce::Slider::RotaryVerticalDrag);
+    slider.setTextBoxStyle (juce::Slider::NoTextBox, true, 0, 0);
+    slider.setRange ((double) minValue, (double) maxValue, 1.0);
+    slider.setMouseDragSensitivity (600);
+    slider.setVelocityBasedMode (false);
+    slider.setScrollWheelEnabled (true);
+    slider.setMouseCursor (juce::MouseCursor::UpDownResizeCursor);
+    slider.getProperties().set ("vfdNumber", true);
+    slider.onValueChange = [this] { repaint(); };
+    addAndMakeVisible (slider);
+}
+
+void VfdNumber::resized()
+{
+    slider.setBounds (getLocalBounds().removeFromTop (windowHeight));
+}
+
+void VfdNumber::paint (juce::Graphics& g)
+{
+    auto win = getLocalBounds().removeFromTop (windowHeight).toFloat();
+    drawVfdWindow (g, win);
+    const int v = (int) slider.getValue();
+    const auto text = valueText ? valueText (v) : juce::String (v);
+    auto textArea = win.reduced (12.0f, 2.0f).withTrimmedRight (10.0f).toNearestInt();
+    g.setFont (Fonts::mono (30.0f));
+    g.setColour (colours::vfd.withAlpha (0.3f));
+    g.drawFittedText (text, textArea.translated (0, 1), juce::Justification::centred, 1, 0.7f);
+    g.setColour (colours::vfd);
+    g.drawFittedText (text, textArea, juce::Justification::centred, 1, 0.7f);
+
+    // up / down marks: it is dragged, not turned
+    const float x = win.getRight() - 12.0f, cy = win.getCentreY();
+    juce::Path marks;
+    marks.addTriangle (x - 4.0f, cy - 4.0f, x + 4.0f, cy - 4.0f, x, cy - 10.0f);
+    marks.addTriangle (x - 4.0f, cy + 4.0f, x + 4.0f, cy + 4.0f, x, cy + 10.0f);
+    g.setColour (colours::vfdDim.withAlpha (0.7f));
+    g.fillPath (marks);
+
+    g.setFont (Fonts::label (11.5f).withExtraKerningFactor (0.05f));
+    g.setColour (colours::label);
+    g.drawFittedText (lang::upper (labelText), getLocalBounds().withTrimmedTop (windowHeight + 4), juce::Justification::centredTop, 1, 0.8f);
+}
+
+//==============================================================================
+// RotarySwitch
+//==============================================================================
+RotarySwitch::RotarySwitch (const juce::String& l) : labelText (l)
+{
+    setMouseCursor (juce::MouseCursor::PointingHandCursor);
+}
+
+void RotarySwitch::setItems (std::vector<Item> i, float spanDegrees)
+{
+    items = std::move (i);
+    const int n = (int) items.size();
+    span = spanDegrees > 0.0f ? spanDegrees
+                              : (n <= 2 ? 60.0f : n == 3 ? 90.0f : n == 4 ? 130.0f : n == 5 ? 180.0f : n == 6 ? 240.0f : n <= 8 ? 300.0f : 270.0f);
+    repaint();
+}
+
+void RotarySwitch::setValue (int v)
+{
+    if (v != value)
+    {
+        value = v;
+        repaint();
+    }
+}
+
+int RotarySwitch::indexOf (int v) const
+{
+    for (size_t i = 0; i < items.size(); ++i)
+        if (items[i].value == v)
+            return (int) i;
+    return -1;
+}
+
+float RotarySwitch::angleOf (int index) const
+{
+    const int n = (int) items.size();
+    if (n < 2)
+        return 0.0f;
+    return juce::degreesToRadians (-span * 0.5f + span * (float) index / (float) (n - 1));
+}
+
+juce::String RotarySwitch::shownLegend (int index) const
+{
+    const auto& it = items[(size_t) index];
+    if (it.legend.isNotEmpty())
+        return it.legend;
+    return it.value == value ? it.name : juce::String();
+}
+
+juce::Rectangle<float> RotarySwitch::legendBox (int index) const
+{
+    const auto text = shownLegend (index);
+    const auto font = Fonts::bold (legendSize).withExtraKerningFactor (0.04f);
+    const float tw = juce::GlyphArrangement::getStringWidth (font, text) + 1.0f, th = legendSize;
+    const float a = angleOf (index);
+    const float dist = radius + 9.0f + std::abs (std::sin (a)) * tw * 0.5f + std::abs (std::cos (a)) * th * 0.5f;
+    return juce::Rectangle<float> (tw, th).withCentre (polar (centre(), dist, a));
+}
+
+void RotarySwitch::paint (juce::Graphics& g)
+{
+    const auto c = centre();
+    const int current = indexOf (value);
+    const auto font = Fonts::bold (legendSize).withExtraKerningFactor (0.04f);
+    g.setFont (font);
+    for (int i = 0; i < (int) items.size(); ++i)
+    {
+        const float a = angleOf (i);
+        const bool lit = i == current;
+        g.setColour (lit ? colours::vfd : colours::silkDim);
+        g.drawLine (juce::Line<float> (polar (c, radius + 2.5f, a), polar (c, radius + 6.5f, a)), lit ? 2.0f : 1.2f);
+        const auto text = shownLegend (i);
+        if (text.isEmpty())
+            continue;
+        const auto box = legendBox (i);
+        if (lit)
+        {
+            g.setColour (colours::vfd.withAlpha (0.3f));
+            g.drawText (text, box.expanded (2.0f).translated (0.0f, 0.5f), juce::Justification::centred, false);
+        }
+        g.setColour (lit ? colours::vfd : colours::silk);
+        g.drawText (text, box.expanded (2.0f), juce::Justification::centred, false);
+    }
+
+    drawSwitchKnob (g, c, radius, current >= 0 ? angleOf (current) : 0.0f);
+
+    g.setFont (Fonts::label (11.5f).withExtraKerningFactor (0.05f));
+    g.setColour (colours::label);
+    g.drawFittedText (lang::upper (labelText), getLocalBounds().removeFromBottom (15), juce::Justification::centred, 1, 0.8f);
+}
+
+void RotarySwitch::choose (int index)
+{
+    if (index < 0 || index >= (int) items.size() || items[(size_t) index].value == value)
+        return;
+    value = items[(size_t) index].value;
+    repaint();
+    if (onChange)
+        onChange (value);
+}
+
+void RotarySwitch::mouseDown (const juce::MouseEvent& e)
+{
+    dragged = pickedLegend = false;
+    dragFrom = indexOf (value);
+    for (int i = 0; i < (int) items.size(); ++i)
+        if (shownLegend (i).isNotEmpty() && legendBox (i).expanded (3.0f, 2.0f).contains (e.position))
+        {
+            pickedLegend = true;
+            choose (i);
+            return;
+        }
+}
+
+void RotarySwitch::mouseDrag (const juce::MouseEvent& e)
+{
+    if (pickedLegend || items.empty())
+        return;
+    const int moved = e.getDistanceFromDragStartX() - e.getDistanceFromDragStartY();
+    if (std::abs (moved) > 3)
+        dragged = true;
+    if (dragged)
+        choose (juce::jlimit (0, (int) items.size() - 1, juce::jmax (0, dragFrom) + moved / 14));
+}
+
+void RotarySwitch::mouseUp (const juce::MouseEvent& e)
+{
+    if (! pickedLegend && ! dragged && e.mouseWasClicked())
+        showList();
+}
+
+void RotarySwitch::mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& d)
+{
+    if (std::abs (d.deltaY) > 0.0f && ! items.empty())
+        choose (juce::jlimit (0, (int) items.size() - 1, juce::jmax (0, indexOf (value)) + (d.deltaY > 0 ? -1 : 1)));
+}
+
+void RotarySwitch::showList()
+{
+    juce::PopupMenu m;
+    if (labelText.isNotEmpty())
+        m.addSectionHeader (labelText);
+    for (const auto& it : items)
+        m.addItem (it.value + 1000, it.name, true, it.value == value);
+    m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this),
+                     [safe = juce::Component::SafePointer<RotarySwitch> (this)] (int r)
+                     {
+                         if (safe != nullptr && r >= 1000)
+                             safe->choose (safe->indexOf (r - 1000));
+                     });
 }
 
 //==============================================================================
