@@ -199,6 +199,8 @@ static void testElevated()
     const auto entries = [] (const juce::File& f) { return f.findChildFiles (juce::File::findFilesAndDirectories, false, "*", juce::File::FollowSymlinks::no).size(); };
 
     // the password given: one script for the protected folder, the other folder done directly
+    // (a macOS feature: the script needs a Unix shell, so not run on Windows)
+   #if ! JUCE_WINDOWS
     {
         const auto zip = reset();
         int runs = 0;
@@ -215,6 +217,7 @@ static void testElevated()
         CHECK (entries (components) == 1 && entries (vst3) == 1);   // nothing left behind
         CHECK (ran.contains ("/Components/OXIde.component") && ! ran.contains ("VST3"));
     }
+   #endif
 
     // the password refused: the protected bundle stays as it was, the rest is installed
     {
