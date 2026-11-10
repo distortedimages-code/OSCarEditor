@@ -35,6 +35,11 @@ public:
     int  getSelectedSlot() const         { return selectedSlot; }
     void setSelectedSlot (int slot);
     int  getChannel() const              { return channel; }
+    // The channel the OSCar sends on (0 until it sends something), and whether it differs from ours:
+    // then, unless it is in omni mode, the OSCar doesn't hear the plugin (SPACE + a key from 1 to 16
+    // on the OSCar sets it, easily by mistake).
+    int  getOscarChannel() const         { return oscarChannel; }
+    bool channelMismatch() const         { return oscarChannel > 0 && oscarChannel != channel; }
     void setChannel (int ch);
     bool getFollowOscar() const          { return followOscar; }
     void setFollowOscar (bool b)         { followOscar = b; statusBroadcaster.sendChangeMessage(); }
@@ -237,6 +242,7 @@ private:
 
     // What the OSCar's current sound holds, as far as we know (message thread).
     int oscarSlot = -1;
+    int oscarChannel = 0;
     std::optional<oscar::VoiceData> oscarSound;
     int selectionToken = 0;
 

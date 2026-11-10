@@ -154,6 +154,9 @@ bool MidiLink::sendShortMessages (const std::vector<juce::MidiMessage>& messages
 // MIDI thread
 void MidiLink::handleIncomingMidiMessage (juce::MidiInput*, const juce::MidiMessage& m)
 {
+    if (m.isNoteOnOrOff() || m.isProgramChange() || m.isController())
+        lastChannel = m.getChannel();
+
     if (m.isNoteOn())
     {
         noteOnFromOscarMs[(size_t) m.getNoteNumber()] = juce::Time::getMillisecondCounterHiRes();

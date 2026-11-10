@@ -1126,6 +1126,15 @@ int main()
         testMorph (proc, out);
         testRandom (proc, out);
 
+        // the OSCar on another MIDI channel: the plugin says so, until it hears it on its own
+        proc.setChannel (1);
+        proc.getMidi().injectForTest (juce::MidiMessage::controllerEvent (5, 7, 0));
+        CHECK (waitForLog (proc, "channel 5"));
+        CHECK (proc.channelMismatch() && proc.getOscarChannel() == 5);
+        proc.getMidi().injectForTest (juce::MidiMessage::controllerEvent (1, 7, 0));
+        pump (100);
+        CHECK (! proc.channelMismatch());
+
         proc.getMidi().setTestOutput (nullptr);
     }
 

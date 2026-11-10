@@ -425,3 +425,5 @@ countries: fr be ch lu mc ca
 "Tempo: the DAW's (%1 BPM)" = "Tempo : celui du DAW (%1 BPM)"
 "Tempo without a DAW: %1 BPM" = "Tempo sans DAW : %1 BPM"
 "RANDOM: drag up or down: how much this control follows SHAPE. Up: S&H and SMOOTH draw new values, the waves move as drawn; down: S&H and SMOOTH loop, the waves move upside down. Double-click: none." = "RANDOM : glisse vers le haut ou le bas : combien cette commande suit SHAPE. Vers le haut : S&H et SMOOTH tirent de nouvelles valeurs, les ondes vont dans leur sens ; vers le bas : S&H et SMOOTH bouclent, les ondes vont à l'envers. Double-clic : rien."
+"The OSCar sends on MIDI channel %1 and the plugin on channel %2: unless it is in omni mode, the OSCar doesn't hear the plugin. On the OSCar, hold SPACE and press key %2; or choose channel %1 on the Setup page." = "L'OSCar émet sur le canal MIDI %1 et le plugin sur le canal %2 : sauf en omni, l'OSCar n'entend pas le plugin. Sur l'OSCar, maintiens SPACE et appuie sur la touche %2 ; ou choisis le canal %1 dans la page Réglages."
+"OSCAR ON CH %1" = "OSCAR CANAL %1"

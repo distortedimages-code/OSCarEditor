@@ -1080,6 +1080,16 @@ void OscarProcessor::timerCallback()
 {
     publishRandom();   // whatever changed meanwhile (cheap: a copy of the voice and the amounts)
 
+    // the OSCar on another MIDI channel: say so once, as soon as it sends something
+    if (const int ch = midi.lastChannelFromOscar(); ch > 0 && ch != oscarChannel)
+    {
+        oscarChannel = ch;
+        if (ch != channel)
+            addLog (tr ("The OSCar sends on MIDI channel %1 and the plugin on channel %2: unless it is in omni mode, the OSCar doesn't hear the plugin. On the OSCar, hold SPACE and press key %2; or choose channel %1 on the Setup page.",
+                        { juce::String (ch), juce::String (channel.load()) }));
+        statusBroadcaster.sendChangeMessage();
+    }
+
     if (awaitingDumpSince > 0 && juce::Time::getMillisecondCounterHiRes() - awaitingDumpSince > 1500.0)
     {
         awaitingDumpSince = 0;

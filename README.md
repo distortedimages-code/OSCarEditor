@@ -97,6 +97,7 @@ Sans outils de dev : pousser ce dossier sur GitHub, l'onglet *Actions* compile M
 - **Program change** : maintenir SPACE, appuyer sur la touche −9 (LED −9 allumée). Indispensable pour que le plugin et l'OSCar jouent la même voix.
 - **Patch CC dump** : maintenir TUNE/TRANSPOSE, appuyer sur la touche « Enable patch CC dump » (page *Raccourcis Tauntek* du plugin). Indispensable pour le rappel automatique.
 - Si l'OSCar ne suit plus après avoir été éteint, refaire ces deux réglages.
+- **Canal MIDI** : maintenir SPACE et appuyer sur une touche de 1 à 16 le change (la carte Tauntek le garde après extinction). Hors omni, l'OSCar n'entend que ce canal : il doit être celui de la page Réglages. Si l'OSCar émet sur un autre canal, l'afficheur du plugin indique « OSCAR CANAL » et son numéro. En maintenant SPACE, les LED montrent les options MIDI actives (2e : program change, 3e : notes, 5e : omni).
 - Attention aux touches « Load factory / B / C patches » et « Load patches from save area » : elles remplacent les 36 voix en mémoire.
 
 **Dump depuis l'OSCar** : maintenir INSERT, appuyer sur VOICE (ou SEQ, un bouton WAVEFORM, ou STORE pour tout), puis SPACE.

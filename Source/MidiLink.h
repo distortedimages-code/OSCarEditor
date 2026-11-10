@@ -48,6 +48,10 @@ public:
         return (note >= 0 && note < 128) ? noteOnFromOscarMs[(size_t) note].load() : 0.0;
     }
 
+    // The channel of the last note, programme change or CC the OSCar sent (its MIDI channel, which
+    // the Tauntek board keeps through power cycles); 0 until it sends one. Any thread.
+    int lastChannelFromOscar() const   { return lastChannel.load(); }
+
     bool isBusy() const;
     double busyRemainingMs() const;
 
@@ -77,6 +81,7 @@ private:
     std::vector<std::pair<int, int>> pendingPrograms;
     std::vector<std::array<int, 3>> pendingControllers;
     std::array<std::atomic<double>, 128> noteOnFromOscarMs {};
+    std::atomic<int> lastChannel { 0 };
     std::atomic<int> partialBytes { 0 };
     std::atomic<bool> partialActive { false };
     bool progressShown = false;
