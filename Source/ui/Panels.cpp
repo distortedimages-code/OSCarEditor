@@ -668,8 +668,8 @@ void GeneratorPanel::refresh()
         locks[i]->setLit (s.locks.locked[(size_t) i]);
 
     std::vector<Selector::Item> voices;
-    for (int i = 0; i < kNumVoices; ++i)
-        voices.push_back ({ i, voiceItemText (proc.getDocument(), i).trim() });
+    for (int pos = 0; pos < kNumVoices; ++pos)
+        voices.push_back ({ slotAtPosition (pos), voiceItemText (proc.getDocument(), slotAtPosition (pos)).trim() });
     parentA.setItems (voices);
     parentB.setItems (voices);
     parentA.setValue (s.parentA);
@@ -895,10 +895,11 @@ void BanksPanel::refresh()
     const juce::ScopedValueSetter<bool> s (updating, true);
     bankList.updateContent();
     const int slot = proc.getSelectedSlot();
-    if (bankList.getSelectedRow() != slot)
+    const int row = positionOfSlot (slot);   // rows in the keyboard's order: -12 .. -1, 1 .. 24
+    if (bankList.getSelectedRow() != row)
     {
-        bankList.selectRow (slot);
-        bankList.scrollToEnsureRowIsOnscreen (slot);
+        bankList.selectRow (row);
+        bankList.scrollToEnsureRowIsOnscreen (row);
     }
     bankList.repaint();
 
@@ -943,7 +944,7 @@ void BanksPanel::rescanLibrary()
     libraryList.updateContent();
     libraryList.repaint();
     refresh();
-    bankList.scrollToEnsureRowIsOnscreen (proc.getSelectedSlot());
+    bankList.scrollToEnsureRowIsOnscreen (positionOfSlot (proc.getSelectedSlot()));
 }
 
 int BanksPanel::getNumRows()
@@ -954,12 +955,16 @@ int BanksPanel::getNumRows()
 void BanksPanel::paintListBoxItem (int row, juce::Graphics& g, int w, int h, bool selected)
 {
     const auto& doc = proc.getDocument();
+    const bool firstPositive = row == 12;   // the line between -1 and 1
+    row = slotAtPosition (row);
+    if (row < 0)
+        return;
     if (selected)
     {
         g.setColour (colours::copper.withAlpha (0.85f));
         g.fillRoundedRectangle (1.0f, 1.0f, (float) w - 2.0f, (float) h - 2.0f, 2.0f);
     }
-    else if (row == 12)
+    else if (firstPositive)
     {
         g.setColour (colours::vfd.withAlpha (0.25f));
         g.drawHorizontalLine (0, 4.0f, (float) w - 4.0f);
@@ -980,9 +985,10 @@ void BanksPanel::paintListBoxItem (int row, juce::Graphics& g, int w, int h, boo
 
 void BanksPanel::selectedRowsChanged (int row)
 {
-    if (updating || row < 0 || row == proc.getSelectedSlot())
+    const int slot = slotAtPosition (row);
+    if (updating || slot < 0 || slot == proc.getSelectedSlot())
         return;
-    proc.chooseVoice (row);
+    proc.chooseVoice (slot);
 }
 
 void BanksPanel::listBoxItemDoubleClicked (int, const juce::MouseEvent&)
@@ -1078,6 +1084,9 @@ void BanksPanel::resized()
         auto buttons = g.removeFromBottom (78);
         g.removeFromBottom (8);
         bankList.setBounds (g.reduced (4));
+        // from the top (-12) when the selected voice fits on the first screen, else just enough to show it
+        bankList.setVerticalPosition (0.0);
+        bankList.scrollToEnsureRowIsOnscreen (positionOfSlot (proc.getSelectedSlot()));
         const int bw = (buttons.getWidth() - 24) / 4;
         juce::Component* row1[] = { &renameButton, &copyButton, &pasteButton, &swapButton };
         juce::Component* row2[] = { &revertButton, &selectButton, &exportVoiceButton, &importVoiceButton };
@@ -1225,8 +1234,11 @@ void MorphPanel::refresh()
 {
     const auto& doc = proc.getDocument();
     std::vector<Selector::Item> items;
-    for (int i = 0; i < kNumVoices; ++i)
+    for (int pos = 0; pos < kNumVoices; ++pos)
+    {
+        const int i = slotAtPosition (pos);
         items.push_back ({ i, juce::String (slotLabel (i)) + "  " + doc.getDisplayName (i) });
+    }
     voiceA.setItems (items);
     voiceB.setItems (items);
     voiceA.setValue (proc.morphSettings().slotA);

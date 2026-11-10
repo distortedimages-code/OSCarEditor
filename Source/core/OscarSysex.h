@@ -119,6 +119,11 @@ std::string slotLabel (int index);               // "-1" .. "-12", "1" .. "24"
 int         slotIndexFromLabel (int oscarNumber); // -12..-1, 1..24 -> 0..35, else -1
 int         slotOscarNumber (int index);          // 0..35 -> -1..-12, 1..24
 
+// Display order, as on the OSCar's keyboard: -12 .. -1 then 1 .. 24. Position 0 is the leftmost.
+// The mapping is its own inverse (slotAtPosition (positionOfSlot (i)) == i).
+int         slotAtPosition (int position);        // 0..35 -> slot index
+int         positionOfSlot (int index);           // slot index -> 0..35
+
 // Transfer time over a 31250 baud DIN link (10 bits per byte).
 inline double transferSeconds (std::size_t numBytes) { return (double) numBytes * 10.0 / 31250.0; }
 

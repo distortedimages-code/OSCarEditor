@@ -6,8 +6,9 @@ using lang::tr;
 
 namespace
 {
-    juce::String slotsText (const juce::Array<int>& slots)
+    juce::String slotsText (juce::Array<int> slots)
     {
+        std::sort (slots.begin(), slots.end(), [] (int a, int b) { return positionOfSlot (a) < positionOfSlot (b); });
         juce::StringArray s;
         for (auto i : slots)
             s.add (slotLabel (i));
@@ -79,8 +80,9 @@ OscarEditor::OscarEditor (OscarProcessor& p)
     display.onClick = [this] { showVoiceMenu(); };
     display.setMouseCursor (juce::MouseCursor::PointingHandCursor);
     root.addAndMakeVisible (display);
-    prevVoice.onClick = [this] { proc.chooseVoice ((proc.getSelectedSlot() + kNumVoices - 1) % kNumVoices); };
-    nextVoice.onClick = [this] { proc.chooseVoice ((proc.getSelectedSlot() + 1) % kNumVoices); };
+    // in the keyboard's order: ... -2, -1, 1, 2 ...
+    prevVoice.onClick = [this] { proc.chooseVoice (slotAtPosition ((positionOfSlot (proc.getSelectedSlot()) + kNumVoices - 1) % kNumVoices)); };
+    nextVoice.onClick = [this] { proc.chooseVoice (slotAtPosition ((positionOfSlot (proc.getSelectedSlot()) + 1) % kNumVoices)); };
     root.addAndMakeVisible (prevVoice);
     root.addAndMakeVisible (nextVoice);
 
@@ -171,11 +173,11 @@ void OscarEditor::layout()
     for (int i = 0; i < tabs.size(); ++i)
         tabs[i]->setBounds (innerX + 6 + i * (tw + 8), tabsY, tw, tabsH + 3);
     int x = innerX + 74;
-    for (int i = 0; i < kNumVoices; ++i)
+    for (int pos = 0; pos < kNumVoices; ++pos)   // as on the keyboard: -12 .. -1, gap, 1 .. 24
     {
-        if (i == 12)
-            x += 14;   // gap between the -1..-12 and 1..24 memories
-        memory[i]->setBounds (x, memoryY + 4, 29, 38);
+        if (pos == 12)
+            x += 14;
+        memory[slotAtPosition (pos)]->setBounds (x, memoryY + 4, 29, 38);
         x += 32;
     }
 
@@ -243,7 +245,7 @@ void OscarEditor::paintBackdrop (juce::Graphics& g)
     g.setColour (juce::Colour (0xffdcdee1));
     g.drawText (tr ("memory"), juce::Rectangle<int> (innerX + 2, memoryY, 74, 30), juce::Justification::centredLeft);
     g.setColour (juce::Colours::white.withAlpha (0.2f));
-    const int divider = memory[11]->getRight() + 7;
+    const int divider = memory[slotAtPosition (11)]->getRight() + 7;   // after -1
     g.drawVerticalLine (divider, (float) memoryY + 6.0f, (float) memoryY + 34.0f);
 
     // message
@@ -402,10 +404,13 @@ void OscarEditor::showVoiceMenu()
 {
     juce::PopupMenu m;
     m.addSectionHeader (tr ("Voices"));
-    for (int i = 0; i < kNumVoices; ++i)
+    for (int pos = 0; pos < kNumVoices; ++pos)
+    {
+        const int i = slotAtPosition (pos);
         m.addItem (i + 1, juce::String (slotLabel (i)).paddedLeft (' ', 3) + "   " + proc.getDocument().getDisplayName (i)
                               + (proc.getDocument().hasUnsentEdits (i) ? "   " + tr ("(edited)") : juce::String()),
                    true, i == proc.getSelectedSlot());
+    }
     m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (display).withMaximumNumColumns (2),
                      [safe = juce::Component::SafePointer<OscarEditor> (this)] (int r)
                      {
@@ -452,8 +457,8 @@ void OscarEditor::swapSelected (juce::Component& anchor)
     const int slot = proc.getSelectedSlot();
     juce::PopupMenu m;
     m.addSectionHeader (tr ("Swap voice %1 with...", { juce::String (slotLabel (slot)) }));
-    for (int i = 0; i < kNumVoices; ++i)
-        if (i != slot)
+    for (int pos = 0; pos < kNumVoices; ++pos)
+        if (const int i = slotAtPosition (pos); i != slot)
             m.addItem (i + 1, juce::String (slotLabel (i)) + "   " + proc.getDocument().getDisplayName (i));
 
     m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (anchor).withMaximumNumColumns (2),

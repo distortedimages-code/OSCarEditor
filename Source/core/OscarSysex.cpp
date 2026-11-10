@@ -255,6 +255,17 @@ std::string slotLabel (int index)
     return std::to_string (slotOscarNumber (index));
 }
 
+int slotAtPosition (int position)
+{
+    if (position < 0 || position >= kNumVoices) return -1;
+    return position < 12 ? 11 - position : position;
+}
+
+int positionOfSlot (int index)
+{
+    return slotAtPosition (index);
+}
+
 int slotIndexFromLabel (int n)
 {
     if (n <= -1 && n >= -12) return -n - 1;

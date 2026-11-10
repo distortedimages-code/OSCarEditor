@@ -83,6 +83,16 @@ static void testSlots()
     CHECK (slotIndexFromLabel (0) == -1);
     CHECK (slotIndexFromLabel (25) == -1);
     CHECK (slotIndexFromLabel (-13) == -1);
+
+    // shown as on the keyboard: -12 .. -1, then 1 .. 24
+    std::string order;
+    for (int pos = 0; pos < 36; ++pos)
+    {
+        CHECK (positionOfSlot (slotAtPosition (pos)) == pos);
+        order += slotLabel (slotAtPosition (pos)) + " ";
+    }
+    CHECK (order.rfind ("-12 -11 -10 -9 -8 -7 -6 -5 -4 -3 -2 -1 1 2 3 ", 0) == 0);
+    CHECK (slotAtPosition (35) == 35 && slotAtPosition (36) == -1 && slotAtPosition (-1) == -1);
 }
 
 static void testParamMapLayout()

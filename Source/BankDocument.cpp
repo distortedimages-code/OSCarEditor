@@ -18,8 +18,9 @@ namespace
         return b;
     }
 
-    juce::String listSlots (const juce::Array<int>& slots)
+    juce::String listSlots (juce::Array<int> slots)
     {
+        std::sort (slots.begin(), slots.end(), [] (int a, int b) { return oscar::positionOfSlot (a) < oscar::positionOfSlot (b); });
         juce::StringArray s;
         for (auto i : slots)
             s.add (slotLabel (i));
