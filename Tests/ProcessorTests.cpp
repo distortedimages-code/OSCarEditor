@@ -1203,7 +1203,8 @@ int main()
         CHECK (! proc.channelMismatch() && proc.getChannel() == 5);
         proc.setChannel (1);
         proc.getMidi().injectForTest (juce::MidiMessage::controllerEvent (1, 7, 0));
-        pump (100);
+        for (int i = 0; i < 200 && proc.channelMismatch(); ++i)   // the next check of the 40 ms timer (slow machines: later)
+            pump (10);
         CHECK (! proc.channelMismatch());
 
         proc.getMidi().setTestOutput (nullptr);
