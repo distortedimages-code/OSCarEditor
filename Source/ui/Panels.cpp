@@ -699,11 +699,42 @@ void VoicePanel::layout()
     const float slot = 3.0f;   // a fader's slot sits a little right of its centre (its scale is on the left)
     const float sx = (env.starts[2] + env.ends[2]) * 0.5f + slot, rx = (env.starts[3] + env.ends[3]) * 0.5f + slot;
     delayBracket = { sx, (float) y1 + 36.0f, rx - sx, (float) faderTop - 38.0f };
+    const float wordW = juce::GlyphArrangement::getStringWidth (Fonts::bold (9.5f).withExtraKerningFactor (0.10f), "DELAY") + 8.0f;
+    delayWord = juce::Rectangle<float> (wordW, 10.0f).withCentre ({ delayBracket.getCentreX(), delayBracket.getY() + 4.0f });
+    plates.invalidate();
 }
 
 void VoicePanel::resized() {}
 
 void VoicePanel::paint (juce::Graphics& g)
+{
+    // plates, rules, dividers and the printed lines never move: drawn once, then copied
+    plates.draw (g, getLocalBounds(), [this] (juce::Graphics& p) { paintPlates (p); });
+
+    // the words, drawn live so they stay sharp at any window size
+    g.setFont (Fonts::bold (14.5f).withExtraKerningFactor (0.10f));
+    g.setColour (colours::text);
+    for (const auto& t : titles)
+        g.drawFittedText (t.text, t.area.toNearestInt(), juce::Justification::centred, 1, 0.8f);
+
+    g.setFont (Fonts::bold (9.5f).withExtraKerningFactor (0.10f));
+    g.setColour (colours::silk);
+    for (const auto& r : routes)
+        if (r.label.isNotEmpty() && ! r.points.empty())   // printed beside the arrow's head
+            g.drawText (r.label, juce::Rectangle<float> (60.0f, 11.0f).withPosition (r.points.back().x + 6.0f, r.points.back().y - 2.0f),
+                        juce::Justification::centredLeft, false);
+    if (! delayBracket.isEmpty())
+        g.drawText ("DELAY", delayWord, juce::Justification::centred, false);
+
+    // printed legends at both ends of the big filter knob's scale
+    auto& f = knob ("filterFreq");
+    const auto c = f.getBounds().toFloat().getCentre().withY ((float) f.getY() + 65.0f);
+    g.setFont (Fonts::bold (10.5f).withExtraKerningFactor (0.06f));
+    g.drawText (lang::upper (tr ("closed")), juce::Rectangle<float> (60.0f, 12.0f).withCentre (c.translated (-48.0f, 60.0f)), juce::Justification::centred);
+    g.drawText (lang::upper (tr ("open")), juce::Rectangle<float> (60.0f, 12.0f).withCentre (c.translated (48.0f, 60.0f)), juce::Justification::centred);
+}
+
+void VoicePanel::paintPlates (juce::Graphics& g)
 {
     for (const auto& c : columns)
         drawInset (g, c);
@@ -714,10 +745,6 @@ void VoicePanel::paint (juce::Graphics& g)
         g.setColour (colours::accent.withAlpha (0.85f));
         g.drawLine (c.getX() + 12.0f, c.getY() + 26.0f, c.getRight() - 12.0f, c.getY() + 26.0f, 1.6f);
     }
-    g.setFont (Fonts::bold (14.5f).withExtraKerningFactor (0.10f));
-    g.setColour (colours::text);
-    for (const auto& t : titles)
-        g.drawFittedText (t.text, t.area.toNearestInt(), juce::Justification::centred, 1, 0.8f);
 
     g.setColour (colours::silkDim.withAlpha (0.4f));
     for (const auto& d : dividers)
@@ -752,41 +779,23 @@ void VoicePanel::paint (juce::Graphics& g)
         g.fillPath (head);
         if (r.dot)
             g.fillEllipse (juce::Rectangle<float> (5.0f, 5.0f).withCentre (r.points.front()));
-        if (r.label.isNotEmpty())   // printed beside the arrow's head
-        {
-            g.setFont (Fonts::bold (9.5f).withExtraKerningFactor (0.10f));
-            g.drawText (r.label, juce::Rectangle<float> (60.0f, 11.0f).withPosition (tip.x + 6.0f, tip.y - 2.0f),
-                        juce::Justification::centredLeft, false);
-        }
     }
     g.setColour (colours::silk);
     for (const auto& j : junctions)
         g.fillEllipse (juce::Rectangle<float> (5.0f, 5.0f).withCentre (j));
 
-    // DELAY, from Sustain to Release of the filter envelope: down to both, the arrow on Release
+    // DELAY, from Sustain to Release of the filter envelope: down to both, the arrow on Release,
+    // a gap in the middle for the word
     if (! delayBracket.isEmpty())
     {
         const auto& d = delayBracket;
-        g.setFont (Fonts::bold (9.5f).withExtraKerningFactor (0.10f));
-        const juce::String word ("DELAY");
-        const float tw = juce::GlyphArrangement::getStringWidth (g.getCurrentFont(), word) + 8.0f;
-        const float y = d.getY() + 4.0f;
+        const float y = delayWord.getCentreY();
         g.setColour (colours::silkDim);
         g.drawLine (d.getX(), d.getBottom(), d.getX(), y, 1.2f);
-        g.drawLine (d.getX(), y, d.getCentreX() - tw * 0.5f, y, 1.2f);
-        g.drawLine (d.getCentreX() + tw * 0.5f, y, d.getRight(), y, 1.2f);
+        g.drawLine (d.getX(), y, delayWord.getX(), y, 1.2f);
+        g.drawLine (delayWord.getRight(), y, d.getRight(), y, 1.2f);
         g.drawArrow ({ d.getRight(), y, d.getRight(), d.getBottom() + 1.0f }, 1.2f, 6.0f, 5.0f);
-        g.setColour (colours::silk);
-        g.drawText (word, juce::Rectangle<float> (tw, 10.0f).withCentre ({ d.getCentreX(), y }), juce::Justification::centred, false);
     }
-
-    // printed legends at both ends of the big filter knob's scale
-    auto& f = knob ("filterFreq");
-    const auto c = f.getBounds().toFloat().getCentre().withY ((float) f.getY() + 65.0f);
-    g.setFont (Fonts::bold (10.5f).withExtraKerningFactor (0.06f));
-    g.setColour (colours::silk);
-    g.drawText (lang::upper (tr ("closed")), juce::Rectangle<float> (60.0f, 12.0f).withCentre (c.translated (-48.0f, 60.0f)), juce::Justification::centred);
-    g.drawText (lang::upper (tr ("open")), juce::Rectangle<float> (60.0f, 12.0f).withCentre (c.translated (48.0f, 60.0f)), juce::Justification::centred);
 }
 
 //==============================================================================
@@ -841,6 +850,9 @@ GeneratorPanel::GeneratorPanel (OscarProcessor& p) : proc (p)
     parentB.onChange = [this] (int v) { proc.genSettings().parentB = v; };
 
     amount.setValueText ([] (int v) { return juce::String (v) + " %"; });
+    amount.setKnobSize (170);       // the generator's big knob
+    amount.setHotZone (0.75f);      // above 75 %: past the ranges of real voices, printed orange
+    amount.setValueBeside (true);
     amount.onChange = [this] (int v) { proc.genSettings().amount = v / 100.0; refresh(); };
     amount.setTooltip (tr ("Vary: how far from the voice (above 75 % leaves the factory ranges). Breed: how much mutation."));
     addAndMakeVisible (amount);
@@ -848,6 +860,8 @@ GeneratorPanel::GeneratorPanel (OscarProcessor& p) : proc (p)
     generateButton.fontHeight = 20.0f;
     generateButton.onClick = [this] { proc.generate(); };
     generateButton.setTooltip (tr ("Generate into the selected voice. With Live CC the OSCar plays it at once; its memory is only written by \"Send voices to synth\"."));
+    prevButton.setArrow (LedButton::Arrow::Before);
+    nextButton.setArrow (LedButton::Arrow::After);
     prevButton.onClick = [this] { proc.genStep (-1); };
     nextButton.onClick = [this] { proc.genStep (1); };
     auditionButton.onClick = [this] { proc.setLiveCc (! proc.getLiveCc()); };
@@ -883,7 +897,7 @@ void GeneratorPanel::refresh()
     amount.setValue (juce::roundToInt (s.amount * 100.0));
     amount.setLabel (s.mode == OscarProcessor::GenMode::Vary ? tr ("Variation")
                      : s.mode == OscarProcessor::GenMode::Breed ? tr ("Mutation") : tr ("Not used by New"));
-    amount.setAlpha (s.mode == OscarProcessor::GenMode::New ? 0.45f : 1.0f);
+    amount.setAlpha (s.mode == OscarProcessor::GenMode::New ? 0.5f : 1.0f);
 
     const auto& h = proc.getGenHistory();
     const bool series = ! h.empty() && proc.getGenSlot() == proc.getSelectedSlot();
@@ -922,6 +936,8 @@ void GeneratorPanel::resized()
         groups.push_back ({ f.toFloat(), tr ("family (new)") });
         std::initializer_list<juce::Component*> list { pads[0], pads[1], pads[2], pads[3], pads[4] };
         spread (list, inner (f, 94), 70, 94);
+        for (auto* pad : pads)
+            pad->setFace (pad->getBounds());   // the same place, with room for the halo
 
         c.removeFromTop (8);
         groups.push_back ({ c.toFloat(), tr ("parents (breed)") });
@@ -933,16 +949,22 @@ void GeneratorPanel::resized()
         parentsNote = p.toFloat();
     }
 
-    // B: amount, generate, history navigation, in the middle of the column
+    // B, top to bottom and evenly spaced: the amount knob with its value, the note, Generate, the
+    // history navigation
     {
         auto c = columns[1].reduced (8.0f).toNearestInt();
         groups.push_back ({ c.toFloat(), tr ("generate") });
         auto g = c.reduced (12, 12).withTrimmedBottom (22);
-        g = g.withSizeKeepingCentre (g.getWidth(), 330);
-        amount.setBounds (g.getCentreX() - 85, g.getY() + 2, 170, 166);
-        amountNote = juce::Rectangle<int> (g.getX(), g.getY() + 174, g.getWidth(), 36).toFloat();
-        generateButton.setBounds (g.getCentreX() - 130, g.getY() + 216, 260, 64);
-        auto row = juce::Rectangle<int> (g.getX(), g.getY() + 296, g.getWidth(), 34);
+        const int heights[] = { amount.preferredHeight(), 36, 64, 34 };
+        const int gap = (g.getHeight() - (heights[0] + heights[1] + heights[2] + heights[3])) / 4;
+        int y = g.getY() + gap / 2;
+        amount.setBounds (g.getX(), y, g.getWidth(), heights[0]);
+        y += heights[0] + gap;
+        amountNote = juce::Rectangle<int> (g.getX(), y, g.getWidth(), heights[1]).toFloat();
+        y += heights[1] + gap;
+        generateButton.setFace ({ g.getCentreX() - 130, y, 260, heights[2] });
+        y += heights[2] + gap;
+        auto row = juce::Rectangle<int> (g.getX(), y, g.getWidth(), heights[3]);
         prevButton.setBounds (row.removeFromLeft (118));
         row.removeFromLeft (8);
         nextButton.setBounds (row.removeFromLeft (100));
@@ -967,7 +989,7 @@ void GeneratorPanel::resized()
         auto buttons = h.removeFromBottom (36);
         originalButton.setBounds (buttons.removeFromLeft ((buttons.getWidth() - 8) / 2));
         buttons.removeFromLeft (8);
-        keepButton.setBounds (buttons);
+        keepButton.setFace (buttons);
         h.removeFromBottom (8);
         historyArea = h.toFloat();
     }
@@ -983,12 +1005,13 @@ void GeneratorPanel::paint (juce::Graphics& g)
     for (const auto& [area, label] : groups)
         drawGroup (g, area, label);
 
-    // amount scale words
+    // amount scale words, either side of the knob near its foot
+    const auto knob = amount.getBounds().withSizeKeepingCentre (amount.knobDiameter(), amount.getHeight()).withHeight (amount.knobDiameter());
     g.setFont (Fonts::bold (12.0f).withExtraKerningFactor (0.1f));
     g.setColour (colours::label);
-    g.drawText (tr ("SUBTLE"), amount.getBounds().translated (-82, 108).withSize (80, 14), juce::Justification::centredRight);
+    g.drawText (tr ("SUBTLE"), juce::Rectangle<int> (knob.getX() - 96, knob.getBottom() - 26, 90, 14), juce::Justification::centredRight);
     g.setColour (colours::vfd);
-    g.drawText (tr ("WILD"), amount.getBounds().translated (172, 108).withSize (80, 14), juce::Justification::centredLeft);
+    g.drawText (tr ("WILD"), juce::Rectangle<int> (knob.getRight() + 6, knob.getBottom() - 26, 90, 14), juce::Justification::centredLeft);
 
     const auto mode = proc.genSettings().mode;
     drawText (g, amountNote, mode == OscarProcessor::GenMode::New
@@ -1331,7 +1354,7 @@ void BanksPanel::resized()
         g.removeFromBottom (8);
         g.removeFromTop (8);
         libraryList.setBounds (g.reduced (4));
-        loadButton.setBounds (buttons.getX(), buttons.getY(), 220, buttons.getHeight() - 2);
+        loadButton.setFace ({ buttons.getX(), buttons.getY(), 220, buttons.getHeight() - 2 });
         auto rest = buttons.withTrimmedLeft (232);
         const int bw = (rest.getWidth() - 8) / 2;
         juce::Component* grid[3][2] = { { &saveAsButton, &openFileButton },
@@ -1456,7 +1479,9 @@ void MorphPanel::refresh()
     voiceB.setItems (items);
     voiceA.setValue (proc.morphSettings().slotA);
     voiceB.setValue (proc.morphSettings().slotB);
-    repaint();
+    // only what shows the voices: the fader moves the voice up to 30 times a second
+    for (const auto& r : { preview, summaryA, summaryB, info })
+        repaint (r.toNearestInt().expanded (2));
 }
 
 void MorphPanel::timerCallback()
@@ -1503,7 +1528,7 @@ void MorphPanel::resized()
     g.removeFromTop (16);
     auto bottom = g;
     smoothing.setBounds (bottom.removeFromLeft (96).withHeight (Knob::height (KnobStyle::Chrome)));
-    keepButton.setBounds (bottom.removeFromRight (210).withSizeKeepingCentre (210, 54));
+    keepButton.setFace (bottom.removeFromRight (210).withSizeKeepingCentre (210, 54));
     info = bottom.reduced (18, 4).toFloat();
 
     setupWear (*this, wear, columns, { preview, readout, summaryA, summaryB }, { { fader.getBounds().toFloat().getCentre(), 150.0f } });
@@ -1634,7 +1659,7 @@ void WavesPanel::resized()
         b->setBounds (top.removeFromLeft (110));
         top.removeFromLeft (8);
     }
-    sendButton.setBounds (top.removeFromRight (230).withSizeKeepingCentre (230, 40));
+    sendButton.setFace (top.removeFromRight (230).withSizeKeepingCentre (230, 40));
     g.removeFromTop (8);
     infoArea = g.removeFromTop (22).toFloat();
     g.removeFromTop (8);
@@ -2121,7 +2146,7 @@ void SetupPanel::resized()
         autoButton.setBounds (row.removeFromLeft (190));
         row.removeFromLeft (8);
         notesButton.setBounds (row);
-        installButton.setBounds (updateText.toNearestInt().removeFromRight (170).withSizeKeepingCentre (170, 34));
+        installButton.setFace (updateText.toNearestInt().removeFromRight (170).withSizeKeepingCentre (170, 34));
     }
 
     {

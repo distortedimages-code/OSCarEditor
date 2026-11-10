@@ -25,6 +25,8 @@ namespace
         juce::Typeface::Ptr mono     = make (BinaryData::ShareTechMonoRegular_ttf, BinaryData::ShareTechMonoRegular_ttfSize);
     };
 
+    // The four typefaces are loaded once and kept while the plug-in's look exists (Look holds them):
+    // a pointer taken here alone would load the four fonts again on every call and drop them at once.
     juce::Font fontFrom (juce::Typeface::Ptr FontCache::* which, float h)
     {
         juce::SharedResourcePointer<FontCache> cache;
@@ -180,6 +182,10 @@ namespace
     }
 }
 
+struct Fonts::Keep::Holder { juce::SharedResourcePointer<FontCache> cache; };
+Fonts::Keep::Keep() : holder (std::make_unique<Holder>()) {}
+Fonts::Keep::~Keep() = default;
+
 juce::Font Fonts::title (float h) { return fontFrom (&FontCache::title, h); }
 juce::Font Fonts::label (float h) { return fontFrom (&FontCache::label, h); }
 juce::Font Fonts::bold (float h)  { return fontFrom (&FontCache::bold, h); }
@@ -193,6 +199,26 @@ void drawWoodCheek (juce::Graphics& g, juce::Rectangle<float> area, bool leftSid
     const float scale = g.getInternalContext().getPhysicalPixelScaleFactor();
     g.drawImage (makeWood (juce::roundToInt (area.getWidth() * scale), juce::roundToInt (area.getHeight() * scale), scale, leftSide, seed),
                  area);
+}
+
+//==============================================================================
+// CachedPainting
+//==============================================================================
+void CachedPainting::draw (juce::Graphics& g, juce::Rectangle<int> area, const std::function<void (juce::Graphics&)>& paint)
+{
+    const float scale = juce::jlimit (1.0f, 4.0f, g.getInternalContext().getPhysicalPixelScaleFactor());
+    // a scale that moves by a hair (rounding of a scaled window) keeps the image
+    if (! image.isValid() || drawn != area || std::abs (scale - drawnScale) > 0.05f)
+    {
+        drawn = area;
+        drawnScale = scale;
+        image = juce::Image (opaque ? juce::Image::RGB : juce::Image::ARGB, juce::jmax (1, (int) std::ceil ((float) area.getWidth() * scale)),
+                             juce::jmax (1, (int) std::ceil ((float) area.getHeight() * scale)), true);
+        juce::Graphics ig (image);
+        ig.addTransform (juce::AffineTransform::translation ((float) -area.getX(), (float) -area.getY()).scaled (scale));
+        paint (ig);
+    }
+    g.drawImage (image, area.toFloat().withSize ((float) image.getWidth() / drawnScale, (float) image.getHeight() / drawnScale));
 }
 
 //==============================================================================
@@ -217,8 +243,8 @@ void WearLayer::paint (juce::Graphics& g)
         return;
     const float scale = juce::jmax (1.0f, g.getInternalContext().getPhysicalPixelScaleFactor());
     const int pw = juce::roundToInt ((float) getWidth() * scale), ph = juce::roundToInt ((float) getHeight() * scale);
-    if (cache.getWidth() != pw || cache.getHeight() != ph)
-        cache = render (pw, ph, scale);
+    if (! cache.isValid() || std::abs (cache.getWidth() - pw) > 2 || std::abs (cache.getHeight() - ph) > 2)
+        cache = render (pw, ph, scale);   // slow: only when the size really changes, not for a rounding
     g.drawImage (cache, getLocalBounds().toFloat());
 }
 
@@ -372,7 +398,7 @@ void WoodCheek::paint (juce::Graphics& g)
 {
     const float scale = juce::jmax (1.0f, g.getInternalContext().getPhysicalPixelScaleFactor());
     const int pw = juce::roundToInt ((float) getWidth() * scale), ph = juce::roundToInt ((float) getHeight() * scale);
-    if (cache.getWidth() != pw || cache.getHeight() != ph)
+    if (! cache.isValid() || std::abs (cache.getWidth() - pw) > 2 || std::abs (cache.getHeight() - ph) > 2)
         cache = makeWood (pw, ph, scale, isLeft, grainSeed);
     g.drawImage (cache, getLocalBounds().toFloat());
 }
@@ -768,34 +794,48 @@ void drawHardButton (juce::Graphics& g, juce::Rectangle<float> a, bool down, boo
     g.drawRoundedRectangle (a.reduced (0.5f), 3.0f, 1.0f);
 }
 
+void drawCopperGlow (juce::Graphics& g, juce::Rectangle<float> a, float corner, bool down)
+{
+    // a soft orange halo, spreading past the bezel
+    juce::Path face;
+    face.addRoundedRectangle (a, corner);
+    juce::DropShadow (juce::Colour (0xfff0783c).withAlpha (down ? 0.45f : 0.75f), 22, {}).drawForPath (g, face);
+}
+
 void drawCopper (juce::Graphics& g, juce::Rectangle<float> a, float corner, bool lit, bool down)
 {
     const auto c = a.getCentre();
     if (lit)
     {
-        // glow
-        auto glow = a.expanded (10.0f);
-        g.setGradientFill (juce::ColourGradient (colours::copper.withAlpha (down ? 0.25f : 0.38f), c.x, c.y,
-                                                 colours::copper.withAlpha (0.0f), c.x, glow.getY(), true));
-        g.fillRoundedRectangle (glow, corner + 10.0f);
-        juce::ColourGradient grad (colours::copperLight.brighter (down ? 0.0f : 0.05f), c.x, c.y - a.getHeight() * 0.05f,
-                                   colours::copperDark, c.x, a.getBottom() + a.getHeight() * 0.25f, true);
-        grad.addColour (0.45, colours::copper);
-        g.setGradientFill (grad);
+        juce::Path face;
+        face.addRoundedRectangle (a, corner);
+        // the face: an oval radial gradient that follows the button's shape, lightest a little above the middle
+        const float cy = a.getY() + a.getHeight() * 0.45f;
+        const float ry = a.getHeight() * 0.55f * 1.4142f, rx = a.getWidth() * 0.5f * 1.4142f;
+        const float k = down ? 0.12f : 0.0f;
+        juce::ColourGradient grad (juce::Colour (0xfff7a36e).darker (k), c.x, cy, juce::Colour (0xff6a2b10).darker (k), c.x, cy + ry, true);
+        grad.addColour (0.40, juce::Colour (0xffe0703a).darker (k));
+        grad.addColour (0.80, juce::Colour (0xffa8461d).darker (k));
+        juce::FillType fill (grad);
+        fill.transform = juce::AffineTransform::scale (juce::jmax (1.0f, rx / ry), 1.0f, c.x, cy);
+        g.setFillType (fill);
+        g.fillPath (face);
+        g.setColour (juce::Colour (0xffffdcbe).withAlpha (down ? 0.25f : 0.45f));   // the light catching the top edge
+        g.drawHorizontalLine (juce::roundToInt (a.getY() + 1.0f), a.getX() + corner, a.getRight() - corner);
+        g.setColour (juce::Colours::black.withAlpha (0.6f));
+        g.drawRoundedRectangle (a.reduced (0.5f), corner, 1.0f);
+        return;
     }
-    else
-    {
-        g.setGradientFill (juce::ColourGradient (juce::Colour (0xff3b2a21), c.x, c.y, juce::Colour (0xff150d08),
-                                                 c.x, a.getBottom() + a.getHeight() * 0.2f, true));
-    }
+    g.setGradientFill (juce::ColourGradient (juce::Colour (0xff3b2a21), c.x, c.y, juce::Colour (0xff150d08),
+                                             c.x, a.getBottom() + a.getHeight() * 0.2f, true));
     g.fillRoundedRectangle (a, corner);
-    g.setColour (juce::Colours::white.withAlpha (lit ? 0.35f : 0.06f));
+    g.setColour (juce::Colours::white.withAlpha (0.06f));
     g.drawHorizontalLine (juce::roundToInt (a.getY() + 1.0f), a.getX() + corner, a.getRight() - corner);
     g.setColour (juce::Colours::black.withAlpha (0.8f));
     g.drawRoundedRectangle (a.reduced (0.5f), corner, 1.0f);
 }
 
-void drawKnob (juce::Graphics& g, juce::Rectangle<float> area, float proportion, KnobStyle style)
+void drawKnob (juce::Graphics& g, juce::Rectangle<float> area, float proportion, KnobStyle style, float hotFrom)
 {
     const auto c = area.getCentre();
     const float R = juce::jmin (area.getWidth(), area.getHeight()) * 0.5f;
@@ -851,7 +891,26 @@ void drawKnob (juce::Graphics& g, juce::Rectangle<float> area, float proportion,
     }
     else // Brass
     {
-        ticks (g, c, R - 1.0f, R * 0.08f, R * 0.11f, juce::Colour (0xffc9cbcf), 1.6f);
+        if (hotFrom > 0.0f && hotFrom < 1.0f)
+        {
+            // light ticks, then orange ones from hotFrom on, with a long mark where the orange starts
+            const auto hot = juce::Colour (0xffff6a3d);
+            for (int i = 0; i <= 10; ++i)
+            {
+                const float p = (float) i / 10.0f, a = knobAngle (p);
+                const bool isHot = p >= hotFrom - 0.0001f, major = i == 0 || i == 5 || i == 10;
+                g.setColour (isHot ? hot : juce::Colour (0xffc9cbcf));
+                g.drawLine (juce::Line<float> (polar (c, R - 1.0f, a), polar (c, R - 1.0f - (major ? R * 0.11f : R * 0.08f), a)),
+                            isHot ? 2.0f : 1.6f);
+            }
+            g.setColour (hot);
+            const float a = knobAngle (hotFrom);
+            g.drawLine (juce::Line<float> (polar (c, R - 1.0f, a), polar (c, R - 1.0f - R * 0.11f, a)), 2.0f);
+        }
+        else
+        {
+            ticks (g, c, R - 1.0f, R * 0.08f, R * 0.11f, juce::Colour (0xffc9cbcf), 1.6f);
+        }
         auto ring = juce::Rectangle<float> (R * 1.6f, R * 1.6f).withCentre (c);
         dropShadow (g, ring, R * 0.12f, 0.8f);
         for (int i = 0; i < 8; ++i)   // grip lobes
@@ -975,7 +1034,8 @@ void Look::drawRotarySlider (juce::Graphics& g, int x, int y, int w, int h, floa
     if ((bool) s.getProperties().getWithDefault ("vfdNumber", false))
         return;   // VfdNumber paints its own window
     const auto style = (KnobStyle) (int) s.getProperties().getWithDefault ("knobStyle", 0);
-    drawKnob (g, juce::Rectangle<float> ((float) x, (float) y, (float) w, (float) h), pos, style);
+    drawKnob (g, juce::Rectangle<float> ((float) x, (float) y, (float) w, (float) h), pos, style,
+              (float) s.getProperties().getWithDefault ("hotFrom", -1.0f));
 }
 
 void Look::drawLinearSlider (juce::Graphics& g, int x, int y, int w, int h, float pos, float, float,
@@ -1141,6 +1201,8 @@ Knob::Knob (const juce::String& l, KnobStyle s, int maxValue) : labelText (l), s
 
 void Knob::setValue (int v)
 {
+    if ((int) slider.getValue() == v)
+        return;   // nothing to redraw
     const juce::ScopedValueSetter<bool> sv (updating, true);
     slider.setValue (v, juce::dontSendNotification);
     repaint();
@@ -1148,13 +1210,13 @@ void Knob::setValue (int v)
 
 void Knob::resized()
 {
-    const int k = knobSize (style);
+    const int k = knobDiameter();
     slider.setBounds (getLocalBounds().withTrimmedTop (topRoom (style)).removeFromTop (k).withSizeKeepingCentre (k, k));
 }
 
 void Knob::paint (juce::Graphics& g)
 {
-    const int k = knobSize (style);
+    const int k = knobDiameter();
     const bool big = style == KnobStyle::Brass;
     if (! big)
     {
@@ -1188,6 +1250,30 @@ void Knob::paint (juce::Graphics& g)
         }
     }
 
+    if (valueBeside)
+    {
+        // NAME [value]: one row under the knob, the value in a small orange VFD window
+        const auto v = (int) slider.getValue();
+        const auto name = lang::upper (labelText);
+        const auto labelFont = Fonts::bold (12.0f).withExtraKerningFactor (0.10f);
+        const float lw = juce::GlyphArrangement::getStringWidth (labelFont, name) + 2.0f;
+        const auto window = readoutBounds();
+        g.setFont (labelFont);
+        g.setColour (colours::label);
+        g.drawText (name, juce::Rectangle<float> (window.getX() - 10.0f - lw, window.getY(), lw, window.getHeight()),
+                    juce::Justification::centredRight, false);
+        drawVfdWindow (g, window);
+        const auto text = valueText ? valueText (v) : juce::String (v);
+        g.setFont (Fonts::mono (18.0f));
+        const bool lit = slider.isMouseOverOrDragging();
+        g.setColour (colours::vfd.withAlpha (lit ? 0.35f : 0.22f));   // a soft glow under the figures
+        for (auto d : { juce::Point<float> (-1.0f, 0.0f), { 1.0f, 0.0f }, { 0.0f, -1.0f }, { 0.0f, 1.0f } })
+            g.drawText (text, window.translated (d.x, d.y + 1.0f), juce::Justification::centred, false);
+        g.setColour (lit ? colours::vfd.brighter (0.25f) : colours::vfd);
+        g.drawText (text, window.translated (0.0f, 1.0f), juce::Justification::centred, false);
+        return;
+    }
+
     auto area = getLocalBounds().withTrimmedTop (topRoom (style) + k + (big ? 4 : 10));
     const auto font = big ? Fonts::bold (13.5f).withExtraKerningFactor (0.08f) : Fonts::label (12.0f).withExtraKerningFactor (0.04f);
     const bool twoLines = ! big && labelStyle == LabelStyle::Plain && area.getHeight() >= 26 + 14 + 10;
@@ -1202,7 +1288,15 @@ void Knob::paint (juce::Graphics& g)
 juce::Rectangle<float> Knob::readoutBounds() const
 {
     const bool big = style == KnobStyle::Brass;
-    const int top = topRoom (style) + knobSize (style) + (big ? 4 : 10);
+    if (valueBeside)   // the window right of centre, the name to its left
+    {
+        const auto name = lang::upper (labelText);
+        const float lw = juce::GlyphArrangement::getStringWidth (Fonts::bold (12.0f).withExtraKerningFactor (0.10f), name) + 2.0f;
+        const float ww = 72.0f, total = lw + 10.0f + ww;
+        const float y = (float) (topRoom (style) + knobDiameter() + 8);
+        return { (float) getWidth() * 0.5f - total * 0.5f + lw + 10.0f, y, ww, 26.0f };
+    }
+    const int top = topRoom (style) + knobDiameter() + (big ? 4 : 10);
     const bool twoLines = ! big && labelStyle == LabelStyle::Plain && getHeight() - top >= 26 + 14 + 10;
     const float y = (float) (top + (big ? 17 : (twoLines ? 26 : 16)) + (big ? 2 : 1));
     const float rh = big ? 24.0f : 18.0f, rw = big ? 56.0f : 40.0f;
@@ -1229,6 +1323,8 @@ Fader::Fader (const juce::String& l) : labelText (l)
 
 void Fader::setValue (int v)
 {
+    if ((int) slider.getValue() == v)
+        return;   // nothing to redraw
     const juce::ScopedValueSetter<bool> sv (updating, true);
     slider.setValue (v, juce::dontSendNotification);
     repaint();
@@ -1271,6 +1367,10 @@ Selector::Selector (const juce::String& l, bool labelOnLeft) : labelText (l), la
 
 void Selector::setItems (std::vector<Item> i)
 {
+    const bool same = i.size() == items.size()
+                      && std::equal (i.begin(), i.end(), items.begin(), [] (const Item& a, const Item& b) { return a.value == b.value && a.text == b.text; });
+    if (same)
+        return;   // nothing to redraw
     items = std::move (i);
     repaint();
 }
@@ -1885,28 +1985,59 @@ void LedButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
     const float fh = juce::jlimit (10.5f, 14.0f, body.getHeight() * 0.48f);
     g.setFont (Fonts::bold (fh).withExtraKerningFactor (0.08f));
     g.setColour (! isEnabled() ? colours::faint : (textColour ? *textColour : (lit ? juce::Colours::white : colours::label)));
+    if (arrow != Arrow::None)
+    {
+        // a small filled triangle, before the text (pointing left) or after it (pointing right)
+        const float tw = juce::jmin (textArea.getWidth() - 14.0f, juce::GlyphArrangement::getStringWidth (g.getCurrentFont(), lang::upper (getButtonText())));
+        const float cy = textArea.getCentreY(), h = fh * 0.62f, w = h * 0.8f;
+        juce::Path tri;
+        if (arrow == Arrow::Before)
+        {
+            const float x = textArea.getX();
+            tri.addTriangle (x, cy, x + w, cy - h * 0.5f, x + w, cy + h * 0.5f);
+            textArea.removeFromLeft (w + 6.0f);
+        }
+        else
+        {
+            const float x = (place == LedPlace::Right ? textArea.getX() : textArea.getCentreX() - (tw + w + 6.0f) * 0.5f) + tw + 6.0f;
+            tri.addTriangle (x + w, cy, x, cy - h * 0.5f, x, cy + h * 0.5f);
+        }
+        g.fillPath (tri);
+    }
     g.drawFittedText (lang::upper (getButtonText()), textArea.toNearestInt(),
                       place == LedPlace::Right ? juce::Justification::centredLeft : juce::Justification::centred, 1, 0.75f);
 }
 
 void CopperButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
 {
-    auto r = getLocalBounds().toFloat().reduced (2.0f);
-    drawCopper (g, r, 4.0f, isEnabled(), down);
+    // set in a dark bezel, like a lit pad, the halo spreading around it
+    auto bezel = getLocalBounds().toFloat().reduced ((float) halo);
+    if (isEnabled())
+        drawCopperGlow (g, bezel.reduced (4.0f), 6.0f, down);
+    g.setColour (juce::Colour (0xff0b0b0c));
+    g.fillRoundedRectangle (bezel, 8.0f);
+    g.setColour (juce::Colours::black);
+    g.drawRoundedRectangle (bezel.reduced (0.5f), 8.0f, 1.0f);
+    g.setColour (juce::Colours::white.withAlpha (0.06f));
+    g.drawHorizontalLine (juce::roundToInt (bezel.getBottom() - 1.0f), bezel.getX() + 8.0f, bezel.getRight() - 8.0f);
+    auto r = bezel.reduced (4.0f).translated (0.0f, down ? 1.0f : 0.0f);
+    drawCopper (g, r, 6.0f, isEnabled(), down);
     if (highlighted && ! down && isEnabled())
     {
         g.setColour (juce::Colours::white.withAlpha (0.08f));
-        g.fillRoundedRectangle (r, 4.0f);
+        g.fillRoundedRectangle (r, 6.0f);
     }
-    g.setFont (Fonts::bold (fontHeight).withExtraKerningFactor (0.14f));
+    g.setFont (Fonts::bold (fontHeight).withExtraKerningFactor (0.20f));
     g.setColour (isEnabled() ? juce::Colour (0xff1e0b03) : colours::faint);
-    g.drawFittedText (lang::upper (getButtonText()), r.toNearestInt().translated (0, down ? 1 : 0), juce::Justification::centred, 1, 0.8f);
+    g.drawFittedText (lang::upper (getButtonText()), r.toNearestInt(), juce::Justification::centred, 1, 0.8f);
 }
 
 void Pad::paintButton (juce::Graphics& g, bool highlighted, bool down)
 {
-    auto r = getLocalBounds().toFloat();
+    auto r = getLocalBounds().toFloat().reduced ((float) halo);
     auto square = r.removeFromTop (r.getWidth());
+    if (lit)
+        drawCopperGlow (g, square.reduced (4.0f), 5.0f, down);
     g.setColour (juce::Colour (0xff0b0b0c));
     g.fillRoundedRectangle (square, 7.0f);
     g.setColour (juce::Colours::black);

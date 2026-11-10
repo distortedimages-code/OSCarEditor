@@ -101,7 +101,8 @@ private:
 
     atelier::LedButton undoButton { {} }, redoButton { {} }, selectAfterButton { {} }, liveButton { "Live CC" }, thruButton { "MIDI Thru" };
     atelier::CopperButton sendButton { {} };
-    juce::String message;
+    atelier::CachedPainting panelCache;   // the brushed panel, vents and logo
+    juce::String message, shownLights;   // what the backdrop shows: repainted only when they change
 
     std::unique_ptr<juce::FileChooser> fileChooser;
     std::unique_ptr<juce::AlertWindow> textDialog;

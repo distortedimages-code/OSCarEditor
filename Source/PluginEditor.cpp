@@ -70,6 +70,7 @@ OscarEditor::OscarEditor (OscarProcessor& p)
 {
     setLookAndFeel (&look);
     root.setLookAndFeel (&look);
+    panelCache.opaque = true;
     root.painter = [this] (juce::Graphics& g) { paintBackdrop (g); };
     root.setOpaque (true);
     addAndMakeVisible (root);
@@ -187,7 +188,7 @@ void OscarEditor::layout()
     undoButton.setBounds (f.removeFromLeft (92).withHeight (37));
     f.removeFromLeft (8);
     redoButton.setBounds (f.removeFromLeft (92).withHeight (37));
-    sendButton.setBounds (f.removeFromRight (240));
+    sendButton.setFace (f.removeFromRight (240));
     f.removeFromRight (10);
     thruButton.setBounds (f.removeFromRight (124).withHeight (37));
     f.removeFromRight (8);
@@ -198,23 +199,21 @@ void OscarEditor::layout()
 
 void OscarEditor::paintBackdrop (juce::Graphics& g)
 {
-    // panel
-    g.setGradientFill (juce::ColourGradient (colours::panelTop, 0, 0, colours::panel, 0, 120, false));
-    g.fillRect (0, 0, baseWidth, baseHeight);
-    g.setGradientFill (juce::ColourGradient (colours::panel, 0, 400, colours::panelLow, 0, (float) baseHeight, false));
-    g.fillRect (0, 400, baseWidth, baseHeight - 400);
-    // fine brushed lines
-    g.setColour (juce::Colours::white.withAlpha (0.012f));
-    for (int x = 36; x < baseWidth - 36; x += 3)
-        g.drawVerticalLine (x, 0.0f, (float) baseHeight);
-
-    // header
-    drawVents (g, leftVents);
-    drawVents (g, rightVents);
+    // the panel, its brushed lines, the vents and the logo never change: drawn once, then copied
+    panelCache.draw (g, { 0, 0, baseWidth, baseHeight }, [this] (juce::Graphics& p)
     {
+        p.setGradientFill (juce::ColourGradient (colours::panelTop, 0, 0, colours::panel, 0, 120, false));
+        p.fillRect (0, 0, baseWidth, baseHeight);
+        p.setGradientFill (juce::ColourGradient (colours::panel, 0, 400, colours::panelLow, 0, (float) baseHeight, false));
+        p.fillRect (0, 400, baseWidth, baseHeight - 400);
+        p.setColour (juce::Colours::white.withAlpha (0.012f));   // fine brushed lines
+        for (int x = 36; x < baseWidth - 36; x += 3)
+            p.drawVerticalLine (x, 0.0f, (float) baseHeight);
+        drawVents (p, leftVents);
+        drawVents (p, rightVents);
         const float logoH = 34.0f;
-        drawLogo (g, { (float) baseWidth * 0.5f - logoWidth (logoH) * 0.5f, (float) headerY + 6.0f }, logoH, juce::Colour (0xffeeedea));
-    }
+        drawLogo (p, { (float) baseWidth * 0.5f - logoWidth (logoH) * 0.5f, (float) headerY + 6.0f }, logoH, juce::Colour (0xffeeedea));
+    });
     g.setFont (Fonts::bold (12.0f).withExtraKerningFactor (0.22f));
     g.setColour (juce::Colour (0xffa9acb1));
     g.drawText (tr ("EDITOR & LIBRARIAN FOR THE OSCAR"), juce::Rectangle<int> (400, headerY + 45, 600, 16), juce::Justification::centred);
@@ -279,6 +278,7 @@ void OscarEditor::changeListenerCallback (juce::ChangeBroadcaster* source)
         // rebuild every text: the pages are recreated, the window's own buttons relabelled
         applyTexts();
         createPages();
+        root.repaint();
     }
     refreshAll();
 }
@@ -356,9 +356,24 @@ void OscarEditor::refreshAll()
     updateButton.setButtonText (up.getState() == Updater::State::Installed ? tr ("Restart the DAW")
                                                                           : tr ("Update %1", { up.getRelease().version }));
 
-    message = proc.getLastMessage().fromFirstOccurrenceOf ("  ", false, false);
     refreshStatus();
-    root.repaint();
+
+    // The backdrop shows the status lights and the last message: repaint only those strips, and only
+    // when they change. (Repainting the whole window on every edit made turning a knob stutter.)
+    const auto newMessage = proc.getLastMessage().fromFirstOccurrenceOf ("  ", false, false);
+    const auto& midi = proc.getMidi();
+    const auto lights = juce::String (midi.isOutputOpen() ? "O" : "o") + (midi.isInputOpen() ? "I" : "i") + (proc.getLiveCc() ? "L" : "l")
+                        + juce::String ((int) proc.getCcDumpState()) + (updateButton.isVisible() ? "U" : "u");
+    if (lights != shownLights)
+    {
+        shownLights = lights;
+        root.repaint (0, displayY - 4, baseWidth, displayH + 8);
+    }
+    if (newMessage != message)
+    {
+        message = newMessage;
+        root.repaint (redoButton.getRight(), footerY, selectAfterButton.getX() - redoButton.getRight(), footerH);
+    }
 }
 
 void OscarEditor::refreshStatus()

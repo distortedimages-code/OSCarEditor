@@ -1,5 +1,9 @@
 ## English
 
+**0.5.1: a smooth display.** Touching a button or turning a knob no longer redraws the whole window: only what changed is drawn again, and the fonts are loaded once instead of on every redraw. That ends the flicker and the labels that vanished on some Macs, and the interface follows the mouse much more closely.
+
+**Softer copper.** The orange buttons and pads glow with a gentle gradient and a small halo, set in a dark bezel. On the Generator page, the big knob now shows its value in full beside its name, prints the range above 75 % in orange, and Generate and the history buttons sit lower down; Previous and Next carry printed arrows.
+
 **0.5.0: OXIde.** The plug-in is now called OXIde, with a new logo. Updating from inside the plug-in puts OXIde where OSCar Editor was and removes the old copies; your settings, banks, voices and backups move to Documents › OXIde. If both names end up side by side (after installing the disk image by hand, say), the plug-in offers to move the old ones to the Trash. In Logic, OXIde is under OSCarTools, and projects made with OSCar Editor open as before.
 
 **A Voice page that reads like a signal chart.** The window is taller (1400 × 900 at 100 %). On the top floor, the sound: the wheels, then oscillators → mix → filter. Below, what shapes it: LFO, glide, triggering, arpeggiator, clock, and both envelopes side by side, the amplifier's last. Printed lines show the way: the audio path in orange along the titles, the modulations into ENV AMOUNT, LFO AMOUNT and the oscillators' pitch, and the filter envelope's DELAY from Sustain to Release. On each row, every name and every value readout sits at the same height.
@@ -20,6 +24,10 @@
 - **A panel with a past**: the printed ink is lightly worn in places; the controls stay clean.
 
 ## Français
+
+**0.5.1 : un affichage fluide.** Toucher un bouton ou tourner un potard ne redessine plus toute la fenêtre : seul ce qui a changé est redessiné, et les polices sont chargées une seule fois au lieu de l'être à chaque affichage. Fini le clignotement et les textes qui disparaissaient sur certains Mac, et l'interface suit la souris de beaucoup plus près.
+
+**Un cuivre plus doux.** Les boutons et pads orange s'allument avec un dégradé tout en douceur et un petit halo, dans un cadre sombre. Sur la page Générateur, le grand potard affiche sa valeur en entier à côté de son nom, la plage au-delà de 75 % est imprimée en orange, Générer et les boutons d'historique sont plus bas, et Précédent et Suivant ont des flèches.
 
 **0.5.0 : OXIde.** Le plugin s'appelle maintenant OXIde, avec un nouveau logo. La mise à jour depuis le plugin met OXIde à la place d'OSCar Editor et retire les anciennes copies ; tes réglages, banques, voix et sauvegardes passent dans Documents › OXIde. Si les deux noms se retrouvent côte à côte (après une installation à la main depuis l'image disque, par exemple), le plugin propose de mettre les anciens à la corbeille. Dans Logic, OXIde est rangé sous OSCarTools, et les projets faits avec OSCar Editor s'ouvrent comme avant.
 

@@ -88,7 +88,9 @@ private:
     struct Route { std::vector<juce::Point<float>> points; bool audio = false; bool dot = false; juce::String label; };
     std::vector<Route> routes;
     std::vector<juce::Point<float>> junctions;         // where a line branches
-    juce::Rectangle<float> delayBracket;               // the filter envelope's DELAY, from Sustain to Release
+    juce::Rectangle<float> delayBracket, delayWord;    // the filter envelope's DELAY, from Sustain to Release
+    atelier::CachedPainting plates;                    // what never moves, drawn once
+    void paintPlates (juce::Graphics&);
 
 
     atelier::WearLayer wear;                           // on top of everything, controls cut out
@@ -111,7 +113,7 @@ private:
     atelier::Selector parentA { TRANS ("Parent A") }, parentB { TRANS ("Parent B") };
     atelier::Knob amount { TRANS ("Amount"), atelier::KnobStyle::Brass, 100 };
     atelier::CopperButton generateButton { TRANS ("Generate") };
-    atelier::LedButton prevButton { TRANS ("< Previous") }, nextButton { TRANS ("Next >") }, auditionButton { TRANS ("Audition (Live CC)") },
+    atelier::LedButton prevButton { TRANS ("Previous") }, nextButton { TRANS ("Next") }, auditionButton { TRANS ("Audition (Live CC)") },
                        originalButton { TRANS ("Back to original") };
     atelier::CopperButton keepButton { TRANS ("Keep") };
     std::vector<std::pair<juce::Rectangle<float>, juce::String>> groups;

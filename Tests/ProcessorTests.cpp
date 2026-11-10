@@ -1,3 +1,4 @@
+#include <typeinfo>
 // End-to-end tests of the plugin's MIDI behaviour, through a virtual OSCar port:
 // live CC edits, voice selection, Tauntek CC dumps, host automation, SysEx transfers, state.
 
@@ -790,6 +791,66 @@ int main()
     juce::File (testDir).createDirectory();
 
     juce::ScopedJuceInitialiser_GUI init;
+
+    // OSCAR_BENCH=1: only times full repaints of each page at 2x (what a click costs at worst).
+    if (juce::SystemStats::getEnvironmentVariable ("OSCAR_BENCH", {}).isNotEmpty())
+    {
+        OscarProcessor proc;
+        std::unique_ptr<juce::AudioProcessorEditor> ed (proc.createEditor());
+        ed->setSize (1400, 900);
+        juce::Image img (juce::Image::ARGB, 2800, 1800, true);
+        for (int page = 0; page < 7; ++page)
+        {
+            dynamic_cast<OscarEditor*> (ed.get())->showPage (page);
+            pump (50);
+            {
+                juce::Graphics g (img);   // the first paint fills the caches (wood, wear, logo)
+                g.addTransform (juce::AffineTransform::scale (2.0f));
+                ed->paintEntireComponent (g, false);
+            }
+            const auto t0 = juce::Time::getMillisecondCounterHiRes();
+            for (int i = 0; i < 10; ++i)
+            {
+                juce::Graphics g (img);
+                g.addTransform (juce::AffineTransform::scale (2.0f));
+                ed->paintEntireComponent (g, false);
+            }
+            std::printf ("page %d: %.1f ms per full repaint\n", page, (juce::Time::getMillisecondCounterHiRes() - t0) / 10.0);
+            if (page == 0)   // where the time goes: each component on its own (children included)
+            {
+                std::map<juce::String, double> byType;
+                std::function<void (juce::Component&, int)> walk = [&] (juce::Component& c, int depth)
+                {
+                    for (auto* child : c.getChildren())
+                    {
+                        if (! child->isVisible())
+                            continue;
+                        juce::Image part (juce::Image::ARGB, juce::jmax (1, child->getWidth() * 2), juce::jmax (1, child->getHeight() * 2), true);
+                        const auto t = juce::Time::getMillisecondCounterHiRes();
+                        for (int i = 0; i < 5; ++i)
+                        {
+                            juce::Graphics pg (part);
+                            pg.addTransform (juce::AffineTransform::scale (2.0f));
+                            child->paintEntireComponent (pg, false);
+                        }
+                        const double ms = (juce::Time::getMillisecondCounterHiRes() - t) / 5.0;
+                        if (depth < 2)
+                            std::printf ("  %*s%s %dx%d: %.1f ms\n", depth * 2, "", typeid (*child).name(), child->getWidth(), child->getHeight(), ms);
+                        if (depth == 2)
+                            byType[typeid (*child).name()] += ms;
+                        if (depth < 2)
+                            walk (*child, depth + 1);
+                    }
+                };
+                walk (*ed, 0);
+                for (const auto& [t, ms] : byType)
+                    std::printf ("    all %s: %.1f ms\n", t.toRawUTF8(), ms);
+            }
+        }
+        ed.reset();
+        pump (100);
+        return 0;
+    }
 
     // OSCAR_SHOTS=<folder> [OSCAR_SHOTS_SCALE=2] [OSCAR_SHOTS_LANG=fr] [OSCAR_SHOTS_FINISH=0..3]: only saves a PNG of each page.
     if (const auto shots = juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS", {}); shots.isNotEmpty())

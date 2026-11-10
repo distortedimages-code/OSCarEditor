@@ -424,7 +424,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Version actuelle">
   <a class="arrow" href="#news" aria-label="Nouveautés">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.5.0</span><span class="name">OXIDE</span><span class="state">GRATUIT</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.5.1</span><span class="name">OXIDE</span><span class="state">GRATUIT</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -454,7 +454,7 @@ footer a { color: var(--muted); }
         Télécharger pour Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.5.0</dd>
+        <dt>Version</dt><dd id="spec-version">0.5.1</dd>
         <dt>Formats</dt><dd>AU pour Logic Pro, VST3 et application autonome</dd>
         <dt>Système</dt><dd>macOS 11 ou plus récent, Apple Silicon et Intel</dd>
         <dt>Synthé</dt><dd>OSCar avec la carte MIDI Tauntek. Avec le MIDI d'origine, tout marche sauf l'édition en direct.</dd>
@@ -489,8 +489,10 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Les dernières versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.5.0</span><div class="cap when">dernière version</div></div>
+      <div><span class="vchip">0.5.1</span><div class="cap when">dernière version</div></div>
       <div class="notes">
+        <p><strong>0.5.1 : un affichage fluide.</strong> Toucher un bouton ou tourner un potard ne redessine plus toute la fenêtre : seul ce qui a changé est redessiné, et les polices sont chargées une seule fois au lieu de l'être à chaque affichage. Fini le clignotement et les textes qui disparaissaient sur certains Mac, et l'interface suit la souris de beaucoup plus près.</p>
+        <p><strong>Un cuivre plus doux.</strong> Les boutons et pads orange s'allument avec un dégradé tout en douceur et un petit halo, dans un cadre sombre. Sur la page Générateur, le grand potard affiche sa valeur en entier à côté de son nom, la plage au-delà de 75 % est imprimée en orange, Générer et les boutons d'historique sont plus bas, et Précédent et Suivant ont des flèches.</p>
         <p><strong>0.5.0 : OXIde.</strong> Le plugin s'appelle maintenant OXIde, avec un nouveau logo. La mise à jour depuis le plugin met OXIde à la place d'OSCar Editor et retire les anciennes copies ; tes réglages, banques, voix et sauvegardes passent dans Documents › OXIde. Si les deux noms se retrouvent côte à côte (après une installation à la main depuis l'image disque, par exemple), le plugin propose de mettre les anciens à la corbeille. Dans Logic, OXIde est rangé sous OSCarTools, et les projets faits avec OSCar Editor s'ouvrent comme avant.</p>
         <p><strong>Une page Voix qui se lit comme un schéma.</strong> La fenêtre est plus haute (1400 × 900 à 100 %). À l'étage du haut, le son : les molettes, puis oscillateurs → mix → filtre. En bas, ce qui le façonne : LFO, glide, triggering, arpégiateur, horloge, et les deux enveloppes côte à côte, celle de l'ampli en dernier. Des lignes imprimées montrent le chemin : le son en orange le long des titres, les modulations vers ENV AMOUNT, LFO AMOUNT et la hauteur des oscillateurs, et le DELAY de l'enveloppe du filtre, de Sustain à Release. Sur chaque rangée, tous les noms et tous les afficheurs de valeur sont à la même hauteur.</p>
         <p>- Les formes d'onde sont des potards avec les positions de la façade (N, rampe, carré, impulsion, PWM, off) ; les formes −3 à −12 affichent leur numéro sous le potard. - Function, le type de glide et le type de filtre sont des potards à six positions, comme sur la façade : les trois dernières, sous un arc, sont HOLD, FIX et NO TRACK. - L'octave du clavier a ses cinq LED. Les enveloppes repassent en tirettes, quatre côte à côte pour chacune. - La colonne ARP réunit Function, Direction et Mode ; la colonne CLOCK réunit Sync, la division d'horloge externe et le tempo.</p>

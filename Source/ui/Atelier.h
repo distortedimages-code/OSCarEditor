@@ -35,6 +35,32 @@ struct Fonts
     static juce::Font label (float h);    // Barlow Semi Condensed SemiBold
     static juce::Font bold (float h);     // Barlow Semi Condensed Bold
     static juce::Font mono (float h);     // Share Tech Mono
+
+    // While one of these exists, the typefaces stay loaded (the Look holds one).
+    struct Keep
+    {
+        Keep();
+        ~Keep();
+        struct Holder;
+        std::unique_ptr<Holder> holder;
+    };
+};
+
+//==============================================================================
+// Something that rarely changes (a page's plates and lines, the window's brushed panel), drawn once
+// into an image at the screen's pixel scale and then only copied. Drawn again when the size or the
+// scale really changes, or after invalidate().
+class CachedPainting
+{
+public:
+    void draw (juce::Graphics& g, juce::Rectangle<int> area, const std::function<void (juce::Graphics&)>& paint);
+    void invalidate()                               { image = {}; }
+    bool opaque = false;                            // covers its whole area: copied without blending, faster
+
+private:
+    juce::Image image;
+    juce::Rectangle<int> drawn;
+    float drawnScale = 0.0f;
 };
 
 //==============================================================================
@@ -69,7 +95,8 @@ enum class KnobStyle { Knurled, Chrome, Brass };
 enum class LabelStyle { Plain, Boxed };
 void drawControlLabel (juce::Graphics&, juce::Rectangle<int> area, const juce::String& text, const juce::Font&,
                        LabelStyle, juce::Colour plainColour, int maxLines = 1);
-void drawKnob (juce::Graphics&, juce::Rectangle<float> area, float proportion, KnobStyle);
+// hotFrom (0..1, brass only): the ticks from there to the end printed orange, with a mark where it starts
+void drawKnob (juce::Graphics&, juce::Rectangle<float> area, float proportion, KnobStyle, float hotFrom = -1.0f);
 void drawSwitchKnob (juce::Graphics&, juce::Point<float> centre, float radius, float angleFromTop);   // pointer knob of a rotary switch
 
 //==============================================================================
@@ -77,6 +104,7 @@ class Look : public juce::LookAndFeel_V4
 {
 public:
     Look();
+    Fonts::Keep keepFonts;   // first: the typefaces load once, for as long as the look exists
 
     void drawRotarySlider (juce::Graphics&, int x, int y, int w, int h, float pos, float start, float end, juce::Slider&) override;
     void drawLinearSlider (juce::Graphics&, int x, int y, int w, int h, float pos, float min, float max,
@@ -118,6 +146,12 @@ public:
         scaleLow = low; scaleHigh = high; scaleMid = middle; repaint();
     }
     void setLabelStyle (LabelStyle s)               { labelStyle = s; repaint(); }
+    void setKnobSize (int px)                       { customSize = px; resized(); repaint(); }   // instead of the style's size
+    void setHotZone (float from)                    { slider.getProperties().set ("hotFrom", from); repaint(); }
+    // the name and the value side by side under the knob, the value in a small VFD window (big knob)
+    void setValueBeside (bool b)                    { valueBeside = b; repaint(); }
+    int knobDiameter() const                        { return customSize > 0 ? customSize : knobSize (style); }
+    int preferredHeight() const                     { return valueBeside ? topRoom (style) + knobDiameter() + 8 + 26 : height (style); }
     void mouseEnter (const juce::MouseEvent&) override { repaint(); }   // the value lights up under the mouse
     void mouseExit (const juce::MouseEvent&) override  { repaint(); }
 
@@ -139,6 +173,8 @@ private:
     LabelStyle labelStyle = LabelStyle::Plain;
     std::function<juce::String (int)> valueText;
     bool updating = false;
+    int customSize = 0;
+    bool valueBeside = false;
 };
 
 // Vertical fader (envelopes). Its name and value sit at its bottom, as under a knob: placed with its
@@ -356,14 +392,17 @@ class LedButton : public juce::Button
 {
 public:
     enum class LedPlace { Right, Below, None };
+    enum class Arrow { None, Before, After };       // a small printed triangle before or after the text
     LedButton (const juce::String& buttonText, LedPlace place = LedPlace::Right);
-    void setLit (bool b)                            { lit = b; repaint(); }
+    void setArrow (Arrow a)                         { arrow = a; repaint(); }
+    void setLit (bool b)                            { if (b != lit) { lit = b; repaint(); } }
     bool isLit() const                              { return lit; }
-    void setTextColour (juce::Colour c)             { textColour = c; repaint(); }
+    void setTextColour (juce::Colour c)             { if (textColour != c) { textColour = c; repaint(); } }
     void paintButton (juce::Graphics&, bool highlighted, bool down) override;
 
 private:
     LedPlace place;
+    Arrow arrow = Arrow::None;
     bool lit = false;
     std::optional<juce::Colour> textColour;
 };
@@ -372,7 +411,10 @@ private:
 class CopperButton : public juce::Button
 {
 public:
+    static constexpr int halo = 14;                 // room around the button for its glow
     explicit CopperButton (const juce::String& buttonText) : juce::Button (buttonText) {}
+    void setFace (juce::Rectangle<int> face)        { setBounds (face.expanded (halo)); }   // place the button itself
+    bool hitTest (int x, int y) override            { return getLocalBounds().reduced (halo).contains (x, y); }
     void paintButton (juce::Graphics&, bool highlighted, bool down) override;
     float fontHeight = 14.0f;
 };
@@ -381,8 +423,11 @@ public:
 class Pad : public juce::Button
 {
 public:
+    static constexpr int halo = 12;                 // room around the pad for its glow
     explicit Pad (const juce::String& buttonText) : juce::Button (buttonText) {}
-    void setLit (bool b)                            { lit = b; repaint(); }
+    void setFace (juce::Rectangle<int> face)        { setBounds (face.expanded (halo)); }   // the pad and its name
+    bool hitTest (int x, int y) override            { return getLocalBounds().reduced (halo).contains (x, y); }
+    void setLit (bool b)                            { if (b != lit) { lit = b; repaint(); } }
     void paintButton (juce::Graphics&, bool highlighted, bool down) override;
 
 private:
