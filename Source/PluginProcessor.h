@@ -41,6 +41,14 @@ public:
     int  getOscarChannel() const         { return oscarChannel; }
     bool channelMismatch() const         { return oscarChannel > 0 && oscarChannel != channel; }
     void setChannel (int ch);
+    // Total recall (on by default, saved with the project): when a project (or a saved state) opens,
+    // the OSCar is put back exactly as the plugin has it, whatever its memories hold: every value of
+    // the selected voice as CC (no programme change, so the OSCar's memory is neither loaded nor
+    // compared), the global tempo, and the user waveforms when the voice uses one (SysEx: the only
+    // way for them). No voice memory of the OSCar is written. Tried for 10 s while the port opens.
+    bool getRecallOnLoad() const         { return recallOnLoad; }
+    void setRecallOnLoad (bool b)        { recallOnLoad = b; statusBroadcaster.sendChangeMessage(); }
+
     bool getFollowOscar() const          { return followOscar; }
     void setFollowOscar (bool b)         { followOscar = b; statusBroadcaster.sendChangeMessage(); }
     bool getSelectAfterSend() const      { return selectAfterSend; }
@@ -239,6 +247,10 @@ private:
     int selectedSlot = 0;
     std::atomic<int> channel { 1 };
     bool followOscar = true;
+    bool recallOnLoad = true;
+    int recallStage = 0;                        // 0: nothing to do; 1: waveforms (if used); 2: the voice
+    double recallAt = 0, recallGiveUp = 0;
+    void recallTick (double now);
     bool selectAfterSend = true;
     std::atomic<bool> liveCc { true };
 

@@ -619,6 +619,25 @@ static void testEditor (OscarProcessor& proc, Capture& out)
     CHECK (img.isValid());
     pump (100);
 
+    // waveforms received from the OSCar are loaded even when they read like a text copy: MIDI can't do that
+    {
+        // the waveform block of the damaged factory archive (Tests/factory_codemechanic.syx): 27 pairs 0D 0A
+        const juce::String hex ("02070b070e0909020e08070303000800060d0a000d0a03000b080b010c040804000007010b0d0a060f0b03050b05050d0a0d0a0f0f0804"
+                                "01000e09040f0e070304000c0508060102010e0d0a0f01070506050c060e0b020d0a0b010d0a020e0d0a0d0a0305040d0a0d0a030b040f"
+                                "0f0206030c0f080d0a080d0a0d0a05080305010b060e0507010803010c000d0a0b0d0a050702030d0a0304020d0a0001070e0c0406010102"
+                                "0f010b0607060c0c05060e080e040d0a010705080d0a0307080d0a0d0a0c00000e0401010e090000000d0a080f000b0003080d0a0000070b"
+                                "04070c0e0000020f0d0a050b090001060d0a");
+        std::vector<std::uint8_t> body { 0x2B, 0x01 };
+        for (int i = 0; i + 1 < hex.length(); i += 2)
+            body.push_back ((std::uint8_t) hex.substring (i, i + 2).getHexValue32());
+        CHECK (body.size() == 242);
+        proc.getMidi().injectForTest (juce::MidiMessage::createSysExMessage (body.data(), (int) body.size()));
+        CHECK (waitForLog (proc, "aveform"));
+        CHECK (proc.getDocument().getWaves().has_value()
+               && std::equal (proc.getDocument().getWaves()->raw.begin(), proc.getDocument().getWaves()->raw.end(), body.begin() + 2));
+        CHECK (! proc.getLastMessage().contains ("CR/LF"));
+    }
+
     // the Waveforms page: one quick stroke across the bands draws every band it crosses
     if (! proc.getDocument().getWaves())
     {
@@ -1193,6 +1212,36 @@ int main()
         testMidiClock (proc, out);
         testMorph (proc, out);
         testRandom (proc, out);
+
+        // total recall: a project opens, the OSCar gets the saved voice whole (no programme change)
+        {
+            auto& doc = proc.getDocument();
+            const int slot = proc.getSelectedSlot();
+            const auto& freq = *findParam ("filterFreq");
+            doc.setParam (slot, freq, 120);
+            pump (300);
+            juce::MemoryBlock saved;
+            proc.getStateInformation (saved);
+            doc.setParam (slot, freq, 30);                 // changed after saving, not saved
+            pump (300);
+            out.take();
+            proc.setStateInformation (saved.getData(), (int) saved.getSize());
+            CHECK (getParam (doc.getVoice (slot), freq) == 120);
+            auto sent = collect (out, ccCountAtLeast (40));
+            CHECK (countPrograms (sent, -1) == 0);
+            CHECK (ccsOf (sent).size() >= 40);
+            CHECK (ccValues (sent, freq.cc).size() == 1 && ! ccValues (sent, freq.cc).empty() && ccValues (sent, freq.cc).back() == 60);
+            CHECK (waitForLog (proc, "Sound recalled"));
+            // off: a project opens and nothing is sent
+            proc.setRecallOnLoad (false);
+            proc.getStateInformation (saved);
+            pump (100);
+            out.take();
+            proc.setStateInformation (saved.getData(), (int) saved.getSize());
+            pump (1000);
+            CHECK (ccsOf (out.take()).empty() && ! proc.getRecallOnLoad());
+            proc.setRecallOnLoad (true);
+        }
 
         // the OSCar on another MIDI channel: the plugin says so, until it hears it on its own
         proc.setChannel (1);

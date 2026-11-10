@@ -9,22 +9,30 @@ namespace
 {
     bool isNibble (std::uint8_t b) noexcept { return b <= 0x0F; }
 
-    // Heuristic: a file that went through a text-mode copy has every 0x0A
-    // expanded to 0x0D 0x0A. In real nibble data 0x0D is followed by 0x0A
-    // only 1 time in 16, so "every 0x0D is followed by 0x0A" is a strong sign.
+    // Heuristic, for files only (MIDI cannot do this): a file that went through
+    // a text-mode copy has every 0x0A turned into 0x0D 0x0A. So: no 0x0D and no
+    // 0x0A on its own, many pairs, and the pairs at odd and even places alike
+    // (a copy shifts the bytes). Real levels can make pairs too (173 is 0D 0A),
+    // but always at the same place in a byte, never a mix: the damaged archive
+    // has 27 pairs, 13 even and 14 odd.
     bool looksLikeCrLfDamage (const std::uint8_t* d, std::size_t n) noexcept
     {
-        std::size_t crCount = 0;
+        std::size_t even = 0, odd = 0;
         for (std::size_t i = 0; i < n; ++i)
         {
             if (d[i] == 0x0D)
             {
-                ++crCount;
                 if (i + 1 >= n || d[i + 1] != 0x0A)
-                    return false;
+                    return false;   // a CR alone
+                ++((i % 2 == 0) ? even : odd);
+            }
+            else if (d[i] == 0x0A && (i == 0 || d[i - 1] != 0x0D))
+            {
+                return false;       // an LF alone
             }
         }
-        return crCount >= 4;
+        const auto pairs = even + odd;
+        return pairs >= 8 && std::min (even, odd) * 4 >= pairs;
     }
 
     const char* blockName (BlockType t)

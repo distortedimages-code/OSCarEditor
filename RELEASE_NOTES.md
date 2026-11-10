@@ -1,5 +1,9 @@
 ## English
 
+**0.6.4: the project's sound comes back, and waveforms received as they are.** A new option on the Setup page, on by default: *Recall the sound when the project opens*. When a project opens, the OSCar gets the selected voice exactly as saved in the project, whatever its memories hold: all its values as CC, the tempo, and the user waveforms if the voice plays one. So a sound changed after the last save comes back as saved. Nothing is written into the OSCar's voice memories.
+
+Waveforms dumped by the OSCar could be refused as "damaged by a text-mode copy (CR/LF)": some real harmonic levels read like that damage. Data straight from MIDI is never checked for it any more (only a copied file can be damaged that way), and the check on files is stricter, so it no longer mistakes such levels for damage.
+
 **0.6.3: Use channel, and strokes across the harmonics.** When the OSCar sends on another MIDI channel, a Use channel button appears left of the voice display: one click and the plugin takes the OSCar's channel. (The OSCar's own channel can only be set on the OSCar, SPACE + a key from 1 to 16: its firmware takes no MIDI message for it.) On the Waveforms page, a quick stroke across the bands now draws every band it crosses, on the line between, and carries on to the first and last band when the mouse runs past them.
 
 **0.6.2: a safer, simpler Morph.** The Morph page has a MORPH switch, off at start: off, the crossfader and its DAW automation do nothing. On, the OSCar plays the blend of A and B (as CC, Live CC on) and no voice changes any more: Keep the blend writes it into the selected voice, in one undo step. Edits of A or B are heard in the blend at once. Turning MORPH off, choosing another voice or generating one gives the OSCar the selected voice back; the display shows MORPH ON meanwhile. Each end has a single window: a click opens the list, with the selected voice first, and the voice chosen there is loaded (with MORPH on, the sound glides to it). The arrows, Selected voice and Load buttons are gone.
@@ -40,6 +44,10 @@
 - **A panel with a past**: the printed ink is lightly worn in places; the controls stay clean.
 
 ## Français
+
+**0.6.4 : le son du projet revient, et les formes d'onde reçues telles quelles.** Une nouvelle option dans Réglages, activée par défaut : *Rappeler le son à l'ouverture du projet*. À l'ouverture d'un projet, l'OSCar reprend la voix choisie exactement comme enregistrée dans le projet, quoi que contiennent ses mémoires : toutes ses valeurs en CC, le tempo, et les formes d'onde utilisateur si la voix en joue une. Un son modifié après le dernier enregistrement revient donc tel qu'enregistré. Rien n'est écrit dans les mémoires de voix de l'OSCar.
+
+Les formes d'onde envoyées par l'OSCar pouvaient être refusées comme « abîmées par une copie en mode texte (CR/LF) » : certains niveaux d'harmoniques réels y ressemblent. Ce qui arrive directement par MIDI n'est plus vérifié pour ça (seul un fichier copié peut être abîmé ainsi), et la vérification des fichiers est plus stricte : elle ne prend plus ces niveaux pour des dégâts.
 
 **0.6.3 : Passer sur le canal, et des traits à travers les harmoniques.** Quand l'OSCar émet sur un autre canal MIDI, un bouton Passer sur le canal apparaît à gauche de l'afficheur : un clic et le plugin prend le canal de l'OSCar. (Le canal de l'OSCar lui-même ne se règle que sur l'OSCar, SPACE + une touche de 1 à 16 : son firmware n'accepte aucun message MIDI pour ça.) Dans la page Formes d'onde, un trait rapide à travers les bandes dessine maintenant toutes celles qu'il traverse, sur la ligne entre les deux, et va jusqu'à la première et la dernière bande quand la souris les dépasse.
 

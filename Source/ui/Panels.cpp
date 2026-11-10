@@ -2113,6 +2113,8 @@ SetupPanel::SetupPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
     liveButton.setTooltip (tr ("Every edit is sent to the OSCar as CC at once, and clicking a voice plays it on the OSCar."));
     thruButton.onClick = [this] { proc.setMidiThru (! proc.getMidiThru()); };
     thruButton.setTooltip (tr ("Notes and pitch bend reaching this plugin from the DAW are played on the OSCar. Off if your DAW already sends MIDI to the OSCar (External Instrument...), to avoid double notes."));
+    recallButton.onClick = [this] { proc.setRecallOnLoad (! proc.getRecallOnLoad()); };
+    recallButton.setTooltip (tr ("When the project opens, the OSCar gets the selected voice exactly as saved in the project, whatever its memories hold: all its values as CC, the tempo, and the user waveforms if the voice plays one. Nothing is written into the OSCar's voice memories."));
     clockButton.onClick = [this] { proc.setClockOut (! proc.getClockOut()); };
     clockButton.setTooltip (tr ("While the DAW plays, the plugin sends MIDI clock to the OSCar (24 per quarter note), with Start, Continue and Stop. Voices set to Sync = MIDI clock then follow the DAW's tempo. Off if the DAW already sends clock to the OSCar's port."));
 
@@ -2129,7 +2131,7 @@ SetupPanel::SetupPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
     englishButton.setTooltip ("English interface");
 
     for (auto* c : std::initializer_list<juce::Component*> { &outBox, &inBox, &channelBox, &rescanButton, &followButton,
-                                                             &selectAfterButton, &liveButton, &thruButton, &clockButton,
+                                                             &selectAfterButton, &liveButton, &thruButton, &clockButton, &recallButton,
                                                              &checkButton, &autoButton, &notesButton, &installButton, &frenchButton, &englishButton })
         addAndMakeVisible (c);
 
@@ -2187,6 +2189,7 @@ void SetupPanel::refresh()
     liveButton.setLit (proc.getLiveCc());
     thruButton.setLit (proc.getMidiThru());
     clockButton.setLit (proc.getClockOut());
+    recallButton.setLit (proc.getRecallOnLoad());
     frenchButton.setLit (proc.getLanguage() == "fr");
     englishButton.setLit (proc.getLanguage() == "en");
 
@@ -2214,7 +2217,7 @@ void SetupPanel::resized()
 
     {
         auto c = cols[0].reduced (8.0f).toNearestInt();
-        auto midi = c.removeFromTop (300);
+        auto midi = c.removeFromTop (334);
         groups.push_back ({ midi.toFloat(), "midi" });
         auto g = midi.reduced (14, 12).withTrimmedBottom (22);
         portsLabels = g.removeFromLeft (70).toFloat();
@@ -2234,7 +2237,7 @@ void SetupPanel::resized()
         g.removeFromTop (8);
         portsLabels = portsLabels.withHeight (116.0f);
         const int bh = 32;
-        for (auto* b : { &followButton, &selectAfterButton, &liveButton, &clockButton })
+        for (auto* b : { &followButton, &selectAfterButton, &liveButton, &clockButton, &recallButton })
         {
             b->setBounds (g.removeFromTop (bh).withX (g.getX() - 70).withWidth (g.getWidth() + 70));
             g.removeFromTop (4);

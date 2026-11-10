@@ -277,7 +277,8 @@ private:
     atelier::LedButton rescanButton { TRANS ("Rescan") }, followButton { TRANS ("Follow the OSCar's voice changes") },
                        selectAfterButton { TRANS ("Select the voice after sending") }, liveButton { TRANS ("Live CC (Tauntek)") },
                        thruButton { TRANS ("MIDI Thru: play the OSCar from this track") },
-                       clockButton { TRANS ("Send the DAW's MIDI clock to the OSCar") };
+                       clockButton { TRANS ("Send the DAW's MIDI clock to the OSCar") },
+                       recallButton { TRANS ("Recall the sound when the project opens") };
     atelier::LedButton checkButton { TRANS ("Check now") }, autoButton { TRANS ("Check automatically") }, notesButton { TRANS ("What's new") };
     atelier::CopperButton installButton { TRANS ("Install update") };
     atelier::LedButton frenchButton { juce::String::fromUTF8 ("Fran\xc3\xa7" "ais") }, englishButton { "English" };

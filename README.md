@@ -41,6 +41,10 @@ En haut de la fenêtre, sur toutes les pages : **RANDOM** à gauche du logo, **S
 - La voix ne change pas : l'OSCar reçoit les valeurs en CC (Live CC) et retrouve celles de la voix quand l'aléatoire s'arrête (retour au milieu, Live CC coupé). Les aléatoires et leurs boucles sont enregistrés avec le projet.
 - **SCALE** et **ROOT** : les gammes de MIFM1 (majeur, mineur, dorien, phrygien, lydien, mixolydien, locrien, mineur harmonique et mélodique, pentatoniques majeure et mineure, blues, par tons, hirajoshi, phrygien dominant). Transpose et Osc 2 Interval ne prennent que les notes de la gamme (comptées depuis ROOT ; Osc 2 depuis là où Transpose met l'oscillateur 1), leurs aléatoires aussi. Avec MIDI Thru, les notes jouées vont à la note de la gamme la plus proche, et les aléatoires comptent depuis la dernière note jouée. Frequency (le filtre) n'a pas de correspondance en notes : il reste libre.
 
+## Rappel du son à l'ouverture du projet
+
+Option dans Réglages, activée par défaut : *Rappeler le son à l'ouverture du projet*. Le plugin enregistre avec le projet ses 36 voix et la voix choisie. À l'ouverture, l'OSCar reprend cette voix exactement comme dans le projet, quoi que contiennent ses mémoires : toutes ses valeurs en CC (sans changement de programme, donc sans charger ni comparer sa mémoire), le tempo, et les formes d'onde utilisateur (−8 à −12, en SysEx) si la voix en joue une. Rien n'est écrit dans les mémoires de voix de l'OSCar. Si la sortie MIDI n'est pas là dans les 10 secondes, un message le dit.
+
 ## MIDI Thru
 
 Option (désactivée par défaut) pour jouer l'OSCar depuis la piste du DAW, donc avec un autre clavier. Seuls les notes (avec vélocité) et le pitch bend passent, sur le canal de l'OSCar, à leur position dans le bloc audio. Les autres CC sont filtrés pour ne pas changer le son derrière le dos du plugin. Rien ne passe pendant un transfert de banque, et les notes relâchées pendant ce temps sont coupées à la fin. Une note jouée sur le clavier de l'OSCar qui revient par le DAW (monitoring de piste) n'est pas renvoyée. La molette de modulation (CC 1) ne passe pas : le firmware Tauntek ne la reçoit pas.

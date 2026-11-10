@@ -15,7 +15,7 @@ namespace
                            idSlot ("slot"), idFollow ("follow"), idSelectAfter ("selectAfter"),
                            idLiveCc ("liveCc"), idThru ("midiThru"), idClock ("clockOut"), idHost ("HostParams"),
                            idRandom ("Random"), idRandomParam ("Param"), idId ("id"), idAmount ("amount"), idSeed ("seed"),
-                           idRate ("rate"), idShape ("shape"), idLoop ("loop"), idBpm ("bpm"), idScale ("scale"), idRoot ("root");
+                           idRecall ("recallOnLoad"), idRate ("rate"), idShape ("shape"), idLoop ("loop"), idBpm ("bpm"), idScale ("scale"), idRoot ("root");
 
     // A note the OSCar's own keyboard just played that comes back through the DAW
     // (track input monitoring) is an echo: it must not be sent to the OSCar again.
@@ -1059,7 +1059,11 @@ void OscarProcessor::sysexReceived (const std::vector<std::uint8_t>& message)
 
     DumpContents d;
     std::string err;
-    if (! parseStream (message, d, err))
+    const bool parsed = parseStream (message, d, err);
+    // Straight from MIDI: no text-mode copy can have damaged it (that check is for files).
+    d.suspectBlocks.clear();
+    d.warnings.clear();
+    if (! parsed)
     {
         writeBackup ("received (unreadable)", message);
         addLog (tr ("Received OSCar data could not be read: %1 Nothing was changed. Try the dump again.", { tr (juce::String (err)) }));
@@ -1109,6 +1113,7 @@ void OscarProcessor::controllerReceived (int, int cc, int value)
 void OscarProcessor::timerCallback()
 {
     publishRandom();   // whatever changed meanwhile (cheap: a copy of the voice and the amounts)
+    recallTick (juce::Time::getMillisecondCounterHiRes());
 
     // the OSCar on another MIDI channel: say so once, as soon as it sends something
     if (const int ch = midi.lastChannelFromOscar(); ch > 0 && ch != oscarChannel)
@@ -1333,6 +1338,7 @@ void OscarProcessor::getStateInformation (juce::MemoryBlock& destData)
     s.setProperty (idChannel, channel.load(), nullptr);
     s.setProperty (idSlot, selectedSlot, nullptr);
     s.setProperty (idFollow, followOscar, nullptr);
+    s.setProperty (idRecall, recallOnLoad, nullptr);
     s.setProperty (idSelectAfter, selectAfterSend, nullptr);
     s.setProperty (idLiveCc, liveCc.load(), nullptr);
     s.setProperty (idThru, midiThru.load(), nullptr);
@@ -1390,16 +1396,66 @@ void OscarProcessor::applyState (const juce::ValueTree& s)
     channel = juce::jlimit (1, 16, (int) s.getProperty (idChannel, 1));
     selectedSlot = juce::jlimit (0, kNumVoices - 1, (int) s.getProperty (idSlot, 0));
     followOscar = (bool) s.getProperty (idFollow, true);
+    recallOnLoad = (bool) s.getProperty (idRecall, true);
     selectAfterSend = (bool) s.getProperty (idSelectAfter, true);
     liveCc = (bool) s.getProperty (idLiveCc, true);
     midiThru = (bool) s.getProperty (idThru, false);
     clockOut = (bool) s.getProperty (idClock, false);
     loadRandomState (s.getChildWithName (idRandom));
 
-    // A reloaded project says nothing about what the OSCar is playing now.
+    // A reloaded project says nothing about what the OSCar is playing now...
     oscarSlot = -1;
     oscarSound.reset();
+    morphOn = false;
+    morphPending = false;
+    // ...so, total recall: it gets the project's sound once the port is open
+    if (recallOnLoad)
+    {
+        const auto now = juce::Time::getMillisecondCounterHiRes();
+        recallStage = 1;
+        recallAt = now + 600.0;
+        recallGiveUp = now + 10000.0;
+    }
     statusBroadcaster.sendChangeMessage();
+}
+
+void OscarProcessor::recallTick (double now)
+{
+    if (recallStage == 0 || now < recallAt)
+        return;
+    if (! midi.isOutputOpen() || midi.isBusy())
+    {
+        if (now > recallGiveUp)
+        {
+            recallStage = 0;
+            addLog (tr ("Sound recall: no MIDI output to the OSCar, so it doesn't play the project's sound. Choose the voice once the OSCar is connected."));
+        }
+        return;
+    }
+    const auto& v = document.getVoice (selectedSlot);
+    if (recallStage == 1)
+    {
+        // the user waveforms first, if the voice plays one (-8 to -12): they only go by SysEx
+        const int w1 = getParam (v, *findParam ("wave1")), w2 = getParam (v, *findParam ("wave2"));
+        if (document.getWaves() && (w1 >= 11 || w2 >= 11))
+            sendWaves();
+        recallStage = 2;
+        recallAt = now + 80.0;   // the transfer shows as busy until it is through
+        return;
+    }
+
+    // every value of the voice, whatever the OSCar's memory holds, and the global tempo
+    std::vector<CcMessage> msgs;
+    for (const auto& p : allParams())
+    {
+        const auto m = ccMessagesFor (p, v);
+        msgs.insert (msgs.end(), m.begin(), m.end());
+    }
+    if (const auto* tempo = hostParams.getRawParameterValue ("tempo"))
+        msgs.emplace_back (kTempoCc, juce::jlimit (0, 127, juce::roundToInt (tempo->load()) >> 1));
+    queueCc (msgs);
+    recallStage = 0;
+    addLog (tr ("Sound recalled: the OSCar plays voice %1 as saved in the project.", { juce::String (slotLabel (selectedSlot)) + " " + document.getDisplayName (selectedSlot) }));
 }
 
 //==============================================================================

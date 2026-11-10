@@ -469,6 +469,16 @@ static void testHarmonics()
     CHECK (back.waves && *back.waves == w);
     CHECK (back.warnings.empty());
     CHECK (back.suspectBlocks.empty());
+
+    // real levels that happen to read 0D 0A (173), the same in every table: not a text copy
+    WaveBank same {};
+    for (int t = 0; t < kNumWaveTables; ++t)
+        for (int h : { 0, 4, 9 })
+            same.setHarmonic (t, h, 173);
+    DumpContents s, sb;
+    s.waves = same;
+    CHECK (parseStream (buildFile (s), sb, err));
+    CHECK (sb.waves && *sb.waves == same && ! sb.isSuspect (BlockType::Waveforms) && sb.warnings.empty());
 }
 
 static void testRejections()

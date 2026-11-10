@@ -426,7 +426,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Current version">
   <a class="arrow" href="#news" aria-label="What's new">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.6.3</span><span class="name">OXIDE</span><span class="state">FREE</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.6.4</span><span class="name">OXIDE</span><span class="state">FREE</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -456,7 +456,7 @@ footer a { color: var(--muted); }
         Download for Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.6.3</dd>
+        <dt>Version</dt><dd id="spec-version">0.6.4</dd>
         <dt>Formats</dt><dd>AU for Logic Pro, VST3 and standalone app</dd>
         <dt>System</dt><dd>macOS 11 or later, Apple silicon and Intel</dd>
         <dt>Synth</dt><dd>OSCar with the Tauntek MIDI board. With the original MIDI, everything works except live editing.</dd>
@@ -491,8 +491,10 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Latest versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.6.3</span><div class="cap when">latest version</div></div>
+      <div><span class="vchip">0.6.4</span><div class="cap when">latest version</div></div>
       <div class="notes">
+        <p><strong>0.6.4: the project's sound comes back, and waveforms received as they are.</strong> A new option on the Setup page, on by default: *Recall the sound when the project opens*. When a project opens, the OSCar gets the selected voice exactly as saved in the project, whatever its memories hold: all its values as CC, the tempo, and the user waveforms if the voice plays one. So a sound changed after the last save comes back as saved. Nothing is written into the OSCar's voice memories.</p>
+        <p>Waveforms dumped by the OSCar could be refused as "damaged by a text-mode copy (CR/LF)": some real harmonic levels read like that damage. Data straight from MIDI is never checked for it any more (only a copied file can be damaged that way), and the check on files is stricter, so it no longer mistakes such levels for damage.</p>
         <p><strong>0.6.3: Use channel, and strokes across the harmonics.</strong> When the OSCar sends on another MIDI channel, a Use channel button appears left of the voice display: one click and the plugin takes the OSCar's channel. (The OSCar's own channel can only be set on the OSCar, SPACE + a key from 1 to 16: its firmware takes no MIDI message for it.) On the Waveforms page, a quick stroke across the bands now draws every band it crosses, on the line between, and carries on to the first and last band when the mouse runs past them.</p>
         <p><strong>0.6.2: a safer, simpler Morph.</strong> The Morph page has a MORPH switch, off at start: off, the crossfader and its DAW automation do nothing. On, the OSCar plays the blend of A and B (as CC, Live CC on) and no voice changes any more: Keep the blend writes it into the selected voice, in one undo step. Edits of A or B are heard in the blend at once. Turning MORPH off, choosing another voice or generating one gives the OSCar the selected voice back; the display shows MORPH ON meanwhile. Each end has a single window: a click opens the list, with the selected voice first, and the voice chosen there is loaded (with MORPH on, the sound glides to it). The arrows, Selected voice and Load buttons are gone.</p>
         <p><strong>0.6.1: the OSCar on another channel.</strong> When the OSCar sends on a MIDI channel other than the plugin's (SPACE + a key from 1 to 16 on the OSCar changes it, easily by mistake, and the Tauntek board keeps it after power-off), the display shows OSCAR ON CH and its number, and a message says how to put it back. Unless it is in omni mode, the OSCar doesn't hear the plugin then.</p>
