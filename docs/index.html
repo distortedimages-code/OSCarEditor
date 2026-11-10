@@ -424,7 +424,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Current version">
   <a class="arrow" href="#news" aria-label="What's new">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.5.1</span><span class="name">OXIDE</span><span class="state">FREE</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.5.2</span><span class="name">OXIDE</span><span class="state">FREE</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -454,7 +454,7 @@ footer a { color: var(--muted); }
         Download for Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.5.1</dd>
+        <dt>Version</dt><dd id="spec-version">0.5.2</dd>
         <dt>Formats</dt><dd>AU for Logic Pro, VST3 and standalone app</dd>
         <dt>System</dt><dd>macOS 11 or later, Apple silicon and Intel</dd>
         <dt>Synth</dt><dd>OSCar with the Tauntek MIDI board. With the original MIDI, everything works except live editing.</dd>
@@ -489,8 +489,9 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Latest versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.5.1</span><div class="cap when">latest version</div></div>
+      <div><span class="vchip">0.5.2</span><div class="cap when">latest version</div></div>
       <div class="notes">
+        <p><strong>0.5.2: updates into protected folders.</strong> When the plug-in was installed with your password (the AU in /Library/Audio/Plug-Ins/Components, from the disk image), the update now asks macOS for that password once, in its usual window, and installs there too. Before, the AU was left on the old version with "no permission to write".</p>
         <p><strong>0.5.1: a smooth display.</strong> Touching a button or turning a knob no longer redraws the whole window: only what changed is drawn again, and the fonts are loaded once instead of on every redraw. That ends the flicker and the labels that vanished on some Macs, and the interface follows the mouse much more closely.</p>
         <p><strong>Softer copper.</strong> The orange buttons and pads glow with a gentle gradient and a small halo, set in a dark bezel. On the Generator page, the big knob now shows its value in full beside its name, prints the range above 75 % in orange, and Generate and the history buttons sit lower down; Previous and Next carry printed arrows.</p>
         <p><strong>0.5.0: OXIde.</strong> The plug-in is now called OXIde, with a new logo. Updating from inside the plug-in puts OXIde where OSCar Editor was and removes the old copies; your settings, banks, voices and backups move to Documents › OXIde. If both names end up side by side (after installing the disk image by hand, say), the plug-in offers to move the old ones to the Trash. In Logic, OXIde is under OSCarTools, and projects made with OSCar Editor open as before.</p>

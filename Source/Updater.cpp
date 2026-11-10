@@ -78,6 +78,20 @@ namespace
         if (p.start (juce::StringArray { "/usr/bin/xattr", "-dr", "com.apple.quarantine", bundle.getFullPathName() }))
             p.waitForProcessToFinish (20000);
     }
+
+    // Runs a shell script as administrator: macOS shows its own password dialog (osascript, the
+    // way installers without a helper do it). False if the password wasn't given.
+    bool runAsAdministrator (const juce::String& shellScript)
+    {
+        const auto literal = [] (const juce::String& t) { return "\"" + t.replace ("\\", "\\\\").replace ("\"", "\\\"") + "\""; };
+        const auto apple = "do shell script " + literal (shellScript) + " with prompt "
+                           + literal (tr ("OXIde needs your password to update itself in the system plug-in folder."))
+                           + " with administrator privileges";
+        juce::ChildProcess p;
+        if (! p.start (juce::StringArray { "/usr/bin/osascript", "-e", apple }))
+            return false;
+        return p.waitForProcessToFinish (300000) && p.getExitCode() == 0;   // time to type the password
+    }
    #endif
 }
 
@@ -228,7 +242,7 @@ void Updater::install()
                 }
                 else
                 {
-                    const auto r = installBundles (tmp, targets, rel.version, dittoExtract, installed);
+                    const auto r = installBundles (tmp, targets, rel.version, dittoExtract, installed, runAsAdministrator);
                     if (r.failed())
                         err = r.getErrorMessage();
                     for (const auto& path : installed)
@@ -372,14 +386,25 @@ juce::Array<juce::File> Updater::outdatedCopies()
     return outdatedCopies (installedBundles());
 }
 
+juce::String Updater::shellQuote (const juce::String& s)
+{
+    return "'" + s.replace ("'", "'\\''") + "'";
+}
+
 juce::Result Updater::installBundles (const juce::File& zip, const juce::Array<juce::File>& targets,
                                       const juce::String& expectedVersion, const Extractor& extract,
-                                      juce::StringArray& installed)
+                                      juce::StringArray& installed, const Elevator& elevate,
+                                      const std::function<bool (const juce::File&)>& writable)
 {
     const auto stamp = juce::Time::getCurrentTime().formatted ("%Y%m%d-%H%M%S");
     juce::StringArray problems;
 
     juce::Array<juce::File> done;   // bundles already installed by this call
+
+    // bundles waiting for the administrator step: the checked new bundle, where it goes, the
+    // copies with the old name to remove, and the temporary folder to clear afterwards
+    struct Pending { juce::File fresh, dest; juce::Array<juce::File> remove; juce::File staging; };
+    std::vector<Pending> pending;
 
     for (const auto& target : targets)
     {
@@ -404,14 +429,41 @@ juce::Result Updater::installBundles (const juce::File& zip, const juce::Array<j
             removeRenamed();
             continue;
         }
-
-        const auto staging = parent.getChildFile (".oscar-update-" + stamp);
-        staging.deleteRecursively();
-
-        if (! staging.createDirectory())
-        {
-            problems.add (tr ("%1: no permission to write in %2 (install it by hand).", { name, parent.getFullPathName() }));
+        bool alreadyPending = false;
+        for (auto& p : pending)
+            if (p.dest == dest)
+            {
+                if (target != dest)
+                    p.remove.addIfNotAlreadyThere (target);
+                alreadyPending = true;
+            }
+        if (alreadyPending)
             continue;
+
+        // unpacked next to the bundle when the folder can be written in, otherwise in a
+        // temporary folder for the administrator step
+        bool direct = writable ? writable (parent) : true;
+        auto staging = parent.getChildFile (".oscar-update-" + stamp);
+        if (direct)
+        {
+            staging.deleteRecursively();
+            direct = staging.createDirectory().wasOk();
+        }
+        if (! direct)
+        {
+            if (! elevate)
+            {
+                problems.add (tr ("%1: no permission to write in %2 (install it by hand).", { name, parent.getFullPathName() }));
+                continue;
+            }
+            staging = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                          .getChildFile ("oxide-update-" + stamp).getChildFile (target.getFileExtension().substring (1));
+            staging.deleteRecursively();
+            if (! staging.createDirectory())
+            {
+                problems.add (tr ("%1: the downloaded file could not be unpacked.", { name }));
+                continue;
+            }
         }
 
         auto cleanup = [&staging] { staging.deleteRecursively(); };
@@ -431,6 +483,15 @@ juce::Result Updater::installBundles (const juce::File& zip, const juce::Array<j
         {
             problems.add (tr ("%1: not found in the release, or not the expected version. Left unchanged.", { name }));
             cleanup();
+            continue;
+        }
+
+        if (! direct)
+        {
+            Pending p { fresh, dest, {}, staging };
+            if (target != dest)
+                p.remove.add (target);
+            pending.push_back (p);
             continue;
         }
 
@@ -456,6 +517,48 @@ juce::Result Updater::installBundles (const juce::File& zip, const juce::Array<j
         installed.add (dest.getFullPathName());
         done.add (dest);
         removeRenamed();
+    }
+
+    // The administrator step: one script for every protected bundle, so the password is asked
+    // once. Per bundle: the old one aside, the new one moved in, then the old one deleted (or put
+    // back if the copy failed), the copies with the old name removed, the quarantine flag cleared.
+    if (! pending.empty())
+    {
+        juce::StringArray script;
+        for (const auto& p : pending)
+        {
+            const auto q = [] (const juce::File& f) { return shellQuote (f.getFullPathName()); };
+            const auto old = p.dest.getParentDirectory().getChildFile ("." + p.dest.getFileName() + ".old-" + stamp);
+            juce::String removeOld = "true";
+            for (const auto& r : p.remove)
+                removeOld << "; /bin/rm -rf " << q (r);
+            script.add ("if [ -e " + q (p.dest) + " ]; then /bin/mv " + q (p.dest) + " " + q (old) + "; fi; "
+                        "if [ ! -e " + q (p.dest) + " ] && /bin/mv " + q (p.fresh) + " " + q (p.dest) + "; then "
+                        "/bin/rm -rf " + q (old) + "; " + removeOld + "; /usr/bin/xattr -dr com.apple.quarantine " + q (p.dest) + " 2>/dev/null; "
+                        "else [ ! -e " + q (old) + " ] || { /bin/rm -rf " + q (p.dest) + "; /bin/mv " + q (old) + " " + q (p.dest) + "; }; fi");
+        }
+        script.add ("true");
+        const bool ran = elevate (script.joinIntoString ("; "));
+
+        for (const auto& p : pending)
+        {
+            const auto plist = p.dest.getChildFile ("Contents/Info.plist").loadFileAsString();
+            if (ran && plist.contains (kBundleId) && plist.contains (normalise (expectedVersion)))
+            {
+                installed.add (p.dest.getFullPathName());
+                done.add (p.dest);
+            }
+            else if (! ran)
+            {
+                problems.add (tr ("%1: the administrator password was not given. Left unchanged.", { p.dest.getFileName() }));
+            }
+            else
+            {
+                problems.add (tr ("%1: couldn't be installed in %2, even as administrator. Left unchanged.",
+                                  { p.dest.getFileName(), p.dest.getParentDirectory().getFullPathName() }));
+            }
+            p.staging.getParentDirectory().deleteRecursively();
+        }
     }
 
     return problems.isEmpty() ? juce::Result::ok() : juce::Result::fail (problems.joinIntoString ("\n"));

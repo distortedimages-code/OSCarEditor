@@ -174,6 +174,75 @@ static void testRename()
     dir.deleteRecursively();
 }
 
+// A folder the plug-in can't write in (the AU folder when it was installed with the password):
+// the bundle is checked in a temporary folder, then swapped by one script run as administrator.
+static void testElevated()
+{
+    const auto dir = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("oscar-updater-elevated");
+    const auto components = dir.getChildFile ("Components"), vst3 = dir.getChildFile ("VST3");
+    const auto au = components.getChildFile ("OXIde.component"), oldAu = components.getChildFile ("OSCar Editor.component");
+    const auto vst = vst3.getChildFile ("OXIde.vst3");
+    const auto protectedFolder = [components] (const juce::File& f) { return f != components; };
+    const auto shell = [] (const juce::String& script)
+    {
+        juce::ChildProcess p;
+        return p.start (juce::StringArray { "/bin/sh", "-c", script }) && p.waitForProcessToFinish (20000) && p.getExitCode() == 0;
+    };
+    const auto reset = [&]
+    {
+        dir.deleteRecursively();
+        makeBundle (au, "0.5.0", "old");
+        makeBundle (oldAu, "0.4.2", "older");   // a copy with the old name in the same folder
+        makeBundle (vst, "0.5.0", "old");
+        return makeZip (dir, "0.5.1", { "OXIde.component", "OXIde.vst3", "OXIde.app" });
+    };
+    const auto entries = [] (const juce::File& f) { return f.findChildFiles (juce::File::findFilesAndDirectories, false, "*", juce::File::FollowSymlinks::no).size(); };
+
+    // the password given: one script for the protected folder, the other folder done directly
+    {
+        const auto zip = reset();
+        int runs = 0;
+        juce::String ran;
+        juce::StringArray installed;
+        const auto r = Updater::installBundles (zip, { au, oldAu, vst }, "0.5.1", unzip, installed,
+                                                [&] (const juce::String& script) { ++runs; ran = script; return shell (script); }, protectedFolder);
+        CHECK (r.wasOk());
+        CHECK (runs == 1);
+        CHECK (installed.size() == 2);
+        CHECK (au.getChildFile ("Contents/MacOS/OXIde").loadFileAsString() == "new 0.5.1");
+        CHECK (vst.getChildFile ("Contents/MacOS/OXIde").loadFileAsString() == "new 0.5.1");
+        CHECK (! oldAu.exists());
+        CHECK (entries (components) == 1 && entries (vst3) == 1);   // nothing left behind
+        CHECK (ran.contains ("/Components/OXIde.component") && ! ran.contains ("VST3"));
+    }
+
+    // the password refused: the protected bundle stays as it was, the rest is installed
+    {
+        const auto zip = reset();
+        juce::StringArray installed;
+        const auto r = Updater::installBundles (zip, { au, oldAu, vst }, "0.5.1", unzip, installed,
+                                                [] (const juce::String&) { return false; }, protectedFolder);
+        CHECK (r.failed() && r.getErrorMessage().contains ("OXIde.component"));
+        CHECK (installed.size() == 1);
+        CHECK (au.getChildFile ("Contents/MacOS/OXIde").loadFileAsString() == "old");
+        CHECK (oldAu.exists());
+        CHECK (entries (components) == 2);
+    }
+
+    // no way to ask (Windows, tests): reported, left as it was
+    {
+        const auto zip = reset();
+        juce::StringArray installed;
+        const auto r = Updater::installBundles (zip, { au, vst }, "0.5.1", unzip, installed, {}, protectedFolder);
+        CHECK (r.failed() && installed.size() == 1);
+        CHECK (au.getChildFile ("Contents/MacOS/OXIde").loadFileAsString() == "old");
+    }
+
+    // paths with spaces and quotes survive the shell
+    CHECK (Updater::shellQuote ("/a b/it's") == "'/a b/it'\\''s'");
+    dir.deleteRecursively();
+}
+
 static void testNotesLanguage()
 {
     const auto both = juce::String::fromUTF8 ("## English\n\n**Disk image** to install.\n\n## Fran\xc3\xa7" "ais\n\n**Image disque** pour installer.\n");
@@ -193,6 +262,7 @@ int main()
     testParsing();
     testInstall();
     testRename();
+    testElevated();
     testNotesLanguage();
     std::printf ("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;

@@ -1,5 +1,7 @@
 ## English
 
+**0.5.2: updates into protected folders.** When the plug-in was installed with your password (the AU in /Library/Audio/Plug-Ins/Components, from the disk image), the update now asks macOS for that password once, in its usual window, and installs there too. Before, the AU was left on the old version with "no permission to write".
+
 **0.5.1: a smooth display.** Touching a button or turning a knob no longer redraws the whole window: only what changed is drawn again, and the fonts are loaded once instead of on every redraw. That ends the flicker and the labels that vanished on some Macs, and the interface follows the mouse much more closely.
 
 **Softer copper.** The orange buttons and pads glow with a gentle gradient and a small halo, set in a dark bezel. On the Generator page, the big knob now shows its value in full beside its name, prints the range above 75 % in orange, and Generate and the history buttons sit lower down; Previous and Next carry printed arrows.
@@ -24,6 +26,8 @@
 - **A panel with a past**: the printed ink is lightly worn in places; the controls stay clean.
 
 ## Français
+
+**0.5.2 : mises à jour dans les dossiers protégés.** Quand le plugin a été installé avec ton mot de passe (l'AU dans /Library/Audio/Plug-Ins/Components, depuis l'image disque), la mise à jour demande maintenant ce mot de passe une fois, dans la fenêtre habituelle de macOS, et installe là aussi. Avant, l'AU restait sur l'ancienne version avec « pas le droit d'écrire ».
 
 **0.5.1 : un affichage fluide.** Toucher un bouton ou tourner un potard ne redessine plus toute la fenêtre : seul ce qui a changé est redessiné, et les polices sont chargées une seule fois au lieu de l'être à chaque affichage. Fini le clignotement et les textes qui disparaissaient sur certains Mac, et l'interface suit la souris de beaucoup plus près.
 

@@ -55,10 +55,19 @@ public:
     // the zip, in the same folder; a target still named OSCar Editor is removed once its OXIde
     // replacement is in. 'extract' unpacks the zip into a folder (ditto on macOS). Each replacement
     // is atomic per bundle: the old one is put back if the new one can't be moved in.
+    //
+    // A folder the plug-in can't write in (/Library/Audio/Plug-Ins/Components when the bundle was
+    // installed with the administrator password): the new bundle is unpacked and checked in a
+    // temporary folder, then 'elevate' runs one shell script that swaps all such bundles at once
+    // (macOS asks the password once). Without 'elevate' those bundles are reported and left as they
+    // are. 'writable' tells whether a folder can be written in (tests); by default, trying is enough.
     using Extractor = std::function<bool (const juce::File& zip, const juce::File& destination)>;
+    using Elevator = std::function<bool (const juce::String& shellScript)>;
     static juce::Result installBundles (const juce::File& zip, const juce::Array<juce::File>& targets,
                                         const juce::String& expectedVersion, const Extractor& extract,
-                                        juce::StringArray& installed);
+                                        juce::StringArray& installed, const Elevator& elevate = {},
+                                        const std::function<bool (const juce::File&)>& writable = {});
+    static juce::String shellQuote (const juce::String& s);   // 'like this', for /bin/sh
     static juce::Array<juce::File> installedBundles();   // where the plug-in is installed on this Mac (either name)
     // Copies still carrying the pre-0.5 name while the same format is installed as OXIde
     // somewhere: two copies of one plug-in, which hosts confuse.
