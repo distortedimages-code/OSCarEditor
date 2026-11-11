@@ -1489,7 +1489,45 @@ void OscarProcessor::recallTick (double now)
         msgs.emplace_back (kTempoCc, juce::jlimit (0, 127, juce::roundToInt (tempo->load()) >> 1));
     queueCc (msgs);
     recallStage = 0;
-    addLog (tr ("Sound recalled: the OSCar plays voice %1 as saved in the project.", { juce::String (slotLabel (selectedSlot)) + " " + document.getDisplayName (selectedSlot) }));
+    if (storeTarget >= 0)
+        addLog (tr ("The OSCar plays voice %1. On the OSCar, press VOICE, STORE, then key %2. Then click Done.",
+                    { juce::String (slotLabel (selectedSlot)) + " " + document.getDisplayName (selectedSlot), juce::String (slotLabel (storeTarget)) }));
+    else
+        addLog (tr ("Sound recalled: the OSCar plays voice %1 as saved in the project.", { juce::String (slotLabel (selectedSlot)) + " " + document.getDisplayName (selectedSlot) }));
+}
+
+void OscarProcessor::storeStart (int targetSlot)
+{
+    storeTarget = juce::jlimit (0, kNumVoices - 1, targetSlot);
+    storeSource = selectedSlot;
+    publishRandom();   // SUPERMOD holds: the OSCar plays the voice's own values
+    morphOff (getMorphOn() ? tr ("MORPH off: the OSCar plays the voice to store.") : juce::String());
+    recallNow();
+    statusBroadcaster.sendChangeMessage();
+}
+
+void OscarProcessor::storeDone()
+{
+    if (storeTarget < 0)
+        return;
+    const int target = storeTarget, source = storeSource;
+    storeTarget = storeSource = -1;
+    const auto stored = voiceAsSentOverCc (document.getVoice (source));
+    document.oscarReportedVoice (target, stored, true);
+    if (target != source)
+        document.rename (target, document.getName (source));
+    publishRandom();
+    addLog (tr ("Voice %1 is in the OSCar's memory %2.", { juce::String (slotLabel (source)) + " " + document.getDisplayName (source), juce::String (slotLabel (target)) }));
+    statusBroadcaster.sendChangeMessage();
+}
+
+void OscarProcessor::storeCancel()
+{
+    if (storeTarget < 0)
+        return;
+    storeTarget = storeSource = -1;
+    publishRandom();
+    statusBroadcaster.sendChangeMessage();
 }
 
 //==============================================================================
@@ -1513,7 +1551,7 @@ void OscarProcessor::publishRandom()
     s.settings = randomSet;
     s.amounts = randomAmounts;
     for (size_t i = 0; i < s.amounts.size(); ++i)   // switched off: as if none (the voice's value goes back)
-        if (randomBypass || randomMuted[i])
+        if (randomBypass || randomMuted[i] || storeTarget >= 0)
             s.amounts[i] = 0;
     s.seeds = randomSeeds;
     s.base = morphOn ? morphHeard : document.getVoice (selectedSlot);   // MORPH on: around the blend

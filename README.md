@@ -31,23 +31,23 @@ Sur la page **Voix**, la colonne **CLOCK** :
 
 L'horloge peut venir de n'importe quel appareil branché sur l'OSCar, ou du DAW : l'option **Envoyer l'horloge MIDI du DAW à l'OSCar** (page **Réglages**, désactivée par défaut) envoie 24 impulsions par noire au tempo du DAW, avec Start (depuis le début), Continue (en cours de morceau) et Stop. Les impulsions sont placées à leur position exacte dans chaque bloc audio. Rien ne part pendant un export hors ligne ni pendant un transfert de banque. À laisser désactivé si le DAW envoie déjà l'horloge sur le port de l'OSCar.
 
-## Random et Scale
+## Supermod et Scale
 
-En bas de la fenêtre, à côté de Live CC : **RANDOM** et **SCALE**. Chacun ouvre son bandeau à la place de la rangée des mémoires (un second clic la remet).
+En bas de la fenêtre, à côté de Live CC : **SUPERMOD** et **SCALE**. Chacun ouvre son bandeau à la place de la rangée des mémoires (un second clic la remet).
 
-- **RANDOM** ouvre son bandeau et son calque sur la page Voix : tourner un potard ou une tirette règle alors jusqu'où il suit SHAPE au lieu de sa valeur (aussi Transpose, Osc 2 Interval et Octave Shift). Vers le haut, la forme dans son sens ; vers le bas, à l'envers. Dans le calque, l'arc sombre montre la plage que la commande parcourt, l'encoche noire sa propre valeur. Double-clic : rien. RANDOM à nouveau : les potards se tournent normalement.
+- **SUPERMOD** (des modulations : de l'aléatoire ou des ondes de LFO) ouvre son bandeau et son calque sur la page Voix : tourner un potard ou une tirette règle alors jusqu'où il suit SHAPE au lieu de sa valeur (aussi Transpose, Osc 2 Interval et Octave Shift). Vers le haut, la forme dans son sens ; vers le bas, à l'envers. Dans le calque, l'arc sombre montre la plage que la commande parcourt, l'encoche noire sa propre valeur. Double-clic : rien. SUPERMOD à nouveau : les potards se tournent normalement.
 - **Retour visuel**, tout le temps, calque ouvert ou non : chaque commande qui bouge s'allume le long de son échelle, un arc lumineux de sa propre valeur jusqu'à là où elle joue, avec un point brillant au bout, et une petite LED (rouge : vers le haut, ambre : vers le bas, éteinte : coupé).
-- **Clic droit** sur un potard, une tirette ou un sélecteur : *Couper son aléatoire* (gardé pour plus tard) ou le réactiver, *Supprimer son aléatoire*, *Revenir à la valeur enregistrée*, *Couper tous les aléatoires*, *Supprimer tous les aléatoires*.
+- **Clic droit** sur un potard, une tirette ou un sélecteur : *Couper sa modulation* (gardée pour plus tard) ou la réactiver, *Supprimer sa modulation*, *Revenir à la valeur enregistrée*, *Couper toutes les modulations*, *Supprimer toutes les modulations*.
 - **SHAPE** : *S&H*, une nouvelle valeur à chaque pas ; *SMOOTH*, un glissement d'une valeur à la suivante (chaque commande la sienne) ; ou une des ondes des LFO de MIFM1 (SINE, TRIANGLE, SAW, RAMP, SQUARE, PUMP, STAIRS, BOUNCE, CLAVE, RISES, FALLS, ZIGZAG), un seul LFO pour toutes les commandes.
 - **RATE** (potard) : la vitesse, un pas ou un cycle. **SYNC** allumé : une division du tempo du DAW, de 1/32 à 16 mesures, sur ses mesures quand il joue (sans DAW : **BPM**). SYNC éteint : de 10 s à 10 ms.
 - **LOOP** : OFF, toujours de nouvelles valeurs ; de 2 à 64, les mêmes valeurs de S&H et SMOOTH reviennent tous les tant de pas (*Nouvelle boucle* en tire d'autres).
 - **MODE** : *BIPOLAR*, une commande bouge des deux côtés de sa valeur ; *UNIPOLAR*, d'un seul côté (au-dessus vers le haut, en dessous vers le bas).
-- **ACTIF** : éteint, tous les aléatoires sont coupés d'un coup et chaque commande retrouve sa valeur ; leurs réglages restent, rallumer les relance.
-- **Tout effacer** : plus aucun aléatoire, chaque commande retrouve sa valeur.
+- **ACTIF** : éteint, toutes les modulations sont coupées d'un coup et chaque commande retrouve sa valeur ; leurs réglages restent, rallumer les relance.
+- **Tout effacer** : plus aucune modulation, chaque commande retrouve sa valeur.
 - La voix ne change pas : l'OSCar reçoit les valeurs en CC (Live CC). Les ondes et les glissements partent au fil des valeurs, 400 CC par seconde au plus (environ un tiers d'un câble MIDI), les plus gros mouvements d'abord. Les réglages et les boucles sont enregistrés avec le projet.
-- **SCALE** et **ROOT** : les gammes de MIFM1 (majeur, mineur, dorien, phrygien, lydien, mixolydien, locrien, mineur harmonique et mélodique, pentatoniques majeure et mineure, blues, par tons, hirajoshi, phrygien dominant), avec un petit clavier qui allume leurs notes (un clic sur une touche choisit la fondamentale). Transpose et Osc 2 Interval ne prennent que les notes de la gamme (comptées depuis ROOT ; Osc 2 depuis là où Transpose met l'oscillateur 1), leurs aléatoires aussi. Avec MIDI Thru, les notes jouées vont à la note de la gamme la plus proche, et les aléatoires comptent depuis la dernière note jouée. Frequency (le filtre) n'a pas de correspondance en notes : il reste libre. Le bouton SCALE est allumé tant qu'une gamme est active.
+- **SCALE** et **ROOT** : les gammes de MIFM1 (majeur, mineur, dorien, phrygien, lydien, mixolydien, locrien, mineur harmonique et mélodique, pentatoniques majeure et mineure, blues, par tons, hirajoshi, phrygien dominant), avec un petit clavier qui allume leurs notes (un clic sur une touche choisit la fondamentale). Transpose et Osc 2 Interval ne prennent que les notes de la gamme (comptées depuis ROOT ; Osc 2 depuis là où Transpose met l'oscillateur 1), leurs modulations aussi. Avec MIDI Thru, les notes jouées vont à la note de la gamme la plus proche, et les modulations comptent depuis la dernière note jouée. Frequency (le filtre) n'a pas de correspondance en notes : il reste libre. Le bouton SCALE est allumé tant qu'une gamme est active.
 
-**Double-clic sur un potard ou une tirette** (hors calque RANDOM) : il revient à la valeur de la voix telle qu'au dernier enregistrement (ouverture du projet, envoi à l'OSCar, dump reçu).
+**Double-clic sur un potard ou une tirette** (hors calque SUPERMOD) : il revient à la valeur de la voix telle qu'au dernier enregistrement (ouverture du projet, envoi à l'OSCar, dump reçu).
 
 ## Rappel du son à l'ouverture du projet
 
@@ -60,6 +60,13 @@ Le choix est dans Réglages, gardé sur l'ordinateur : *toujours*, *demander d'a
 ## MIDI Thru
 
 Option (désactivée par défaut) pour jouer l'OSCar depuis la piste du DAW, donc avec un autre clavier. Seuls les notes (avec vélocité) et le pitch bend passent, sur le canal de l'OSCar, à leur position dans le bloc audio. Les autres CC sont filtrés pour ne pas changer le son derrière le dos du plugin. Rien ne passe pendant un transfert de banque, et les notes relâchées pendant ce temps sont coupées à la fin. Une note jouée sur le clavier de l'OSCar qui revient par le DAW (monitoring de piste) n'est pas renvoyée. La molette de modulation (CC 1) ne passe pas : le firmware Tauntek ne la reçoit pas.
+
+## Sauver
+
+Le bouton **SAUVER**, en bas à côté de SUPERMOD, ouvre son bandeau à la place des mémoires, avec deux onglets.
+
+- **Dans l'OSCar** : choisis la mémoire (au départ, le même numéro que la voix choisie), puis *Ranger dans la mémoire*. Le plugin envoie toute la voix à l'OSCar, comme le rappel ; SUPERMOD et MORPH s'arrêtent le temps de ranger, pour que l'OSCar joue la voix elle-même. Aucun message MIDI ne sait ranger une voix, et l'OSCar ne reçoit que des banques entières : il faut donc taper sur l'OSCar les touches affichées, **VOICE**, **STORE**, puis le numéro, et cliquer *C'est fait*. Seule cette mémoire change ; le plugin note ce qu'elle contient (et y copie la voix et son nom si c'est un autre numéro, en une étape d'annulation). Passés en CC, les potards arrivent sur des valeurs paires, à 1/254 près. *Toute la banque…* écrit les 36 voix d'un coup, comme *Envoyer au synthé*.
+- **Sur l'ordi** : *Sauver voix…*, *Enregistrer la banque…*, *Exporter en .syx…* et *Ouvrir le dossier*, comme sur la page Banques.
 
 ## Sauvegardes
 

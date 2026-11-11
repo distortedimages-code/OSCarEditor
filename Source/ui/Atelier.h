@@ -552,11 +552,12 @@ private:
 };
 
 // A small orange window that shows a text (a value set elsewhere), its name printed below.
-class VfdText : public juce::Component
+class VfdText : public juce::Component, public juce::SettableTooltipClient
 {
 public:
     explicit VfdText (juce::String labelText) : label (std::move (labelText)) { setInterceptsMouseClicks (false, false); }
     void setText (const juce::String& t)            { if (t != text) { text = t; repaint(); } }
+    void setLabel (const juce::String& t)           { if (t != label) { label = t; repaint(); } }
     void paint (juce::Graphics&) override;
 
 private:

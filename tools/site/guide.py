@@ -255,7 +255,38 @@ def art_draw():
     return svg("".join(bars) + f'<path d="{line}" fill="none" stroke="{OR}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="1 0"/>' + pencil)
 
 
-ART = {"nextday": art_nextday, "keep": art_keep, "modes": art_modes, "channel": art_channel,
+def art_store():
+    # a drawer opening, a note dropping into it, and the three keys below
+    cab = (f'<rect x="40" y="10" width="80" height="58" rx="5" fill="{RA}" stroke="{IV}" stroke-width="2"/>'
+           f'<rect x="48" y="18" width="64" height="18" rx="2" fill="none" stroke="{MU}" stroke-width="1.6"/>'
+           f'<rect x="74" y="25" width="12" height="4" rx="2" fill="{MU}"/>'
+           f'<g class="drawer"><rect x="44" y="42" width="72" height="22" rx="2" fill="#3a3d43" stroke="{IV}" stroke-width="2"/>'
+           f'<rect x="54" y="47" width="22" height="12" rx="2" fill="{VBG}"/>'
+           f'<text class="mono" x="65" y="57" text-anchor="middle" font-size="10" fill="{OR}">7</text>'
+           f'<rect x="88" y="51" width="16" height="4" rx="2" fill="{IV}"/></g>')
+    drop = f'<g class="dropin">{note(128, 30, OR)}</g>'
+    keys = ""
+    for i, (x, w, label) in enumerate(((14, 44, "VOICE"), (64, 44, "STORE"), (114, 30, "7"))):
+        keys += (f'<g class="press" style="animation-delay:{i * 0.35:.2f}s"><rect x="{x}" y="80" width="{w}" height="20" rx="3" fill="{IV}"/>'
+                 f'<rect x="{x}" y="96" width="{w}" height="4" rx="2" fill="#bdb6a6"/>'
+                 f'<text x="{x + w / 2}" y="93.5" text-anchor="middle" font-size="9" font-weight="700" fill="{DK}">{label}</text></g>')
+    return svg(cab + drop + keys)
+
+
+def art_disk():
+    floppy = (f'<g transform="rotate(-8 64 56)"><path d="M30 18 H90 L102 30 V94 a4 4 0 0 1 -4 4 H34 a4 4 0 0 1 -4 -4 V22 a4 4 0 0 1 4 -4 Z" fill="{CU}" stroke="{IV}" stroke-width="2"/>'
+              f'<rect x="44" y="18" width="40" height="24" rx="2" fill="#d8cfbd"/><rect x="72" y="22" width="8" height="16" rx="1" fill="{RA}"/>'
+              f'<rect x="40" y="56" width="52" height="38" rx="3" fill="{IV}"/>'
+              + "".join(f'<line x1="46" y1="{y}" x2="86" y2="{y}" stroke="#bdb6a6" stroke-width="2" stroke-linecap="round"/>' for y in (66, 74, 82))
+              + f'<circle cx="52" cy="66" r="0" fill="none"/></g>')
+    face = (f'<circle cx="58" cy="74" r="1.8" fill="{DK}"/><circle cx="72" cy="72" r="1.8" fill="{DK}"/>'
+            f'<path d="M60 80 q6 5 12 -2" fill="none" stroke="{DK}" stroke-width="1.8" stroke-linecap="round"/>')
+    sparkle = "".join(f'<path class="twinkle" style="animation-delay:{d}s" d="M{x} {y - 6} L{x + 1.6} {y - 1.6} L{x + 6} {y} L{x + 1.6} {y + 1.6} L{x} {y + 6} L{x - 1.6} {y + 1.6} L{x - 6} {y} L{x - 1.6} {y - 1.6} Z" fill="{AM}"/>'
+                      for x, y, d in ((122, 24, 0), (134, 60, 0.6), (114, 88, 1.2)))
+    return svg(floppy + face + sparkle)
+
+
+ART = {"store": art_store, "disk": art_disk, "nextday": art_nextday, "keep": art_keep, "modes": art_modes, "channel": art_channel,
        "breathe": art_breathe, "pump": art_pump, "riff": art_riff, "drift": art_drift, "tidy": art_tidy,
        "scale": art_scale, "morph": art_morph, "draw": art_draw}
 
@@ -263,6 +294,34 @@ ART = {"nextday": art_nextday, "keep": art_keep, "modes": art_modes, "channel": 
 # ---------------------------------------------------------------- the scenes
 # key: (title, situation or "", steps, "ol" or "ul", note or "")
 SCENES = {
+    "store": {
+        "fr": ("Ranger mon son dans une mémoire de l'OSCar", "",
+               ["Clique SAUVER, en bas de la fenêtre, onglet « Dans l'OSCar ».",
+                "Choisis la mémoire : au départ, le même numéro que la voix.",
+                "Clique « Ranger dans la mémoire » : l'OSCar joue la voix, SUPERMOD et MORPH s'arrêtent le temps de ranger.",
+                "Sur l'OSCar, tape les touches affichées, {VOICE}, {STORE}, puis le numéro. Puis clique « C'est fait »."],
+               "ol", "Seule cette mémoire change. Aucun message MIDI ne sait ranger une voix : d'où les touches à taper. « Toute la banque… » écrit les 36 voix d'un coup."),
+        "en": ("Store my sound in one of the OSCar's memories", "",
+               ["Click SAVE, at the bottom of the window, tab \"In the OSCar\".",
+                "Pick the memory: at first, the same number as the voice.",
+                "Click \"Store in this memory\": the OSCar plays the voice, SUPERMOD and MORPH hold while you store.",
+                "On the OSCar, press the keys shown, {VOICE}, {STORE}, then the number. Then click \"Done\"."],
+               "ol", "Only that memory changes. No MIDI message can store a voice: hence the keys to press. \"Whole bank...\" writes all 36 voices at once."),
+    },
+    "disk": {
+        "fr": ("Garder une copie sur l'ordi", "SAUVER, onglet « Sur l'ordi » :",
+               ["« Sauver voix… » : la voix choisie, dans Documents > OXIde > Voices ;",
+                "« Enregistrer la banque… » : les 36 voix avec leurs noms, dans Documents > OXIde > Banks ;",
+                "« Exporter en .syx… » : les 36 voix pour d'autres éditeurs, sans les noms ;",
+                "« Ouvrir le dossier » : tout y est, avec les sauvegardes automatiques."],
+               "ul", "Le projet Logic garde aussi sa banque : en le rouvrant, tu retrouves tes 36 voix."),
+        "en": ("Keep a copy on the computer", "SAVE, tab \"On the computer\":",
+               ["\"Save voice...\": the selected voice, in Documents > OXIde > Voices;",
+                "\"Save bank as...\": the 36 voices with their names, in Documents > OXIde > Banks;",
+                "\"Export .syx...\": the 36 voices for other editors, without the names;",
+                "\"Open folder\": it's all there, with the automatic backups."],
+               "ul", "The Logic project keeps its bank too: open it again and your 36 voices are back."),
+    },
     "nextday": {
         "fr": ("Je rouvre mon morceau le lendemain",
                "Hier soir, le morceau était fini. Ce matin, quelqu'un a joué avec l'OSCar.",
@@ -319,27 +378,27 @@ SCENES = {
     },
     "breathe": {
         "fr": ("Un filtre qui respire en rythme", "",
-               ["Allume Live CC et clique RANDOM, en bas de la fenêtre.",
+               ["Allume Live CC et clique SUPERMOD, en bas de la fenêtre.",
                 "Dans le bandeau : [SHAPE] [SINE], [SYNC] allumé, [RATE] sur [1/1].",
                 "Sur la page Voix, tire le potard Frequency vers le haut jusqu'à [40].",
                 "Lance la lecture dans Logic : le filtre s'ouvre et se ferme à chaque mesure, et l'arc lumineux autour du potard suit le mouvement."],
-               "ol", "La voix elle-même ne change pas : le mouvement passe par-dessus, en CC. Clique RANDOM à nouveau pour retrouver les potards."),
+               "ol", "La voix elle-même ne change pas : le mouvement passe par-dessus, en CC. Clique SUPERMOD à nouveau pour retrouver les potards."),
         "en": ("A filter that breathes in time", "",
-               ["Turn on Live CC and click RANDOM, at the bottom of the window.",
+               ["Turn on Live CC and click SUPERMOD, at the bottom of the window.",
                 "In the strip: [SHAPE] [SINE], [SYNC] on, [RATE] at [1/1].",
                 "On the Voice page, drag the Frequency knob up to [40].",
                 "Press play in Logic: the filter opens and closes every bar, and the lit arc around the knob follows the movement."],
-               "ol", "The voice itself doesn't change: the movement rides on top, as CC. Click RANDOM again to get the knobs back."),
+               "ol", "The voice itself doesn't change: the movement rides on top, as CC. Click SUPERMOD again to get the knobs back."),
     },
     "pump": {
         "fr": ("Une basse qui pompe", "",
-               ["Baisse un peu Frequency, puis clique RANDOM.",
+               ["Baisse un peu Frequency, puis clique SUPERMOD.",
                 "Dans le bandeau : [SHAPE] [PUMP], [SYNC], [RATE] sur [1/4], [MODE] [UNIPOLAR].",
                 "Tire Frequency vers le haut jusqu'à [60].",
                 "À chaque temps, le filtre retombe sur la valeur du potard et remonte : l'effet sidechain, sans compresseur."],
                "ol", "Essaie aussi sur Filter Drive, réglé bas : c'est le volume qui pompe."),
         "en": ("A pumping bass", "",
-               ["Turn Frequency down a little, then click RANDOM.",
+               ["Turn Frequency down a little, then click SUPERMOD.",
                 "In the strip: [SHAPE] [PUMP], [SYNC], [RATE] at [1/4], [MODE] [UNIPOLAR].",
                 "Drag Frequency up to [60].",
                 "On every beat, the filter drops back to the knob's value and swells up again: the sidechain effect, no compressor."],
@@ -348,26 +407,26 @@ SCENES = {
     "drift": {
         "fr": ("Un pad qui vit tout seul", "",
                ["[SHAPE] [SMOOTH], [SYNC] éteint, [RATE] tourné vers [4.00 s] (à gauche, c'est plus lent), [LOOP] [OFF].",
-                "De petits RANDOM sur plusieurs potards : PW [20], De Tune [10], Separation [-15], Osc Balance [25].",
+                "Un peu de SUPERMOD sur plusieurs potards : PW [20], De Tune [10], Separation [-15], Osc Balance [25].",
                 "Chaque potard glisse doucement vers une nouvelle valeur, chacun à sa façon : le son bouge sans jamais se répéter."],
                "ol", "Sync éteint, [RATE] va de 10 ms à 10 s, sans lien avec le tempo."),
         "en": ("A pad that lives on its own", "",
                ["[SHAPE] [SMOOTH], [SYNC] off, [RATE] turned to [4.00 s] (left is slower), [LOOP] [OFF].",
-                "Small RANDOM amounts on several knobs: PW [20], De Tune [10], Separation [-15], Osc Balance [25].",
+                "A little SUPERMOD on several knobs: PW [20], De Tune [10], Separation [-15], Osc Balance [25].",
                 "Each knob glides slowly to a new value, each its own way: the sound moves and never repeats."],
                "ol", "With Sync off, [RATE] goes from 10 ms to 10 s, free of the tempo."),
     },
     "tidy": {
         "fr": ("Calmer, couper, effacer", "",
-               ["Clic droit sur un potard, une tirette ou un sélecteur : « Couper son aléatoire » (il reste réglé, sa LED s'éteint), « Supprimer son aléatoire » ou « Revenir à la valeur enregistrée ».",
-                "[ACTIF], dans le bandeau RANDOM : éteint, tout s'arrête d'un coup, idéal pour un break ; rallumé, tout repart.",
-                "[TOUT EFFACER] : plus aucun aléatoire.",
+               ["Clic droit sur un potard, une tirette ou un sélecteur : « Couper sa modulation » (elle reste réglée, sa LED s'éteint), « Supprimer sa modulation » ou « Revenir à la valeur enregistrée ».",
+                "[ACTIF], dans le bandeau SUPERMOD : éteint, tout s'arrête d'un coup, idéal pour un break ; rallumé, tout repart.",
+                "[TOUT EFFACER] : plus aucune modulation.",
                 "Double-clic sur un potard, calque fermé : il revient à la valeur enregistrée de la voix."],
                "ul", ""),
         "en": ("Tame, mute, erase", "",
-               ["Right-click a knob, a fader or a switch: \"Switch its random off\" (it stays set, its LED goes dark), \"Remove its random\" or \"Back to the saved value\".",
-                "[ACTIVE], in the RANDOM strip: off, everything stops at once, great for a break; back on, everything starts again.",
-                "[CLEAR ALL]: no more randoms.",
+               ["Right-click a knob, a fader or a switch: \"Switch its modulation off\" (it stays set, its LED goes dark), \"Remove its modulation\" or \"Back to the saved value\".",
+                "[ACTIVE], in the SUPERMOD strip: off, everything stops at once, great for a break; back on, everything starts again.",
+                "[CLEAR ALL]: no more modulations.",
                 "Double-click a knob, layer closed: it goes back to the voice's saved value."],
                "ul", ""),
     },
@@ -375,24 +434,24 @@ SCENES = {
         "fr": ("Jouer juste sans y penser", "",
                ["Clique SCALE : choisis une gamme ([MAJOR], [DORIAN], [BLUES]…) et sa tonique sur le petit clavier.",
                 "Allume MIDI Thru : les notes de ton clavier maître glissent vers la note de la gamme la plus proche. Même les fausses notes tombent juste.",
-                "Transpose et Osc 2 Interval ne prennent plus que des notes de la gamme, leurs RANDOM aussi."],
+                "Transpose et Osc 2 Interval ne prennent plus que des notes de la gamme, leurs modulations aussi."],
                "ol", "Les notes jouées sur le clavier de l'OSCar lui-même ne passent pas par le plugin : elles restent telles quelles."),
         "en": ("Stay in key without thinking", "",
                ["Click SCALE: pick a scale ([MAJOR], [DORIAN], [BLUES]…) and its root on the little keyboard.",
                 "Turn on MIDI Thru: the notes from your controller keyboard move to the nearest note of the scale. Even wrong notes land right.",
-                "Transpose and Osc 2 Interval only take notes of the scale, their randoms too."],
+                "Transpose and Osc 2 Interval only take notes of the scale, their modulations too."],
                "ol", "Notes played on the OSCar's own keyboard don't go through the plug-in: they stay as they are."),
     },
     "riff": {
         "fr": ("Un petit riff aléatoire qui revient", "",
                ["Clique SCALE : [MINOR], et le La sur le petit clavier.",
-                "Clique RANDOM : [SHAPE] [S&H], [SYNC], [RATE] sur [1/16], [LOOP] sur [16].",
+                "Clique SUPERMOD : [SHAPE] [S&H], [SYNC], [RATE] sur [1/16], [LOOP] sur [16].",
                 "Tire Transpose vers le haut jusqu'à [60], puis tiens une note (ou lance l'arpège).",
                 "Les 16 pas reviennent à l'identique, toujours dans la gamme. « Nouvelle boucle » en tire un autre ; [LOOP] [OFF] change de note à chaque pas."],
                "ol", ""),
         "en": ("A little random riff that comes back", "",
                ["Click SCALE: [MINOR], and A on the little keyboard.",
-                "Click RANDOM: [SHAPE] [S&H], [SYNC], [RATE] at [1/16], [LOOP] at [16].",
+                "Click SUPERMOD: [SHAPE] [S&H], [SYNC], [RATE] at [1/16], [LOOP] at [16].",
                 "Drag Transpose up to [60], then hold a note (or start the arpeggiator).",
                 "The 16 steps come back exactly the same, always in the scale. \"New loop\" rolls another one; [LOOP] [OFF] changes note on every step."],
                "ol", ""),
@@ -429,7 +488,8 @@ SCENES = {
 
 BANDS = [
     ({"fr": "le projet et l'oscar", "en": "the project and the oscar"}, ["nextday", "keep", "modes", "channel"]),
-    ({"fr": "random", "en": "random"}, ["breathe", "pump", "drift", "tidy"]),
+    ({"fr": "sauver", "en": "save"}, ["store", "disk"]),
+    ({"fr": "supermod", "en": "supermod"}, ["breathe", "pump", "drift", "tidy"]),
     ({"fr": "scale, morph et formes d'onde", "en": "scale, morph and waveforms"}, ["scale", "riff", "morph", "draw"]),
 ]
 

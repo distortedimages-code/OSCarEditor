@@ -1239,6 +1239,16 @@ int main()
             oe->toggleScaleStrip();
             pump (100);
             shoot ("scale-strip");
+            oe->openSave (true);
+            pump (100);
+            shoot ("save-oscar");
+            proc.storeStart (5);
+            pump (900);
+            shoot ("save-waiting");
+            proc.storeCancel();
+            oe->openSave (false);
+            pump (100);
+            shoot ("save-computer");
         }
         ed.reset();
         proc.getMidi().setTestOutput (nullptr);
@@ -1330,6 +1340,50 @@ int main()
         for (int i = 0; i < 200 && proc.channelMismatch(); ++i)   // the next check of the 40 ms timer (slow machines: later)
             pump (10);
         CHECK (! proc.channelMismatch());
+
+        // SAVE, in the OSCar: the voice goes whole, SUPERMOD holds, the user presses the keys, Done
+        {
+            auto& doc = proc.getDocument();
+            const auto& freq = *findParam ("filterFreq");
+            const auto& res = *findParam ("resonance");
+            const int source = 7, target = 20;
+            proc.chooseVoice (source);
+            pump (300);
+            doc.setParam (source, freq, 171);                 // odd: the OSCar gets 170 over CC
+            doc.setParam (source, res, 0);                    // 0: the OSCar gets 1
+            doc.rename (source, "Store me");
+            proc.setLiveCc (true);
+            proc.setRandomShape (2);                          // SINE: it plays all the time
+            proc.setRandomAmount (freq, 60);
+            pump (400);
+            CHECK (proc.getRandomShown (freq) >= 0);
+            out.take();
+            proc.storeStart (target);
+            CHECK (proc.getStoreTarget() == target);
+            auto sent = collect (out, ccCountAtLeast (40));
+            CHECK (ccsOf (sent).size() >= 40 && ! ccValues (sent, freq.cc).empty() && ccValues (sent, freq.cc).back() == 171 >> 1);
+            CHECK (waitForLog (proc, "STORE, then key " + juce::String (slotLabel (target))));
+            pump (300);
+            CHECK (proc.getRandomShown (freq) < 0 && ccValues (out.take(), freq.cc).empty());   // held while the keys are pressed
+            proc.storeDone();
+            CHECK (proc.getStoreTarget() < 0);
+            CHECK (getParam (doc.getVoice (target), freq) == 170 && getParam (doc.getVoice (target), res) == 1);
+            CHECK (doc.getVoice (source) != doc.getVoice (target) || source == target);   // the source keeps its own values
+            CHECK (doc.getName (target) == "Store me" && ! doc.hasUnsentEdits (target));
+            CHECK (waitForLog (proc, "is in the OSCar's memory " + juce::String (slotLabel (target))));
+            pump (300);
+            CHECK (proc.getRandomShown (freq) >= 0);           // SUPERMOD plays again
+            doc.undo();                                         // the name, then the voice
+            doc.undo();
+            CHECK (doc.getName (target) != "Store me" && doc.hasUnsentEdits (target));
+            proc.storeStart (target);                           // cancelled (the strip closed)
+            pump (100);
+            proc.storeCancel();
+            CHECK (proc.getStoreTarget() < 0);
+            proc.clearRandoms();
+            proc.setRandomShape (0);
+            pump (300);
+        }
 
         proc.getMidi().setTestOutput (nullptr);
     }

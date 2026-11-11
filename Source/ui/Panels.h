@@ -175,6 +175,7 @@ private:
 class BanksPanel : public juce::Component, private juce::ListBoxModel
 {
 public:
+    void saveBankAs();   // asks a name: Documents > OXIde > Banks
     BanksPanel (OscarProcessor&, OscarEditor&);
     ~BanksPanel() override;
     void refresh();
@@ -201,7 +202,6 @@ private:
     };
 
     void loadSelectedEntry();
-    void saveBankAs();
 
     OscarProcessor& proc;
     OscarEditor& editor;

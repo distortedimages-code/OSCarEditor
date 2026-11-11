@@ -55,6 +55,16 @@ public:
     void answerRecall (bool recall);     // Ask: recall it, or keep the OSCar's sound
     void recallNow();                    // the same, at once
 
+    // Store in the OSCar: no MIDI message stores a voice and the OSCar only receives whole banks,
+    // so the plugin sends the selected voice whole (as the recall does), holds SUPERMOD and MORPH
+    // so the OSCar plays the voice itself, and the user presses VOICE, STORE and the memory's key
+    // on the OSCar. storeDone: that memory now holds the voice as it went over CC, in the plugin
+    // too (one undo step; the name follows).
+    void storeStart (int targetSlot);
+    void storeDone();
+    void storeCancel();
+    int getStoreTarget() const           { return storeTarget; }   // -1: nothing waiting
+
     bool getFollowOscar() const          { return followOscar; }
     void setFollowOscar (bool b)         { followOscar = b; statusBroadcaster.sendChangeMessage(); }
     bool getSelectAfterSend() const      { return selectAfterSend; }
@@ -353,6 +363,7 @@ private:
     std::array<std::uint32_t, kMaxParams> randomSeeds {};
     std::array<bool, kMaxParams> randomMuted {};
     bool randomBypass = false;
+    int storeTarget = -1, storeSource = -1;    // a store in the OSCar waiting for the user's keys
     void publishRandom();                       // message thread -> CC engine thread
     struct RandomShared
     {

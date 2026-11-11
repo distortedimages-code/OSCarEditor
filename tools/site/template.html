@@ -343,6 +343,10 @@ ul.how li::before { content: ""; position: absolute; left: 2px; top: .62em; widt
 .scene-art .slide { animation: g-slide 4s ease-in-out infinite alternate; }
 .scene-art .wobble { transform-box: fill-box; transform-origin: center; animation: g-wobble 4s ease-in-out infinite; }
 .scene-art .hop { stroke-dasharray: 4 5; animation: g-hop 1.2s linear infinite; }
+.scene-art .drawer { animation: g-drawer 3s ease-in-out infinite; }
+.scene-art .dropin { animation: g-drop 3s ease-in infinite; }
+.scene-art .press { animation: g-press 3s ease-in-out infinite; }
+.scene-art .twinkle { transform-box: fill-box; transform-origin: center; animation: g-twinkle 1.8s ease-in-out infinite; }
 @keyframes g-blink { 0%, 70% { opacity: 1; } 71%, 100% { opacity: .25; } }
 @keyframes g-zz { 0%, 100% { opacity: .35; transform: translateY(2px); } 50% { opacity: 1; transform: translateY(-2px); } }
 @keyframes g-spin { to { transform: rotate(360deg); } }
@@ -354,6 +358,10 @@ ul.how li::before { content: ""; position: absolute; left: 2px; top: .62em; widt
 @keyframes g-slide { from { transform: translateX(-40px); } to { transform: translateX(40px); } }
 @keyframes g-wobble { 0%, 100% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(30deg) scale(1.05); } }
 @keyframes g-hop { to { stroke-dashoffset: -18; } }
+@keyframes g-drawer { 0%, 15%, 85%, 100% { transform: translateY(0); } 30%, 70% { transform: translateY(6px); } }
+@keyframes g-drop { 0%, 25% { opacity: 0; transform: translate(0, -10px); } 40% { opacity: 1; } 65% { opacity: 1; transform: translate(-46px, 22px); } 75%, 100% { opacity: 0; transform: translate(-46px, 26px); } }
+@keyframes g-press { 0%, 8%, 20%, 100% { transform: translateY(0); } 12% { transform: translateY(3px); } }
+@keyframes g-twinkle { 0%, 100% { opacity: .3; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
 @media (prefers-reduced-motion: reduce) { .scene-art * { animation: none !important; } }
 
 /* feedback + support */

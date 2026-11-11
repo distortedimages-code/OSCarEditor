@@ -48,6 +48,8 @@ public:
     void showPage (int index);
     void toggleRandomEdit();   // the RANDOM button: its strip and its layer on the Voice page, on or off
     void toggleScaleStrip();   // the SCALE button: its strip
+    void toggleSaveStrip();    // the SAVE button: its strip (on the computer / in the OSCar)
+    void openSave (bool inOscar)  { saveInOscar = inOscar; showStrip (Strip::Save); }
     static constexpr int banksPageIndex = 3, setupPageIndex = 6;   // Voice, Generator, Morph, Banks, Waveforms, Tauntek keys, Setup
 
 private:
@@ -103,10 +105,10 @@ private:
     juce::OwnedArray<atelier::LedButton> memory;
 
     // RANDOM and SCALE: two buttons in the footer; each opens its strip where the memories are
-    enum class Strip { None, Random, Scale };
+    enum class Strip { None, Random, Scale, Save };
     Strip strip = Strip::None;
     void showStrip (Strip);
-    atelier::LedButton randomButton { "Random" }, scaleButton { "Scale" };
+    atelier::LedButton randomButton { "Supermod" }, scaleButton { "Scale" };
     // the RANDOM strip
     atelier::Selector shapeSelector { "Shape" }, loopSelector { "Loop" }, polaritySelector { "Mode" }, bpmSelector { "BPM" };
     juce::Slider rateKnob;                  // synced: a division (clockwise faster); free: 10 s .. 10 ms
@@ -116,6 +118,18 @@ private:
     // the SCALE strip
     atelier::Selector scaleSelector { "Scale" }, rootSelector { "Root" };
     atelier::ScaleKeys scaleKeys;
+    // the SAVE strip: two tabs. On the computer: the files of the Banks page. In the OSCar: the
+    // selected voice into one memory, by hand (VOICE, STORE, its key: no MIDI message stores),
+    // or the whole bank by SysEx (as Send to synth).
+    atelier::LedButton saveButton { {} };
+    atelier::LedButton computerTab { {} }, oscarTab { {} };
+    atelier::LedButton saveVoiceButton { {} }, saveBankButton { {} }, saveSyxButton { {} }, folderButton { {} };
+    atelier::Selector memorySelector { "Memory" };
+    atelier::LedButton storeButton { {} }, doneButton { {} }, bankButton { {} };
+    atelier::VfdText storeKeys { "Keys on the OSCar" };
+    bool saveInOscar = true;     // the tab
+    int saveTarget = -1, saveTargetFor = -1;   // the memory chosen, and for which selected voice
+    void refreshSave();
     struct Blinker : juce::Timer
     {
         std::function<void()> tick;

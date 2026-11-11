@@ -449,4 +449,17 @@ VoiceData initVoice()
     return v;
 }
 
+VoiceData voiceAsSentOverCc (const VoiceData& v)
+{
+    auto out = v;
+    for (const auto& p : allParams())
+        if (p.cc >= 0 && p.coding == CcCoding::Knob)
+        {
+            const int cc = ccValueFor (p.coding, getParam (v, p));
+            if (cc >= 0)
+                setParam (out, p, firmwareValueFromCc (p.coding, cc));
+        }
+    return out;
+}
+
 } // namespace oscar

@@ -602,6 +602,24 @@ static void testInitVoice()
 }
 
 // Scales and randoms (MIFM1's): the quantizer, the steps of Transpose, the random ranges and loops.
+static void testVoiceOverCc()
+{
+    // what the OSCar keeps of a voice sent as CC: knobs even (0 becomes 1), the rest as it is
+    auto v = initVoice();
+    const auto& freq = *findParam ("filterFreq");
+    const auto& res = *findParam ("resonance");
+    const auto& wave = *findParam ("wave1");
+    setParam (v, freq, 171);
+    setParam (v, res, 0);
+    setParam (v, wave, 5);
+    const auto s = voiceAsSentOverCc (v);
+    CHECK (getParam (s, freq) == 170);
+    CHECK (getParam (s, res) == 1);
+    CHECK (getParam (s, wave) == 5);
+    CHECK (voiceAsSentOverCc (s) == s);
+    CHECK (voiceAsSentOverCc (initVoice()) == initVoice());   // the init voice is exact over CC
+}
+
 static void testPerformance()
 {
     const auto major = scales()[1].mask, minor = scales()[2].mask;
@@ -700,6 +718,7 @@ int main (int argc, char** argv)
     testCombinedMessage();
     testFuzz();
     testPerformance();
+    testVoiceOverCc();
 
     std::printf ("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;

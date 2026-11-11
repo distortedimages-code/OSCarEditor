@@ -319,7 +319,7 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
         auto t = std::make_unique<RandomTouch>();
         t->onChange = [this, id] (int a) { proc.setRandomAmount (def (id.c_str()), a); };
         t->onMenu = [this, id] { showModMenu (id); };
-        t->setTooltip (tr ("RANDOM: drag up or down: how far this control follows SHAPE, up as drawn, down upside down. The dim arc shows the range it sweeps (bipolar: either side of its value, the dark notch; unipolar: one side), the lit one where it plays. Double-click: none. Right-click: switch it off or remove it."));
+        t->setTooltip (tr ("SUPERMOD: drag up or down: how far this control follows SHAPE, up as drawn, down upside down. The dim arc shows the range it sweeps (bipolar: either side of its value, the dark notch; unipolar: one side), the lit one where it plays. Double-click: none. Right-click: switch it off or remove it."));
         addAndMakeVisible (*t);
         touches[id] = std::move (t);
         // a right-click on the control itself, outside the layer
@@ -368,13 +368,13 @@ void VoicePanel::showModMenu (const std::string& id)
     const int slot = proc.getSelectedSlot();
     const int saved = getParam (proc.getDocument().getBaselineVoice (slot), p);
     juce::PopupMenu m;
-    m.addSectionHeader (lang::upper (tr (p.name)) + (amount != 0 ? "   RANDOM " + juce::String (amount) : juce::String()));
-    m.addItem (muteOne, muted ? tr ("Switch its random on again") : tr ("Switch its random off"), amount != 0);
-    m.addItem (removeOne, tr ("Remove its random"), amount != 0);
+    m.addSectionHeader (lang::upper (tr (p.name)) + (amount != 0 ? "   SUPERMOD " + juce::String (amount) : juce::String()));
+    m.addItem (muteOne, muted ? tr ("Switch its modulation on again") : tr ("Switch its modulation off"), amount != 0);
+    m.addItem (removeOne, tr ("Remove its modulation"), amount != 0);
     m.addItem (savedValue, tr ("Back to the saved value"), paramValue (id.c_str()) != saved);
     m.addSeparator();
-    m.addItem (muteAll, bypass ? tr ("Switch every random on again") : tr ("Switch every random off"), any);
-    m.addItem (removeAll, tr ("Remove every random"), any);
+    m.addItem (muteAll, bypass ? tr ("Switch every modulation on again") : tr ("Switch every modulation off"), any);
+    m.addItem (removeAll, tr ("Remove every modulation"), any);
     m.showMenuAsync (juce::PopupMenu::Options().withMousePosition(),
                      [safe = juce::Component::SafePointer<VoicePanel> (this), id, saved, slot] (int r)
                      {
@@ -2234,7 +2234,7 @@ SetupPanel::SetupPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
     help.setFont (Fonts::label (14.0f));
     logView.setFont (Fonts::mono (13.0f));
     help.setText (tr ("CONNECTIONS\nOSCar MIDI OUT -> interface MIDI IN, interface MIDI OUT -> OSCar MIDI IN. Choose both ports on the left.\n\nON THE OSCAR\nProgram change: hold SPACE and press key -9 (LED -9 lit), so the plugin and the OSCar play the same voice. Patch CC dump: hold TUNE/TRANSPOSE and press the 'Enable patch CC dump' key (see the Tauntek keys page). The OSCar then reports each voice it loads and the plugin shows exactly what it plays. If the OSCar stops following after a power cycle, do these two steps again.\n\nRECEIVE: hold INSERT, press VOICE (or SEQ, a WAVEFORM button, or STORE for all three), then SPACE. Everything received is backed up (Banks page).\n\nSEND: the OSCar's MIDI only accepts complete banks, so \"Send voices to synth\" rewrites all 36 voices. What the OSCar held (when known) and what is sent are both backed up.\n\nLIVE CC: edits are sent at once as CC (half resolution: 0-127); Send stores the exact values. Every parameter can also be automated from the DAW.\n\nMIDI THRU: play the OSCar from another keyboard through this track. Notes and pitch bend only; nothing is passed during a transfer; the OSCar's own notes coming back through the DAW are not sent twice.\n\nMIDI CLOCK: set Sync to MIDI clock (Voice page) so the arpeggiator and the sequencer follow the clock the OSCar receives; Division sets the steps. With 'Send the DAW's MIDI clock' on, that clock comes from the DAW's tempo and transport.")
-                  + "\n\n" + tr ("RANDOM and SCALE (bottom right): each opens its strip where the memories are. RANDOM: while its strip is open, a knob or a fader of the Voice page sets how far it follows SHAPE instead of its value, up as drawn, down upside down; BIPOLAR moves it either side of its value, UNIPOLAR one side only. SHAPE: S&H, SMOOTH or one of MIFM1's LFO waves; RATE: the speed, on the DAW's tempo (SYNC) or in milliseconds; LOOP: OFF or the loop's length, 2 to 64 steps. The voice itself never changes: the OSCar gets the values as CC (Live CC).\n\nSCALE: Transpose and Osc 2 Interval only take the notes of the scale, counted from ROOT, and so do their randoms; MIDI Thru moves the notes played to the scale."),
+                  + "\n\n" + tr ("SUPERMOD and SCALE (bottom right): each opens its strip where the memories are. SUPERMOD: while its strip is open, a knob or a fader of the Voice page sets how far it follows SHAPE instead of its value, up as drawn, down upside down; BIPOLAR moves it either side of its value, UNIPOLAR one side only. SHAPE: S&H, SMOOTH or one of MIFM1's LFO waves; RATE: the speed, on the DAW's tempo (SYNC) or in milliseconds; LOOP: OFF or the loop's length, 2 to 64 steps. The voice itself never changes: the OSCar gets the values as CC (Live CC).\n\nSCALE: Transpose and Osc 2 Interval only take the notes of the scale, counted from ROOT, and so do their modulations; MIDI Thru moves the notes played to the scale."),
                   juce::dontSendNotification);
 
     refreshPorts();

@@ -132,6 +132,10 @@ CcDumpRecall voiceFromCcDump (const VoiceData& reference, const std::vector<int>
 // What the firmware's patch dump (routine at 0x59F2) sends for a stored value.
 int dumpCcFor (CcCoding coding, int value);
 
+// The voice the OSCar ends up playing when it gets 'v' as CC: the knobs go over 7 bits, so the
+// firmware stores the even value below (1 for 0); everything else comes through as it is.
+VoiceData voiceAsSentOverCc (const VoiceData& v);
+
 // The (wire byte, bit mask) pairs a parameter owns inside a voice.
 std::vector<std::pair<int, std::uint8_t>> ownedBits (const ParamDef& p);
 
