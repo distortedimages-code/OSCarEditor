@@ -318,10 +318,33 @@ VoicePanel::VoicePanel (OscarProcessor& p) : proc (p)
             continue;
         auto t = std::make_unique<RandomTouch>();
         t->onChange = [this, id] (int a) { proc.setRandomAmount (def (id.c_str()), a); };
-        t->setTooltip (tr ("RANDOM: drag up or down: how much this control follows SHAPE. Up: S&H and SMOOTH draw new values, the waves move as drawn; down: S&H and SMOOTH loop, the waves move upside down. Double-click: none."));
+        t->onMenu = [this, id] { showModMenu (id); };
+        t->setTooltip (tr ("RANDOM: drag up or down: how far this control follows SHAPE, up as drawn, down upside down. The dim arc shows the range it sweeps (bipolar: either side of its value, the dark notch; unipolar: one side), the lit one where it plays. Double-click: none. Right-click: switch it off or remove it."));
         addAndMakeVisible (*t);
         touches[id] = std::move (t);
+        // a right-click on the control itself, outside the layer
+        if (const auto k = knobs.find (id); k != knobs.end())          k->second->slider.onMenu = [this, id] { showModMenu (id); };
+        else if (const auto f = faders.find (id); f != faders.end())   f->second->slider.onMenu = [this, id] { showModMenu (id); };
+        else if (const auto r = rotaries.find (id); r != rotaries.end()) r->second->onMenu = [this, id] { showModMenu (id); };
     }
+
+    // the lit arcs follow what the randoms play, whether the layer is on or not (25 a second, only
+    // the controls that move)
+    liveTimer.tick = [this]
+    {
+        const bool bypass = proc.getRandomBypass();
+        for (auto& [id, t] : touches)
+        {
+            const auto& p = def (id.c_str());
+            t->setAmount (proc.getRandomAmount (p));
+            if (t->getAmount() == 0)
+                continue;
+            t->setMuted (bypass || proc.isRandomMuted (p));
+            const int shown = proc.getRandomShown (p);
+            t->setLive (shown < 0 ? -1.0f : travelOf (id, shown));
+        }
+    };
+    liveTimer.startTimerHz (25);
 
     addAndMakeVisible (wear);
     layout();
@@ -333,6 +356,52 @@ void VoicePanel::setRandomEdit (bool on)
     randomEdit = on;
     for (auto& [id, t] : touches)
         t->setEditing (on);
+}
+
+void VoicePanel::showModMenu (const std::string& id)
+{
+    // this control's random, then all of them
+    enum { removeOne = 1, muteOne, savedValue, muteAll, removeAll };
+    const auto& p = def (id.c_str());
+    const int amount = proc.getRandomAmount (p);
+    const bool muted = proc.isRandomMuted (p), bypass = proc.getRandomBypass(), any = proc.hasRandoms();
+    const int slot = proc.getSelectedSlot();
+    const int saved = getParam (proc.getDocument().getBaselineVoice (slot), p);
+    juce::PopupMenu m;
+    m.addSectionHeader (lang::upper (tr (p.name)) + (amount != 0 ? "   RANDOM " + juce::String (amount) : juce::String()));
+    m.addItem (muteOne, muted ? tr ("Switch its random on again") : tr ("Switch its random off"), amount != 0);
+    m.addItem (removeOne, tr ("Remove its random"), amount != 0);
+    m.addItem (savedValue, tr ("Back to the saved value"), paramValue (id.c_str()) != saved);
+    m.addSeparator();
+    m.addItem (muteAll, bypass ? tr ("Switch every random on again") : tr ("Switch every random off"), any);
+    m.addItem (removeAll, tr ("Remove every random"), any);
+    m.showMenuAsync (juce::PopupMenu::Options().withMousePosition(),
+                     [safe = juce::Component::SafePointer<VoicePanel> (this), id, saved, slot] (int r)
+                     {
+                         if (safe == nullptr || r == 0)
+                             return;
+                         auto& pr = safe->proc;
+                         const auto& d = def (id.c_str());
+                         switch (r)
+                         {
+                             case removeOne:  pr.setRandomAmount (d, 0); break;
+                             case muteOne:    pr.setRandomMuted (d, ! pr.isRandomMuted (d)); break;
+                             case savedValue: pr.editParam (slot, d, saved); break;
+                             case muteAll:    pr.setRandomBypass (! pr.getRandomBypass()); break;
+                             case removeAll:  pr.clearRandoms(); break;
+                             default: break;
+                         }
+                         safe->refresh();
+                     });
+}
+
+float VoicePanel::travelOf (const std::string& id, int value) const
+{
+    if (id == "tuneSemi" || id == "osc2Semi")
+        return (float) (semisOfValue (value) + 7) / 14.0f;   // -7 on the left, +7 on the right
+    if (id == "octaveShift")
+        return (float) value / 5.0f;
+    return (float) value / (float) kKnobMaxEditable;
 }
 
 void VoicePanel::placeTouches()
@@ -436,6 +505,7 @@ void VoicePanel::setupWear (int level)
 
 VoicePanel::~VoicePanel()
 {
+    liveTimer.stopTimer();
     tempoWatch.reset();
     tempoAttachment.reset();
 }
@@ -508,8 +578,19 @@ void VoicePanel::refresh()
     lfoToOsc1.setLit (getParam (v, def ("lfoToOsc1")) == 0);   // 0 = On
     lfoSync.setLit (getParam (v, def ("lfoSync")) == 1);
     refreshClock();
+    const bool bipolar = proc.randomSettings().bipolar;
     for (auto& [id, t] : touches)
+    {
         t->setAmount (proc.getRandomAmount (def (id.c_str())));
+        t->setMuted (proc.getRandomBypass() || proc.isRandomMuted (def (id.c_str())));
+        t->setSweep (travelOf (id, paramValue (id.c_str())), bipolar);
+    }
+    // a double-click puts a knob or a fader back where the voice was when last saved
+    const auto& saved = proc.getDocument().getBaselineVoice (proc.getSelectedSlot());
+    for (auto& [id, k] : knobs)
+        k->slider.setDoubleClickReturnValue (true, (double) getParam (saved, def (id.c_str())));
+    for (auto& [id, f] : faders)
+        f->slider.setDoubleClickReturnValue (true, (double) getParam (saved, def (id.c_str())));
 }
 
 std::pair<int, int> VoicePanel::extent (juce::Component& c) const
@@ -2113,8 +2194,13 @@ SetupPanel::SetupPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
     liveButton.setTooltip (tr ("Every edit is sent to the OSCar as CC at once, and clicking a voice plays it on the OSCar."));
     thruButton.onClick = [this] { proc.setMidiThru (! proc.getMidiThru()); };
     thruButton.setTooltip (tr ("Notes and pitch bend reaching this plugin from the DAW are played on the OSCar. Off if your DAW already sends MIDI to the OSCar (External Instrument...), to avoid double notes."));
-    recallButton.onClick = [this] { proc.setRecallOnLoad (! proc.getRecallOnLoad()); };
-    recallButton.setTooltip (tr ("When the project opens, the OSCar gets the selected voice exactly as saved in the project, whatever its memories hold: all its values as CC, the tempo, and the user waveforms if the voice plays one. Nothing is written into the OSCar's voice memories."));
+    recallBox.addItem (tr ("Recall the project's sound when it opens: always"), 1);
+    recallBox.addItem (tr ("Recall the project's sound when it opens: ask first"), 2);
+    recallBox.addItem (tr ("Recall the project's sound when it opens: never"), 3);
+    recallBox.onChange = [this] { proc.setRecallMode ((OscarProcessor::RecallMode) (recallBox.getSelectedId() - 1)); };
+    recallBox.setTooltip (tr ("When a project opens, the OSCar can get the selected voice exactly as saved in the project, whatever its memories hold: all its values as CC, the tempo, and the user waveforms if the voice plays one. Nothing is written into its voice memories, but the sound it plays is replaced, a sound made on its panel and not stored too. Ask first: the plugin asks in its window, and sends nothing until then."));
+    recallNowButton.onClick = [this] { proc.recallNow(); };
+    recallNowButton.setTooltip (tr ("Sends the selected voice to the OSCar now, whole, as the plugin has it (and the waveforms if it plays one)."));
     clockButton.onClick = [this] { proc.setClockOut (! proc.getClockOut()); };
     clockButton.setTooltip (tr ("While the DAW plays, the plugin sends MIDI clock to the OSCar (24 per quarter note), with Start, Continue and Stop. Voices set to Sync = MIDI clock then follow the DAW's tempo. Off if the DAW already sends clock to the OSCar's port."));
 
@@ -2131,7 +2217,7 @@ SetupPanel::SetupPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
     englishButton.setTooltip ("English interface");
 
     for (auto* c : std::initializer_list<juce::Component*> { &outBox, &inBox, &channelBox, &rescanButton, &followButton,
-                                                             &selectAfterButton, &liveButton, &thruButton, &clockButton, &recallButton,
+                                                             &selectAfterButton, &liveButton, &thruButton, &clockButton, &recallBox, &recallNowButton,
                                                              &checkButton, &autoButton, &notesButton, &installButton, &frenchButton, &englishButton })
         addAndMakeVisible (c);
 
@@ -2148,7 +2234,7 @@ SetupPanel::SetupPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
     help.setFont (Fonts::label (14.0f));
     logView.setFont (Fonts::mono (13.0f));
     help.setText (tr ("CONNECTIONS\nOSCar MIDI OUT -> interface MIDI IN, interface MIDI OUT -> OSCar MIDI IN. Choose both ports on the left.\n\nON THE OSCAR\nProgram change: hold SPACE and press key -9 (LED -9 lit), so the plugin and the OSCar play the same voice. Patch CC dump: hold TUNE/TRANSPOSE and press the 'Enable patch CC dump' key (see the Tauntek keys page). The OSCar then reports each voice it loads and the plugin shows exactly what it plays. If the OSCar stops following after a power cycle, do these two steps again.\n\nRECEIVE: hold INSERT, press VOICE (or SEQ, a WAVEFORM button, or STORE for all three), then SPACE. Everything received is backed up (Banks page).\n\nSEND: the OSCar's MIDI only accepts complete banks, so \"Send voices to synth\" rewrites all 36 voices. What the OSCar held (when known) and what is sent are both backed up.\n\nLIVE CC: edits are sent at once as CC (half resolution: 0-127); Send stores the exact values. Every parameter can also be automated from the DAW.\n\nMIDI THRU: play the OSCar from another keyboard through this track. Notes and pitch bend only; nothing is passed during a transfer; the OSCar's own notes coming back through the DAW are not sent twice.\n\nMIDI CLOCK: set Sync to MIDI clock (Voice page) so the arpeggiator and the sequencer follow the clock the OSCar receives; Division sets the steps. With 'Send the DAW's MIDI clock' on, that clock comes from the DAW's tempo and transport.")
-                  + "\n\n" + tr ("RANDOM (top left): while it is lit, a knob or a fader of the Voice page sets how much it follows SHAPE instead of its value: up or right, S&H and SMOOTH draw new values and the waves move as drawn; down or left, S&H and SMOOTH loop and the waves move upside down. SHAPE: S&H, SMOOTH or one of MIFM1's LFO waves; RATE: the steps or the cycle, on the DAW's tempo and bars; LOOP: the loop's length, 2 to 64 steps; right-click on RANDOM: the tempo without a DAW. The voice itself never changes: the OSCar gets the values as CC (Live CC).\n\nSCALE (top right): Transpose and Osc 2 Interval only take the notes of the scale, counted from ROOT, and so do their randoms; MIDI Thru moves the notes played to the scale."),
+                  + "\n\n" + tr ("RANDOM and SCALE (bottom right): each opens its strip where the memories are. RANDOM: while its strip is open, a knob or a fader of the Voice page sets how far it follows SHAPE instead of its value, up as drawn, down upside down; BIPOLAR moves it either side of its value, UNIPOLAR one side only. SHAPE: S&H, SMOOTH or one of MIFM1's LFO waves; RATE: the speed, on the DAW's tempo (SYNC) or in milliseconds; LOOP: OFF or the loop's length, 2 to 64 steps. The voice itself never changes: the OSCar gets the values as CC (Live CC).\n\nSCALE: Transpose and Osc 2 Interval only take the notes of the scale, counted from ROOT, and so do their randoms; MIDI Thru moves the notes played to the scale."),
                   juce::dontSendNotification);
 
     refreshPorts();
@@ -2189,7 +2275,7 @@ void SetupPanel::refresh()
     liveButton.setLit (proc.getLiveCc());
     thruButton.setLit (proc.getMidiThru());
     clockButton.setLit (proc.getClockOut());
-    recallButton.setLit (proc.getRecallOnLoad());
+    recallBox.setSelectedId ((int) proc.getRecallMode() + 1, juce::dontSendNotification);
     frenchButton.setLit (proc.getLanguage() == "fr");
     englishButton.setLit (proc.getLanguage() == "en");
 
@@ -2237,11 +2323,15 @@ void SetupPanel::resized()
         g.removeFromTop (8);
         portsLabels = portsLabels.withHeight (116.0f);
         const int bh = 32;
-        for (auto* b : { &followButton, &selectAfterButton, &liveButton, &clockButton, &recallButton })
+        for (auto* b : { &followButton, &selectAfterButton, &liveButton, &clockButton })
         {
             b->setBounds (g.removeFromTop (bh).withX (g.getX() - 70).withWidth (g.getWidth() + 70));
             g.removeFromTop (4);
         }
+        auto recallRow = g.removeFromTop (bh).withX (g.getX() - 70).withWidth (g.getWidth() + 70);
+        recallNowButton.setBounds (recallRow.removeFromRight (150));
+        recallRow.removeFromRight (6);
+        recallBox.setBounds (recallRow.reduced (0, 1));
 
         c.removeFromTop (8);
         auto thru = c.removeFromTop (130);

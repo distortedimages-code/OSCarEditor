@@ -41,13 +41,19 @@ public:
     int  getOscarChannel() const         { return oscarChannel; }
     bool channelMismatch() const         { return oscarChannel > 0 && oscarChannel != channel; }
     void setChannel (int ch);
-    // Total recall (on by default, saved with the project): when a project (or a saved state) opens,
-    // the OSCar is put back exactly as the plugin has it, whatever its memories hold: every value of
-    // the selected voice as CC (no programme change, so the OSCar's memory is neither loaded nor
-    // compared), the global tempo, and the user waveforms when the voice uses one (SysEx: the only
-    // way for them). No voice memory of the OSCar is written. Tried for 10 s while the port opens.
-    bool getRecallOnLoad() const         { return recallOnLoad; }
-    void setRecallOnLoad (bool b)        { recallOnLoad = b; statusBroadcaster.sendChangeMessage(); }
+    // Recall the sound when a project (or a saved state) opens: the OSCar is put back exactly as the
+    // plugin has it, whatever its memories hold: every value of the selected voice as CC (no programme
+    // change, so the OSCar's memory is neither loaded nor compared), the global tempo, and the user
+    // waveforms when the voice uses one (SysEx: the only way for them). No voice memory of the OSCar
+    // is written. Tried for 10 s while the port opens. It replaces whatever the OSCar plays, a sound
+    // made on its panel and not stored included: hence Ask, the default, which waits for the user's
+    // answer (in the plugin's window, as soon as it is open). A preference of this computer.
+    enum class RecallMode { Always = 0, Ask = 1, Never = 2 };
+    RecallMode getRecallMode() const;
+    void setRecallMode (RecallMode);
+    bool isRecallWaiting() const         { return recallWaiting; }   // Ask: not answered yet
+    void answerRecall (bool recall);     // Ask: recall it, or keep the OSCar's sound
+    void recallNow();                    // the same, at once
 
     bool getFollowOscar() const          { return followOscar; }
     void setFollowOscar (bool b)         { followOscar = b; statusBroadcaster.sendChangeMessage(); }
@@ -154,13 +160,21 @@ public:
     struct RandomSettings
     {
         int shape = oscar::kShapeSampleHold;        // index in oscar::modShapes()
+        bool sync = true;                           // on the tempo (rate) or free (freeMs)
         int rate = oscar::defaultRandomRate();     // index in oscar::randomRates()
-        int loop = oscar::kDefaultLoopLength;       // steps
+        double freeMs = 250.0;
+        int loop = oscar::kDefaultLoopLength;       // S&H and Smooth: 0, new values; 2..64, a loop of so many steps
+        bool bipolar = true;                        // either side of the control's value, or one side
         int bpm = 120;
         int scale = 0, root = 0;                    // index in oscar::scales(), 0 = C
     };
     const RandomSettings& randomSettings() const    { return randomSet; }
     void setRandomShape (int index);
+    void setRandomSync (bool);
+    void setRandomFreeMs (double ms);
+    void setRandomBipolar (bool);
+    // what a random plays now on this control (its value, 0..254 or a switch position), -1: none
+    int getRandomShown (const oscar::ParamDef&) const;
     void setRandomRate (int index);
     void setRandomLoop (int steps);
     void setRandomBpm (int bpm);
@@ -170,6 +184,12 @@ public:
     void setRandomAmount (const oscar::ParamDef&, int amount);   // back to 0: that loop is drawn again next time
     bool hasRandoms() const;
     void clearRandoms();
+    // Switched off without being lost: one control's modulation, or all of them (the OSCar gets
+    // the voice's own values meanwhile).
+    bool isRandomMuted (const oscar::ParamDef&) const;
+    void setRandomMuted (const oscar::ParamDef&, bool);
+    bool getRandomBypass() const                    { return randomBypass; }
+    void setRandomBypass (bool b)                   { randomBypass = b; publishRandom(); }
     void newRandomLoops();                          // every looped random draws another loop
     int  getRandomSteps() const                     { return randomSteps.load(); }   // steps played so far
     bool isRandomPlaying() const                    { return randomPlaying.load(); }
@@ -247,7 +267,7 @@ private:
     int selectedSlot = 0;
     std::atomic<int> channel { 1 };
     bool followOscar = true;
-    bool recallOnLoad = true;
+    bool recallWaiting = false;
     int recallStage = 0;                        // 0: nothing to do; 1: waveforms (if used); 2: the voice
     double recallAt = 0, recallGiveUp = 0;
     void recallTick (double now);
@@ -331,6 +351,8 @@ private:
     RandomSettings randomSet;
     std::array<int, kMaxParams> randomAmounts {};
     std::array<std::uint32_t, kMaxParams> randomSeeds {};
+    std::array<bool, kMaxParams> randomMuted {};
+    bool randomBypass = false;
     void publishRandom();                       // message thread -> CC engine thread
     struct RandomShared
     {
@@ -351,7 +373,8 @@ private:
     // CC engine thread only
     void randomTick (const RandomShared&, double now);
     int quantizedHostValue (const RandomShared&, const oscar::ParamDef&, int value) const;
-    double randomBeats = 0, randomLastMs = 0;
+    double randomBeats = 0, randomLastMs = 0, randomFreeMs = 0;
+    std::array<std::atomic<int>, kMaxParams> randomShown {};
     long long randomLastStep = -1;
     std::array<bool, kMaxParams> randomLive {};   // sent with a random, not yet put back
     std::array<int, kMaxParams> randomSentCc {};  // the waves and glides: the last CC value sent (-1: none)

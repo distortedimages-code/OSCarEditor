@@ -42,6 +42,8 @@ public:
     // with the OSCar's known content, or, when that is unknown, with the bank as it was
     // when last in step (project reload, dump, send, or a sound reported by the OSCar).
     bool hasUnsentEdits (int slot) const;
+    // That version: the voice as last saved (project opened, sent to the OSCar, dumped, reported).
+    const oscar::VoiceData& getBaselineVoice (int slot) const { return baseline.voices[(size_t) juce::jlimit (0, oscar::kNumVoices - 1, slot)]; }
 
     // The OSCar reported what 'slot' holds (patch CC dump right after it loaded the voice).
     // Updates what we know of the OSCar; with 'adoptIntoEditor' the editor's copy follows

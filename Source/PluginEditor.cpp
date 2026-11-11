@@ -29,9 +29,8 @@ namespace
     constexpr int memoryY = 790, memoryH = 46;
     constexpr int footerY = 846, footerH = 44;
 
-    // shorter vents at both ends: RANDOM and SCALE sit between them and the logo
-    const juce::Rectangle<float> leftVents  { 54.0f, 20.0f, 66.0f, 40.0f };
-    const juce::Rectangle<float> rightVents { 1280.0f, 20.0f, 66.0f, 40.0f };
+    const juce::Rectangle<float> leftVents  { 54.0f, 20.0f, 300.0f, 40.0f };
+    const juce::Rectangle<float> rightVents { 1046.0f, 20.0f, 300.0f, 40.0f };
 }
 
 //==============================================================================
@@ -120,45 +119,71 @@ OscarEditor::OscarEditor (OscarProcessor& p)
         root.addAndMakeVisible (m);
     }
 
-    // RANDOM and SCALE
-    randomButton.onToggle = [this] { toggleRandomEdit(); };
-    randomButton.onMenu = [this] { showRandomMenu(); };
+    // RANDOM and SCALE: footer buttons and their strips
+    randomButton.onClick = [this] { toggleRandomEdit(); };
+    scaleButton.onClick = [this] { toggleScaleStrip(); };
     {
-        std::vector<Selector::Item> shapes, rates, loops, scaleItems, roots;
+        std::vector<Selector::Item> shapes, loops, bpms, scaleItems, roots;
         for (size_t i = 0; i < modShapes().size(); ++i)
             shapes.push_back ({ (int) i, modShapes()[i].name });
-        for (size_t i = 0; i < randomRates().size(); ++i)
-            rates.push_back ({ (int) i, randomRates()[i].label });
         for (auto n : randomLoopLengths())
-            loops.push_back ({ n, juce::String (n) });
+            loops.push_back ({ n, n == 0 ? juce::String ("OFF") : juce::String (n) });
+        for (int b = 40; b <= 240; ++b)
+            bpms.push_back ({ b, juce::String (b) });
         for (size_t i = 0; i < scales().size(); ++i)
             scaleItems.push_back ({ (int) i, scales()[i].name });
         for (int r = 0; r < 12; ++r)
             roots.push_back ({ r, rootName (r) });
         shapeSelector.setItems (shapes);
-        rateSelector.setItems (rates);
         loopSelector.setItems (loops);
+        polaritySelector.setItems ({ { 1, "BIPOLAR" }, { 0, "UNIPOLAR" } });
+        bpmSelector.setItems (bpms);
         scaleSelector.setItems (scaleItems);
         rootSelector.setItems (roots);
     }
     shapeSelector.onChange = [this] (int v) { proc.setRandomShape (v); refreshRandom(); };
-    rateSelector.onChange = [this] (int v) { proc.setRandomRate (v); };
-    loopSelector.onChange = [this] (int v) { proc.setRandomLoop (v); };
-    scaleSelector.onChange = [this] (int v) { proc.setScale (v); };
-    rootSelector.onChange = [this] (int v) { proc.setScaleRoot (v); };
-    for (auto* c : std::initializer_list<juce::Component*> { &randomButton, &shapeSelector, &rateSelector, &loopSelector,
-                                                             &scaleSelector, &rootSelector })
+    loopSelector.onChange = [this] (int v) { proc.setRandomLoop (v); refreshRandom(); };
+    polaritySelector.onChange = [this] (int v) { proc.setRandomBipolar (v == 1); voicePage->refresh(); };
+    bpmSelector.onChange = [this] (int v) { proc.setRandomBpm (v); };
+    scaleSelector.onChange = [this] (int v) { proc.setScale (v); refreshRandom(); };
+    rootSelector.onChange = [this] (int v) { proc.setScaleRoot (v); refreshRandom(); };
+    scaleKeys.onRoot = [this] (int r) { proc.setScaleRoot (r); refreshRandom(); };
+    rateKnob.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    rateKnob.setTextBoxStyle (juce::Slider::NoTextBox, true, 0, 0);
+    rateKnob.setRange (0.0, 1.0);
+    rateKnob.setMouseDragSensitivity (200);
+    rateKnob.setDoubleClickReturnValue (true, 0.0);   // set for real in refreshRandom
+    rateKnob.onValueChange = [this]
+    {
+        const double v = rateKnob.getValue();
+        if (proc.randomSettings().sync)
+        {
+            const int n = (int) randomRates().size();
+            proc.setRandomRate (n - 1 - juce::roundToInt (v * (n - 1)));   // clockwise faster
+        }
+        else
+            proc.setRandomFreeMs (freeRateMs (v));
+        refreshRandom();
+    };
+    syncButton.onClick = [this] { proc.setRandomSync (! proc.randomSettings().sync); refreshRandom(); };
+    newLoopButton.onClick = [this] { proc.newRandomLoops(); };
+    clearButton.onClick = [this] { proc.clearRandoms(); voicePage->refresh(); refreshRandom(); };
+    activeButton.onClick = [this] { proc.setRandomBypass (! proc.getRandomBypass()); voicePage->refresh(); refreshRandom(); };
+    for (auto* c : std::initializer_list<juce::Component*> { &randomButton, &scaleButton })
         root.addAndMakeVisible (c);
+    for (auto* c : std::initializer_list<juce::Component*> { &shapeSelector, &rateKnob, &rateText, &syncButton, &loopSelector,
+                                                             &newLoopButton, &polaritySelector, &bpmSelector, &activeButton,
+                                                             &clearButton, &scaleSelector, &rootSelector, &scaleKeys })
+        root.addChildComponent (c);
     blinker.tick = [this] { blinkRandom(); };
     blinker.startTimerHz (30);
 
     undoButton.onClick = [this] { proc.getDocument().undo(); };
     redoButton.onClick = [this] { proc.getDocument().redo(); };
-    selectAfterButton.onClick = [this] { proc.setSelectAfterSend (! proc.getSelectAfterSend()); };
     liveButton.onClick = [this] { proc.setLiveCc (! proc.getLiveCc()); };
     thruButton.onClick = [this] { proc.setMidiThru (! proc.getMidiThru()); };
     sendButton.onClick = [this] { confirmThenSendVoices(); };
-    for (auto* c : std::initializer_list<juce::Component*> { &undoButton, &redoButton, &selectAfterButton, &liveButton,
+    for (auto* c : std::initializer_list<juce::Component*> { &undoButton, &redoButton, &liveButton,
                                                              &thruButton, &sendButton })
         root.addAndMakeVisible (c);
 
@@ -221,14 +246,28 @@ void OscarEditor::layout()
     updateButton.setBounds (950, displayY + 4, 180, 36);
     channelButton.setBounds (236, displayY + 4, 220, 36);   // left of the voice display, after MIDI IN
 
-    // RANDOM and everything it follows, left of the logo; SCALE right of it, up to the vents
-    const int topY = 16;
-    randomButton.setBounds (132, topY - 2, 104, 33);
-    shapeSelector.setBounds (244, topY, 118, 46);
-    rateSelector.setBounds (370, topY, 90, 46);
-    loopSelector.setBounds (468, topY, 72, 46);
-    rootSelector.setBounds (1190, topY, 78, 46);
-    scaleSelector.setBounds (1024, topY, 158, 46);
+    // the strips, where the memories are (y memoryY .. memoryY + 46)
+    {
+        const int y = memoryY;
+        int x = innerX + 78;
+        auto next = [&x] (int w) { const int at = x; x += w + 10; return at; };
+        shapeSelector.setBounds (next (150), y, 150, 46);
+        rateKnob.setBounds (next (40), y, 40, 40);
+        x -= 6;
+        rateText.setBounds (next (84), y, 84, 46);
+        syncButton.setBounds (next (84), y, 84, 30);
+        loopSelector.setBounds (next (96), y, 96, 46);
+        newLoopButton.setBounds (next (150), y, 150, 30);
+        polaritySelector.setBounds (next (150), y, 150, 46);
+        bpmSelector.setBounds (next (90), y, 90, 46);
+        clearButton.setBounds (innerX + innerW - 6 - 170, y, 170, 30);
+        activeButton.setBounds (clearButton.getX() - 10 - 116, y, 116, 30);
+
+        x = innerX + 78;
+        scaleSelector.setBounds (next (170), y, 170, 46);
+        rootSelector.setBounds (next (84), y, 84, 46);
+        scaleKeys.setBounds (next (196), y, 196, 42);
+    }
 
     const int tw = (innerW - 12 - 6 * 8) / 7;
     for (int i = 0; i < tabs.size(); ++i)
@@ -252,7 +291,9 @@ void OscarEditor::layout()
     f.removeFromRight (8);
     liveButton.setBounds (f.removeFromRight (112).withHeight (37));
     f.removeFromRight (8);
-    selectAfterButton.setBounds (f.removeFromRight (186).withHeight (37));
+    scaleButton.setBounds (f.removeFromRight (88).withHeight (37));
+    f.removeFromRight (8);
+    randomButton.setBounds (f.removeFromRight (98).withHeight (37));
 }
 
 void OscarEditor::paintBackdrop (juce::Graphics& g)
@@ -300,16 +341,20 @@ void OscarEditor::paintBackdrop (juce::Graphics& g)
     drawLights (left, 2, 56.0f);
     drawLights (right, 2, updateButton.isVisible() ? 1150.0f : 1120.0f);
 
-    // memory strip
+    // memory strip, or the RANDOM / SCALE strip in its place
     g.setFont (Fonts::bold (13.0f));
     g.setColour (juce::Colour (0xffdcdee1));
-    g.drawText (tr ("memory"), juce::Rectangle<int> (innerX + 2, memoryY, 74, 30), juce::Justification::centredLeft);
-    g.setColour (juce::Colours::white.withAlpha (0.2f));
-    const int divider = memory[slotAtPosition (11)]->getRight() + 7;   // after -1
-    g.drawVerticalLine (divider, (float) memoryY + 6.0f, (float) memoryY + 34.0f);
+    const auto stripName = strip == Strip::Random ? juce::String ("random") : strip == Strip::Scale ? juce::String ("scale") : tr ("memory");
+    g.drawText (stripName, juce::Rectangle<int> (innerX + 2, memoryY, 74, 30), juce::Justification::centredLeft);
+    if (strip == Strip::None)
+    {
+        g.setColour (juce::Colours::white.withAlpha (0.2f));
+        const int divider = memory[slotAtPosition (11)]->getRight() + 7;   // after -1
+        g.drawVerticalLine (divider, (float) memoryY + 6.0f, (float) memoryY + 34.0f);
+    }
 
     // message
-    const auto msgArea = juce::Rectangle<int> (redoButton.getRight() + 14, footerY, selectAfterButton.getX() - redoButton.getRight() - 24, 37);
+    const auto msgArea = juce::Rectangle<int> (redoButton.getRight() + 14, footerY, randomButton.getX() - redoButton.getRight() - 24, 37);
     g.setFont (Fonts::mono (14.0f));
     g.setColour (colours::vfdDim);
     g.drawFittedText (message, msgArea, juce::Justification::centredLeft, 2, 0.85f);
@@ -319,8 +364,8 @@ void OscarEditor::paintBackdrop (juce::Graphics& g)
 void OscarEditor::showPage (int index)
 {
     page = juce::jlimit (0, (int) pages.size() - 1, index);
-    if (page != 0 && voicePage != nullptr)
-        voicePage->setRandomEdit (false);   // the layer belongs to the Voice page
+    if (page != 0 && strip == Strip::Random)
+        showStrip (Strip::None);   // the layer belongs to the Voice page
     proc.editorPage = page;
     for (int i = 0; i < (int) pages.size(); ++i)
     {
@@ -354,19 +399,28 @@ void OscarEditor::applyTexts()
 
     undoButton.setButtonText (tr ("Undo"));
     redoButton.setButtonText (tr ("Redo"));
-    selectAfterButton.setButtonText (tr ("Then select voice"));
     sendButton.setButtonText (tr ("Send voices to synth"));
-    selectAfterButton.setTooltip (tr ("After sending, select the edited voice on the OSCar so you hear the change."));
     liveButton.setTooltip (tr ("Tauntek: every edit is sent to the OSCar as CC straight away, and choosing a voice plays it on the OSCar. Off: edit the bank without touching the OSCar's sound."));
     thruButton.setTooltip (tr ("Play the OSCar from this DAW track (notes and pitch bend)."));
     sendButton.setTooltip (tr ("Writes the 36 voices into the OSCar's memory (the OSCar only accepts whole banks)."));
 
-    randomButton.setTooltip (tr ("RANDOM: while it is lit, turning a knob or a fader sets how much it follows SHAPE instead of its value. Up or right: S&H and SMOOTH draw new values, the waves move as drawn; down or left: S&H and SMOOTH come back the same every loop, the waves move upside down. The further, the wider; back to the middle or a double-click: none. A small LED marks the controls that move (red: up, amber: down). The voice itself never changes: the OSCar gets the values as CC (Live CC). Right-click: the tempo without a DAW, new loops, clear them all."));
-    shapeSelector.setTooltip (tr ("RANDOM: what the controls follow. S&H: a new value at each step; SMOOTH: gliding from one to the next (each control its own). The waves (from MIFM1's LFOs): one LFO for every control, a cycle per RATE, on the DAW's bars."));
-    rateSelector.setTooltip (tr ("RANDOM: a step (S&H, SMOOTH) or a wave's cycle every..., on the DAW's tempo and bars (T: triplets; 1/1: a bar, 16/1: sixteen)."));
-    loopSelector.setTooltip (tr ("RANDOM: S&H and SMOOTH turned down come back the same every so many steps (2 to 64)."));
-    scaleSelector.setTooltip (tr ("SCALE: Transpose and Osc 2 Interval only take notes of this scale (counted from ROOT), and so do their randoms; the notes played through MIDI Thru move to the nearest note of the scale. OFF: every note."));
-    rootSelector.setTooltip (tr ("SCALE: its root. Play this note to hear the scale from its start (through MIDI Thru, the randoms follow the note played)."));
+    randomButton.setTooltip (tr ("RANDOM: opens its strip and its layer on the Voice page: turning a knob or a fader then sets how far it follows SHAPE instead of its value, up as drawn, down upside down. RANDOM again to turn the knobs as usual. The controls that move light up along their scale, where they play; right-click one to switch its random off or remove it. The voice itself never changes: the OSCar gets the values as CC (Live CC)."));
+    scaleButton.setTooltip (tr ("SCALE: opens its strip. With a scale, Transpose and Osc 2 Interval only take its notes, their randoms too, and the notes played through MIDI Thru move to it. Lit while a scale is on."));
+    shapeSelector.setTooltip (tr ("What the controls follow. S&H: a new value at each step; SMOOTH: gliding from one to the next (each control its own). The waves (from MIFM1's LFOs): one LFO for every control."));
+    rateKnob.setTooltip (tr ("Speed: a step (S&H, SMOOTH) or a wave's cycle. SYNC lit: a division of the DAW's tempo, on its bars (T: triplets; 1/1: a bar). SYNC off: from 10 s to 10 ms. Clockwise: faster. Double-click: back to 1/16 or 250 ms."));
+    syncButton.setTooltip (tr ("Lit: RATE follows the DAW's tempo (or BPM without a DAW). Off: RATE in milliseconds, free."));
+    loopSelector.setTooltip (tr ("S&H and SMOOTH: OFF, new values all the time; 2 to 64, the same values come back every so many steps."));
+    newLoopButton.setTooltip (tr ("Draws other loops (S&H and SMOOTH with LOOP on)."));
+    polaritySelector.setTooltip (tr ("BIPOLAR: a control moves either side of its own value. UNIPOLAR: only on one side, above it when turned up, below it when turned down."));
+    bpmSelector.setTooltip (tr ("The tempo when no DAW gives one (standalone)."));
+    clearButton.setTooltip (tr ("Takes every random off: each control gets its own value back."));
+    activeButton.setTooltip (tr ("Lit: the randoms play. Off: all switched off at once, each control back to its own value; the amounts are kept for later. Right-click a control: switch off or remove its random only."));
+    scaleSelector.setTooltip (tr ("Transpose and Osc 2 Interval only take notes of this scale (counted from ROOT), and so do their randoms; the notes played through MIDI Thru move to the nearest note of the scale. OFF: every note."));
+    rootSelector.setTooltip (tr ("The scale's root. Play this note to hear the scale from its start (through MIDI Thru, the randoms follow the note played)."));
+    scaleKeys.setTooltip (tr ("The notes of the scale, lit; the dot: its root. Click a key to make it the root."));
+    newLoopButton.setButtonText (tr ("New loop"));
+    clearButton.setButtonText (tr ("Clear all"));
+    activeButton.setButtonText (tr ("Active"));
 }
 
 void OscarEditor::createPages()
@@ -413,7 +467,6 @@ void OscarEditor::refreshAll()
 
     undoButton.setEnabled (doc.canUndo());
     redoButton.setEnabled (doc.canRedo());
-    selectAfterButton.setLit (proc.getSelectAfterSend());
     liveButton.setLit (proc.getLiveCc());
     thruButton.setLit (proc.getMidiThru());
 
@@ -447,7 +500,7 @@ void OscarEditor::refreshAll()
     if (newMessage != message)
     {
         message = newMessage;
-        root.repaint (redoButton.getRight(), footerY, selectAfterButton.getX() - redoButton.getRight(), footerH);
+        root.repaint (redoButton.getRight(), footerY, randomButton.getX() - redoButton.getRight(), footerH);
     }
 }
 
@@ -494,58 +547,99 @@ void OscarEditor::timerCallback()
 {
     refreshStatus();
     refreshRandom();   // the DAW's tempo can change
+    askRecall();       // a project opened while this window was closed, or just now
 }
 
 void OscarEditor::refreshRandom()
 {
     const auto& r = proc.randomSettings();
     shapeSelector.setValue (r.shape);
-    rateSelector.setValue (r.rate);
     loopSelector.setValue (r.loop);
-    loopSelector.setAlpha (modShapes()[(size_t) r.shape].random ? 1.0f : 0.45f);   // the waves don't loop: they repeat
+    loopSelector.setAlpha (modShapes()[(size_t) r.shape].random ? 1.0f : 0.45f);   // the waves repeat anyway
+    newLoopButton.setEnabled (r.loop >= 2 && modShapes()[(size_t) r.shape].random);
+    polaritySelector.setValue (r.bipolar ? 1 : 0);
+    syncButton.setLit (r.sync);
+    activeButton.setLit (! proc.getRandomBypass());
+    clearButton.setEnabled (proc.hasRandoms());
+    // the RATE knob: a division (clockwise faster), or milliseconds
+    const int n = (int) randomRates().size();
+    const double knob = r.sync ? (double) (n - 1 - r.rate) / (double) (n - 1) : freeRateKnob (r.freeMs);
+    rateKnob.setValue (knob, juce::dontSendNotification);
+    rateKnob.setDoubleClickReturnValue (true, r.sync ? (double) (n - 1 - defaultRandomRate()) / (double) (n - 1) : freeRateKnob (250.0));
+    if (r.sync)
+        rateText.setText (randomRates()[(size_t) r.rate].label);
+    else if (r.freeMs < 1000.0)
+        rateText.setText (juce::String (juce::roundToInt (r.freeMs)) + " ms");
+    else
+        rateText.setText (juce::String (r.freeMs / 1000.0, r.freeMs < 10000.0 ? 2 : 1) + " s");
+    // the tempo without a DAW: only then, and only synced
+    bpmSelector.setValue (r.bpm);
+    bpmSelector.setVisible (strip == Strip::Random && r.sync && proc.getHostTempo() <= 0.0);
     scaleSelector.setValue (r.scale);
     rootSelector.setValue (r.root);
+    scaleKeys.setScale (scales()[(size_t) r.scale].mask, r.root);
+    scaleButton.setLit (r.scale != 0);
+}
+
+void OscarEditor::showStrip (Strip s)
+{
+    strip = s;
+    const bool random = s == Strip::Random, scale = s == Strip::Scale;
+    for (auto* c : std::initializer_list<juce::Component*> { &shapeSelector, &rateKnob, &rateText, &syncButton, &loopSelector,
+                                                             &newLoopButton, &polaritySelector, &activeButton, &clearButton })
+        c->setVisible (random);
+    for (auto* c : std::initializer_list<juce::Component*> { &scaleSelector, &rootSelector, &scaleKeys })
+        c->setVisible (scale);
+    for (auto* m : memory)   // the memories make room for the strip
+        m->setVisible (s == Strip::None);
+    if (voicePage != nullptr)
+        voicePage->setRandomEdit (random);
+    if (scale)
+        scaleButton.setTextColour (colours::vfd);
+    else
+        scaleButton.clearTextColour();
+    refreshRandom();
+    blinkRandom();
+    root.repaint (innerX, memoryY - 4, innerW, memoryH + 8);   // the strip's printed name
+}
+
+void OscarEditor::askRecall()
+{
+    if (recallAsked || ! proc.isRecallWaiting())
+        return;
+    recallAsked = true;
+    const int slot = proc.getSelectedSlot();
+    juce::AlertWindow::showAsync (juce::MessageBoxOptions().withAssociatedComponent (this)
+        .withIconType (juce::MessageBoxIconType::QuestionIcon)
+        .withTitle (tr ("Recall the project's sound?"))
+        .withMessage (tr ("This project saved voice %1. Recalling it replaces the sound the OSCar plays now (its memories are not touched). If you have just made a sound on the OSCar without storing it, keep it and press STORE on the OSCar first.",
+                          { juce::String (slotLabel (slot)) + " " + proc.getDocument().getDisplayName (slot) }))
+        .withButton (tr ("Recall the project's sound")).withButton (tr ("Keep the OSCar's sound")),
+        [safe = juce::Component::SafePointer<OscarEditor> (this)] (int r)
+        {
+            if (safe == nullptr)
+                return;
+            safe->recallAsked = false;
+            safe->proc.answerRecall (r == 1);   // closed without answering: kept
+        });
 }
 
 void OscarEditor::toggleRandomEdit()
 {
+    if (strip == Strip::Random)
+    {
+        showStrip (Strip::None);
+        return;
+    }
     if (page != 0)
         showPage (0);
-    const bool on = ! voicePage->isRandomEdit();
-    voicePage->setRandomEdit (on);
-    if (on)
-        proc.addLog (tr ("RANDOM: drag a knob or a fader up for a new value at each step, down for a loop. RANDOM again to turn the knobs normally."));
-    blinkRandom();
+    showStrip (Strip::Random);
+    proc.addLog (tr ("RANDOM: drag a knob or a fader up or down: how far it follows SHAPE. RANDOM again to turn the knobs as usual."));
 }
 
-void OscarEditor::showRandomMenu()
+void OscarEditor::toggleScaleStrip()
 {
-    juce::PopupMenu m;
-    m.addSectionHeader ("RANDOM");
-    // the tempo of the steps: the DAW's, or this one without a DAW (standalone)
-    const int daw = juce::roundToInt (proc.getHostTempo());
-    if (daw > 0)
-        m.addItem (3, tr ("Tempo: the DAW's (%1 BPM)", { juce::String (daw) }), false, true);
-    else
-    {
-        juce::PopupMenu tempos;
-        for (int b = 60; b <= 200; b += 5)
-            tempos.addItem (1000 + b, juce::String (b) + " BPM", true, proc.randomSettings().bpm == b);
-        m.addSubMenu (tr ("Tempo without a DAW: %1 BPM", { juce::String (proc.randomSettings().bpm) }), tempos);
-    }
-    m.addSeparator();
-    m.addItem (1, tr ("New loops"), proc.hasRandoms());
-    m.addItem (2, tr ("Clear every random"), proc.hasRandoms());
-    m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (randomButton),
-                     [safe = juce::Component::SafePointer<OscarEditor> (this)] (int r)
-                     {
-                         if (safe == nullptr)
-                             return;
-                         if (r == 1) safe->proc.newRandomLoops();
-                         if (r == 2) safe->proc.clearRandoms();
-                         if (r >= 1000) safe->proc.setRandomBpm (r - 1000);
-                         if (r > 0) safe->voicePage->refresh();
-                     });
+    showStrip (strip == Strip::Scale ? Strip::None : Strip::Scale);
 }
 
 void OscarEditor::blinkRandom()
@@ -559,7 +653,7 @@ void OscarEditor::blinkRandom()
         shownSteps = steps;
         flashUntil = now + 60.0;
     }
-    const bool edit = voicePage != nullptr && voicePage->isRandomEdit();
+    const bool edit = strip == Strip::Random;
     randomButton.setLit (proc.isRandomPlaying() ? now < flashUntil : edit);
     if (edit)
         randomButton.setTextColour (colours::vfd);

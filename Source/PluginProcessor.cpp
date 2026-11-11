@@ -15,7 +15,7 @@ namespace
                            idSlot ("slot"), idFollow ("follow"), idSelectAfter ("selectAfter"),
                            idLiveCc ("liveCc"), idThru ("midiThru"), idClock ("clockOut"), idHost ("HostParams"),
                            idRandom ("Random"), idRandomParam ("Param"), idId ("id"), idAmount ("amount"), idSeed ("seed"),
-                           idRecall ("recallOnLoad"), idRate ("rate"), idShape ("shape"), idLoop ("loop"), idBpm ("bpm"), idScale ("scale"), idRoot ("root");
+                           idMuted ("muted"), idBypass ("bypass"), idRate ("rate"), idShape ("shape"), idLoop ("loop"), idSync ("sync"), idFreeMs ("freeMs"), idBipolar ("bipolar"), idBpm ("bpm"), idScale ("scale"), idRoot ("root");
 
     // A note the OSCar's own keyboard just played that comes back through the DAW
     // (track input monitoring) is an echo: it must not be sent to the OSCar again.
@@ -133,6 +133,8 @@ OscarProcessor::OscarProcessor()
 
     jassert (allParams().size() <= (size_t) kMaxParams);
     randomSentCc.fill (-1);
+    for (auto& v : randomShown)
+        v = -1;
     publishRandom();
 
     morphParam = hostParams.getRawParameterValue ("morph");
@@ -1338,7 +1340,6 @@ void OscarProcessor::getStateInformation (juce::MemoryBlock& destData)
     s.setProperty (idChannel, channel.load(), nullptr);
     s.setProperty (idSlot, selectedSlot, nullptr);
     s.setProperty (idFollow, followOscar, nullptr);
-    s.setProperty (idRecall, recallOnLoad, nullptr);
     s.setProperty (idSelectAfter, selectAfterSend, nullptr);
     s.setProperty (idLiveCc, liveCc.load(), nullptr);
     s.setProperty (idThru, midiThru.load(), nullptr);
@@ -1396,7 +1397,6 @@ void OscarProcessor::applyState (const juce::ValueTree& s)
     channel = juce::jlimit (1, 16, (int) s.getProperty (idChannel, 1));
     selectedSlot = juce::jlimit (0, kNumVoices - 1, (int) s.getProperty (idSlot, 0));
     followOscar = (bool) s.getProperty (idFollow, true);
-    recallOnLoad = (bool) s.getProperty (idRecall, true);
     selectAfterSend = (bool) s.getProperty (idSelectAfter, true);
     liveCc = (bool) s.getProperty (idLiveCc, true);
     midiThru = (bool) s.getProperty (idThru, false);
@@ -1408,14 +1408,48 @@ void OscarProcessor::applyState (const juce::ValueTree& s)
     oscarSound.reset();
     morphOn = false;
     morphPending = false;
-    // ...so, total recall: it gets the project's sound once the port is open
-    if (recallOnLoad)
+    // ...so it gets the project's sound once the port is open (or once the user says so)
+    recallWaiting = false;
+    recallStage = 0;
+    switch (getRecallMode())
     {
-        const auto now = juce::Time::getMillisecondCounterHiRes();
-        recallStage = 1;
-        recallAt = now + 600.0;
-        recallGiveUp = now + 10000.0;
+        case RecallMode::Always: recallNow(); break;
+        case RecallMode::Ask:    recallWaiting = true; break;
+        case RecallMode::Never:  break;
     }
+    statusBroadcaster.sendChangeMessage();
+}
+
+OscarProcessor::RecallMode OscarProcessor::getRecallMode() const
+{
+    auto& settings = const_cast<OscarProcessor*> (this)->globalSettings();
+    return (RecallMode) juce::jlimit (0, 2, settings.getIntValue ("recallMode", (int) RecallMode::Ask));
+}
+
+void OscarProcessor::setRecallMode (RecallMode m)
+{
+    globalSettings().setValue ("recallMode", (int) m);
+    statusBroadcaster.sendChangeMessage();
+}
+
+void OscarProcessor::recallNow()
+{
+    recallWaiting = false;
+    const auto now = juce::Time::getMillisecondCounterHiRes();
+    recallStage = 1;
+    recallAt = now + 600.0;
+    recallGiveUp = now + 10000.0;
+}
+
+void OscarProcessor::answerRecall (bool recall)
+{
+    if (! recallWaiting)
+        return;
+    recallWaiting = false;
+    if (recall)
+        recallNow();
+    else
+        addLog (tr ("The OSCar keeps its sound: the project's voice was not sent."));
     statusBroadcaster.sendChangeMessage();
 }
 
@@ -1478,6 +1512,9 @@ void OscarProcessor::publishRandom()
     RandomShared s;
     s.settings = randomSet;
     s.amounts = randomAmounts;
+    for (size_t i = 0; i < s.amounts.size(); ++i)   // switched off: as if none (the voice's value goes back)
+        if (randomBypass || randomMuted[i])
+            s.amounts[i] = 0;
     s.seeds = randomSeeds;
     s.base = morphOn ? morphHeard : document.getVoice (selectedSlot);   // MORPH on: around the blend
     s.live = liveCc;
@@ -1492,6 +1529,45 @@ void OscarProcessor::setRandomShape (int index)
     publishRandom();
 }
 
+void OscarProcessor::setRandomSync (bool b)
+{
+    randomSet.sync = b;
+    publishRandom();
+}
+
+void OscarProcessor::setRandomFreeMs (double ms)
+{
+    randomSet.freeMs = juce::jlimit (kFreeRateMinMs, kFreeRateMaxMs, ms);
+    publishRandom();
+}
+
+void OscarProcessor::setRandomBipolar (bool b)
+{
+    randomSet.bipolar = b;
+    publishRandom();
+}
+
+bool OscarProcessor::isRandomMuted (const ParamDef& p) const
+{
+    const int i = indexOfParam (p);
+    return i >= 0 && randomMuted[(size_t) i];
+}
+
+void OscarProcessor::setRandomMuted (const ParamDef& p, bool b)
+{
+    const int i = indexOfParam (p);
+    if (i < 0)
+        return;
+    randomMuted[(size_t) i] = b;
+    publishRandom();
+}
+
+int OscarProcessor::getRandomShown (const ParamDef& p) const
+{
+    const int i = indexOfParam (p);
+    return i >= 0 ? randomShown[(size_t) i].load() : -1;
+}
+
 void OscarProcessor::setRandomRate (int index)
 {
     randomSet.rate = juce::jlimit (0, (int) randomRates().size() - 1, index);
@@ -1500,7 +1576,7 @@ void OscarProcessor::setRandomRate (int index)
 
 void OscarProcessor::setRandomLoop (int steps)
 {
-    randomSet.loop = juce::jlimit (1, 256, steps);
+    randomSet.loop = steps < 2 ? 0 : juce::jmin (256, steps);
     publishRandom();
 }
 
@@ -1538,7 +1614,10 @@ void OscarProcessor::setRandomAmount (const ParamDef& p, int amount)
     if (a == amount)
         return;
     if (a != 0 && amount == 0)
+    {
         ++randomSeeds[(size_t) i];   // MIFM1: back to the centre, another loop next time
+        randomMuted[(size_t) i] = false;
+    }
     a = amount;
     publishRandom();
 }
@@ -1556,6 +1635,7 @@ void OscarProcessor::clearRandoms()
             randomAmounts[i] = 0;
             ++randomSeeds[i];
         }
+    randomMuted.fill (false);
     publishRandom();
 }
 
@@ -1593,9 +1673,13 @@ void OscarProcessor::randomTick (const RandomShared& s, double now)
         randomBeats = h.ppq + juce::jmax (0.0, now - h.at) * bpm / 60000.0;
     else
         randomBeats += dt * bpm / 60000.0;
+    randomFreeMs += dt;
+    // synced: steps (or cycles) in beats; free: in milliseconds
     const auto& rates = randomRates();
-    const double stepBeats = rates[(size_t) juce::jlimit (0, (int) rates.size() - 1, s.settings.rate)].beats;
-    const auto step = (long long) std::floor (randomBeats / stepBeats + 1.0e-7);
+    const double stepLength = s.settings.sync ? rates[(size_t) juce::jlimit (0, (int) rates.size() - 1, s.settings.rate)].beats
+                                              : juce::jlimit (kFreeRateMinMs, kFreeRateMaxMs, s.settings.freeMs);
+    const double position = s.settings.sync ? randomBeats : randomFreeMs;
+    const auto step = (long long) std::floor (position / stepLength + 1.0e-7);
 
     const auto& params = allParams();
     const size_t n = params.size();
@@ -1619,6 +1703,8 @@ void OscarProcessor::randomTick (const RandomShared& s, double now)
                 if (randomLive[i])
                     put (i, s.base);
         randomLive.fill (false);
+        for (auto& shown : randomShown)
+            shown = -1;
         randomSentCc.fill (-1);
         randomLastStep = step;
         queueCc (msgs);
@@ -1632,6 +1718,7 @@ void OscarProcessor::randomTick (const RandomShared& s, double now)
             put (i, s.base);
             randomLive[i] = false;
             randomSentCc[i] = -1;
+            randomShown[i] = -1;
         }
 
     const bool newStep = step != randomLastStep;
@@ -1645,15 +1732,17 @@ void OscarProcessor::randomTick (const RandomShared& s, double now)
     const int root = s.settings.root;
     // the scale counts from the note played through MIDI Thru, otherwise from the root
     const int ref = midiThru && thruLastNote >= 0 ? thruLastNote : root;
-    const int loop = juce::jmax (1, s.settings.loop);
-    auto loopIndex = [loop] (long long k) { return (int) (((k % loop) + loop) % loop); };
+    const int loop = s.settings.loop;   // 0: new values
+    auto loopIndex = [loop] (long long k) { return loop < 2 ? 0 : (int) (((k % loop) + loop) % loop); };
     VoiceData v = s.base;
     // a control's value from x (0..1); in the table's order: Transpose before Osc 2 Interval, which
     // lands on the scale from where Transpose puts oscillator 1
     auto apply = [&] (size_t i, double x)
     {
         const auto& p = params[i];
-        int value = randomValue (p, getParam (s.base, p), s.amounts[i], x);
+        // up is up: for Transpose and Osc 2 Interval, a higher note (their values count down)
+        const int amount = isPitchInterval (p) ? -s.amounts[i] : s.amounts[i];
+        int value = randomValue (p, getParam (s.base, p), amount, x, s.settings.bipolar);
         if (mask != 0 && isPitchInterval (p))
         {
             const int from = std::strcmp (p.id, "osc2Semi") == 0 ? ref + semisOfValue (getParam (v, *findParam ("tuneSemi"))) : ref;
@@ -1661,16 +1750,17 @@ void OscarProcessor::randomTick (const RandomShared& s, double now)
         }
         setParam (v, p, value);
         randomLive[i] = true;
+        randomShown[i] = value;
     };
 
     if (shape == kShapeSampleHold)
     {
-        // a new value at each step (up), or the loop's (down); all sent at once, on the step
+        // a new value at each step, or the loop's; all sent at once, on the step
         if (newStep)
         {
             for (size_t i = 0; i < n; ++i)
                 if (s.amounts[i] != 0)
-                    apply (i, s.amounts[i] > 0 ? randomDice.nextDouble() : loopRandom (s.seeds[i], (int) i, loopIndex (step)));
+                    apply (i, loop < 2 ? randomDice.nextDouble() : loopRandom (s.seeds[i], (int) i, loopIndex (step)));
             for (size_t i = 0; i < n; ++i)
                 if (s.amounts[i] != 0)
                 {
@@ -1684,7 +1774,7 @@ void OscarProcessor::randomTick (const RandomShared& s, double now)
 
     // Smooth and the waves move all the time: each control's CC goes out when its value changes,
     // the biggest moves first, within the budget
-    const double phase = juce::jlimit (0.0, 1.0, randomBeats / stepBeats - (double) step);
+    const double phase = juce::jlimit (0.0, 1.0, position / stepLength - (double) step);
     for (size_t i = 0; i < n; ++i)
     {
         const int amount = s.amounts[i];
@@ -1694,7 +1784,7 @@ void OscarProcessor::randomTick (const RandomShared& s, double now)
         if (shape == kShapeSmooth)
         {
             double a, b;
-            if (amount < 0)
+            if (loop >= 2)
             {
                 a = loopRandom (s.seeds[i], (int) i, loopIndex (step));
                 b = loopRandom (s.seeds[i], (int) i, loopIndex (step + 1));
@@ -1715,9 +1805,7 @@ void OscarProcessor::randomTick (const RandomShared& s, double now)
         }
         else
         {
-            x = waveValue (shape, phase);
-            if (amount < 0)
-                x = 1.0 - x;   // upside down
+            x = waveValue (shape, phase);   // upside down when the amount is (randomValue)
         }
         apply (i, x);
     }
@@ -1750,6 +1838,10 @@ void OscarProcessor::saveRandomState (juce::ValueTree& state) const
 {
     juce::ValueTree r (idRandom);
     r.setProperty (idShape, randomSet.shape, nullptr);
+    r.setProperty (idBypass, randomBypass, nullptr);
+    r.setProperty (idSync, randomSet.sync, nullptr);
+    r.setProperty (idFreeMs, randomSet.freeMs, nullptr);
+    r.setProperty (idBipolar, randomSet.bipolar, nullptr);
     r.setProperty (idRate, randomSet.rate, nullptr);
     r.setProperty (idLoop, randomSet.loop, nullptr);
     r.setProperty (idBpm, randomSet.bpm, nullptr);
@@ -1763,6 +1855,8 @@ void OscarProcessor::saveRandomState (juce::ValueTree& state) const
             p.setProperty (idId, params[i].id, nullptr);
             p.setProperty (idAmount, randomAmounts[i], nullptr);
             p.setProperty (idSeed, (juce::int64) randomSeeds[i], nullptr);
+            if (randomMuted[i])
+                p.setProperty (idMuted, true, nullptr);
             r.appendChild (p, nullptr);
         }
     state.appendChild (r, nullptr);
@@ -1773,11 +1867,20 @@ void OscarProcessor::loadRandomState (const juce::ValueTree& r)
     randomSet = {};
     randomAmounts.fill (0);
     randomSeeds.fill (0);
+    randomMuted.fill (false);
+    randomBypass = false;
     if (r.isValid())
     {
         randomSet.shape = juce::jlimit (0, (int) modShapes().size() - 1, (int) r.getProperty (idShape, randomSet.shape));
+        randomSet.sync = (bool) r.getProperty (idSync, true);
+        randomBypass = (bool) r.getProperty (idBypass, false);
+        randomSet.freeMs = juce::jlimit (kFreeRateMinMs, kFreeRateMaxMs, (double) r.getProperty (idFreeMs, 250.0));
+        randomSet.bipolar = (bool) r.getProperty (idBipolar, true);
         randomSet.rate = juce::jlimit (0, (int) randomRates().size() - 1, (int) r.getProperty (idRate, randomSet.rate));
-        randomSet.loop = juce::jlimit (1, 256, (int) r.getProperty (idLoop, randomSet.loop));
+        {
+            const int loop = (int) r.getProperty (idLoop, randomSet.loop);
+            randomSet.loop = loop < 2 ? 0 : juce::jmin (256, loop);
+        }
         randomSet.bpm = juce::jlimit (20, 400, (int) r.getProperty (idBpm, randomSet.bpm));
         randomSet.scale = juce::jlimit (0, (int) scales().size() - 1, (int) r.getProperty (idScale, 0));
         randomSet.root = juce::jlimit (0, 11, (int) r.getProperty (idRoot, 0));
@@ -1789,6 +1892,7 @@ void OscarProcessor::loadRandomState (const juce::ValueTree& r)
                 continue;
             randomAmounts[(size_t) i] = juce::jlimit (-kRandomMax, kRandomMax, (int) p.getProperty (idAmount, 0));
             randomSeeds[(size_t) i] = (std::uint32_t) (juce::int64) p.getProperty (idSeed, 0);
+            randomMuted[(size_t) i] = (bool) p.getProperty (idMuted, false);
         }
     }
     publishRandom();

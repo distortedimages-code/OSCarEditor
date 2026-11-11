@@ -1748,6 +1748,12 @@ void RotarySwitch::choose (int index)
 
 void RotarySwitch::mouseDown (const juce::MouseEvent& e)
 {
+    menuClick = onMenu != nullptr && e.mods.isPopupMenu();
+    if (menuClick)
+    {
+        onMenu();
+        return;
+    }
     dragged = pickedLegend = false;
     dragFrom = shownIndex();
     for (int i = 0; i < (int) items.size(); ++i)
@@ -1761,7 +1767,7 @@ void RotarySwitch::mouseDown (const juce::MouseEvent& e)
 
 void RotarySwitch::mouseDrag (const juce::MouseEvent& e)
 {
-    if (pickedLegend || items.empty())
+    if (menuClick || pickedLegend || items.empty())
         return;
     const int moved = e.getDistanceFromDragStartX() - e.getDistanceFromDragStartY();
     if (std::abs (moved) > 3)
@@ -1772,7 +1778,7 @@ void RotarySwitch::mouseDrag (const juce::MouseEvent& e)
 
 void RotarySwitch::mouseUp (const juce::MouseEvent& e)
 {
-    if (! pickedLegend && ! dragged && e.mouseWasClicked())
+    if (! menuClick && ! pickedLegend && ! dragged && e.mouseWasClicked())
         showList();
 }
 
@@ -2176,13 +2182,20 @@ void RandomTouch::moveTo (float p)
     }
 }
 
-void RandomTouch::mouseDown (const juce::MouseEvent&)
+void RandomTouch::mouseDown (const juce::MouseEvent& e)
 {
+    if (e.mods.isPopupMenu())
+    {
+        if (onMenu) onMenu();
+        return;
+    }
     dragFrom = position;
 }
 
 void RandomTouch::mouseDrag (const juce::MouseEvent& e)
 {
+    if (e.mods.isPopupMenu())
+        return;
     // up or right: a new value at each step; down or left: a loop (shift: finer)
     const float moved = (float) (e.getDistanceFromDragStartX() - e.getDistanceFromDragStartY());
     moveTo (dragFrom + moved * (e.mods.isShiftDown() ? 0.25f : 1.0f));
@@ -2209,88 +2222,172 @@ void RandomTouch::mouseWheelMove (const juce::MouseEvent&, const juce::MouseWhee
 
 void RandomTouch::paint (juce::Graphics& g)
 {
-    const float a = (float) amount / 100.0f;
+    const float a = std::abs ((float) amount) / 100.0f;
     const auto colour = amount < 0 ? loopColour : freeColour;
+    const bool playing = amount != 0 && ! muted && live01 >= 0.0f;
+    // the range swept, 0..1 of the travel
+    float lo = base01, hi = base01;
+    if (bipolar)       { lo = base01 - a; hi = base01 + a; }
+    else if (amount > 0) hi = base01 + a;
+    else               lo = base01 - a;
+    lo = juce::jlimit (0.0f, 1.0f, lo);
+    hi = juce::jlimit (0.0f, 1.0f, hi);
+    const float now = juce::jlimit (0.0f, 1.0f, live01);
+    const float fillFrom = juce::jmin (base01, now), fillTo = juce::jmax (base01, now);
 
-    if (! editing)
-    {
-        if (amount == 0)
-            return;
-        // the mark: a small LED at the top right of the knob, at the top of a fader's slot
-        const auto c = ring ? polar (shape.getCentre(), shape.getWidth() * 0.5f + ledGap, juce::degreesToRadians (45.0f))
-                            : juce::Point<float> (shape.getCentreX() + 9.0f, shape.getY() + 4.0f);
-        if (amount > 0)
-            drawLed (g, c, 6.0f, true);
-        else
-            drawAmberLed (g, c, 6.0f);
+    if (! editing && amount == 0)
         return;
-    }
 
     if (ring)
     {
         const auto c = shape.getCentre();
         const float R = shape.getWidth() * 0.5f;
-        // the layer: the knob a little darker, a dark groove over its scale, a notch at the top for 0
-        g.setColour (juce::Colours::black.withAlpha (0.32f));
-        g.fillEllipse (shape);
         const float r = R + 5.0f, w = juce::jlimit (3.0f, 4.0f, R * 0.09f);
-        juce::Path groove;
-        groove.addCentredArc (c.x, c.y, r, r, 0.0f, knobAngle (0.0f), knobAngle (1.0f), true);
-        g.setColour (juce::Colours::black.withAlpha (0.6f));
-        g.strokePath (groove, juce::PathStrokeType (w + 2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-        g.setColour (juce::Colours::white.withAlpha (0.55f));
-        g.drawLine (juce::Line<float> (polar (c, r - w, 0.0f), polar (c, r + w, 0.0f)), 1.2f);
-        if (amount != 0)
+        auto arcOf = [&c, r] (float from, float to)
         {
-            const float end = juce::degreesToRadians (135.0f) * a;
-            juce::Path arc;
-            arc.addCentredArc (c.x, c.y, r, r, 0.0f, 0.0f, end, true);
-            if (amount > 0)
+            juce::Path p;
+            p.addCentredArc (c.x, c.y, r, r, 0.0f, knobAngle (from), knobAngle (to), true);
+            return p;
+        };
+        if (editing)
+        {
+            // the layer: the knob a little darker, a dark groove over its scale, the range in it
+            g.setColour (juce::Colours::black.withAlpha (0.32f));
+            g.fillEllipse (shape);
+            g.setColour (juce::Colours::black.withAlpha (0.6f));
+            g.strokePath (arcOf (0.0f, 1.0f), juce::PathStrokeType (w + 2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+            if (amount != 0 && hi > lo)
             {
-                g.setColour (colour.withAlpha (0.28f));   // its glow
-                g.strokePath (arc, juce::PathStrokeType (w + 4.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-                g.setColour (colour);
-                g.strokePath (arc, juce::PathStrokeType (w, juce::PathStrokeType::curved, juce::PathStrokeType::butt));
+                g.setColour ((muted ? juce::Colours::grey : colour).withAlpha (0.35f));
+                g.strokePath (arcOf (lo, hi), juce::PathStrokeType (w, juce::PathStrokeType::curved, juce::PathStrokeType::butt));
             }
-            else
-            {
-                // a loop: the arc cut in steps
-                juce::Path dashed;
-                const float dashes[] = { w * 1.4f, w * 0.8f };
-                juce::PathStrokeType (w, juce::PathStrokeType::curved, juce::PathStrokeType::butt).createDashedStroke (dashed, arc, dashes, 2);
-                g.setColour (colour.withAlpha (0.25f));
-                g.strokePath (arc, juce::PathStrokeType (w + 4.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-                g.setColour (colour);
-                g.fillPath (dashed);
-            }
+            // the control's own value: a notch
+            g.setColour (juce::Colours::black);
+            g.drawLine (juce::Line<float> (polar (c, r - w, knobAngle (base01)), polar (c, r + w, knobAngle (base01))), 2.0f);
+        }
+        if (playing && fillTo > fillFrom)
+        {
+            // lit from the control's value to where it plays now, and the tip
+            const auto lit = arcOf (fillFrom, fillTo);
+            g.setColour (colour.withAlpha (0.3f));
+            g.strokePath (lit, juce::PathStrokeType (w + 5.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+            g.setColour (colour);
+            g.strokePath (lit, juce::PathStrokeType (w, juce::PathStrokeType::curved, juce::PathStrokeType::butt));
+        }
+        if (playing)
+        {
+            const auto tip = polar (c, r, knobAngle (now));
+            g.setColour (colour.withAlpha (0.35f));
+            g.fillEllipse (juce::Rectangle<float> (w * 3.2f, w * 3.2f).withCentre (tip));
+            g.setColour (juce::Colour (0xfffff1d6));
+            g.fillEllipse (juce::Rectangle<float> (w + 1.5f, w + 1.5f).withCentre (tip));
         }
     }
     else
     {
-        // a fader: the slot darker, a bar from its middle, up for a new value at each step, down for a loop
-        g.setColour (juce::Colours::black.withAlpha (0.45f));
-        g.fillRoundedRectangle (shape.withSizeKeepingCentre (juce::jmin (shape.getWidth(), 26.0f), shape.getHeight()), 3.0f);
-        const float mid = shape.getCentreY(), half = shape.getHeight() * 0.5f - 6.0f, x = shape.getCentreX();
-        g.setColour (juce::Colours::white.withAlpha (0.55f));
-        g.drawHorizontalLine (juce::roundToInt (mid), x - 7.0f, x + 7.0f);
-        if (amount != 0)
+        const float top = shape.getY() + 6.0f, bottom = shape.getBottom() - 6.0f, x = shape.getCentreX();
+        auto yOf = [top, bottom] (float p) { return bottom - (bottom - top) * juce::jlimit (0.0f, 1.0f, p); };
+        if (editing)
         {
-            const float len = half * std::abs (a);
-            const auto bar = amount > 0 ? juce::Rectangle<float> (x - 2.5f, mid - len, 5.0f, len)
-                                        : juce::Rectangle<float> (x - 2.5f, mid, 5.0f, len);
-            g.setColour (colour.withAlpha (0.28f));
-            g.fillRoundedRectangle (bar.expanded (2.0f), 3.0f);
+            // a fader: the slot darker, the range along it, the fader's own value
+            g.setColour (juce::Colours::black.withAlpha (0.45f));
+            g.fillRoundedRectangle (shape.withSizeKeepingCentre (juce::jmin (shape.getWidth(), 26.0f), shape.getHeight()), 3.0f);
+            if (amount != 0 && hi > lo)
+            {
+                g.setColour ((muted ? juce::Colours::grey : colour).withAlpha (0.35f));
+                g.fillRect (juce::Rectangle<float> (x - 2.5f, yOf (hi), 5.0f, yOf (lo) - yOf (hi)));
+            }
+            g.setColour (juce::Colours::black);
+            g.drawLine (x - 7.0f, yOf (base01), x + 7.0f, yOf (base01), 2.0f);
+        }
+        if (playing)
+        {
+            const auto lit = juce::Rectangle<float> (x - 2.5f, yOf (fillTo), 5.0f, yOf (fillFrom) - yOf (fillTo));
+            g.setColour (colour.withAlpha (0.3f));
+            g.fillRoundedRectangle (lit.expanded (2.5f), 3.0f);
             g.setColour (colour);
-            if (amount > 0)
-                g.fillRect (bar);
-            else
-                for (float y = bar.getY(); y < bar.getBottom(); y += 7.0f)   // in steps
-                    g.fillRect (juce::Rectangle<float> (bar.getX(), y, bar.getWidth(), juce::jmin (4.5f, bar.getBottom() - y)));
+            g.fillRect (lit);
+            const juce::Point<float> tip { x, yOf (now) };
+            g.setColour (colour.withAlpha (0.35f));
+            g.fillEllipse (juce::Rectangle<float> (13.0f, 13.0f).withCentre (tip));
+            g.setColour (juce::Colour (0xfffff1d6));
+            g.fillEllipse (juce::Rectangle<float> (6.0f, 6.0f).withCentre (tip));
         }
     }
 
+    if (! editing)
+    {
+        // the mark: a small LED at the top right of the knob, at the top of a fader's slot
+        const auto c = ring ? polar (shape.getCentre(), shape.getWidth() * 0.5f + ledGap, juce::degreesToRadians (45.0f))
+                            : juce::Point<float> (shape.getCentreX() + 9.0f, shape.getY() + 4.0f);
+        if (muted)
+            drawLed (g, c, 6.0f, false);
+        else if (amount > 0)
+            drawLed (g, c, 6.0f, true);
+        else
+            drawAmberLed (g, c, 6.0f);
+        return;
+    }
     if (! readout.isEmpty())
-        drawSegmentReadout (g, readout, juce::String (amount), 3, true);
+        drawSegmentReadout (g, readout, juce::String (amount), 3, ! muted);
+}
+
+//==============================================================================
+juce::Rectangle<float> ScaleKeys::keyBounds (int note) const
+{
+    // seven white keys, five black ones over them
+    static const int whiteIndex[12] = { 0, -1, 1, -1, 2, 3, -1, 4, -1, 5, -1, 6 };
+    const auto r = getLocalBounds().toFloat().reduced (1.0f);
+    const float w = r.getWidth() / 7.0f;
+    if (whiteIndex[note] >= 0)
+        return { r.getX() + w * (float) whiteIndex[note], r.getY(), w, r.getHeight() };
+    const int left = whiteIndex[note - 1];
+    return { r.getX() + w * (float) (left + 1) - w * 0.32f, r.getY(), w * 0.64f, r.getHeight() * 0.58f };
+}
+
+void ScaleKeys::paint (juce::Graphics& g)
+{
+    auto drawKey = [&] (int n, bool black)
+    {
+        const auto k = keyBounds (n);
+        const bool in = scaleMask == 0 || ((scaleMask >> ((n - scaleRoot + 12) % 12)) & 1u) != 0;
+        auto fill = black ? juce::Colour (0xff17181b) : juce::Colour (0xffd9dadc);
+        if (in && scaleMask != 0)
+            fill = black ? juce::Colour (0xffc45a1c) : juce::Colour (0xffff8c3c);
+        g.setColour (fill);
+        g.fillRoundedRectangle (k.reduced (0.6f, 0.0f), 2.0f);
+        g.setColour (juce::Colours::black.withAlpha (0.7f));
+        g.drawRoundedRectangle (k.reduced (0.6f, 0.0f), 2.0f, 1.0f);
+        if (n == scaleRoot && scaleMask != 0)   // the root: a dot at the bottom of its key
+        {
+            g.setColour (black ? juce::Colours::white : juce::Colour (0xff1a0802));
+            g.fillEllipse (juce::Rectangle<float> (5.0f, 5.0f).withCentre ({ k.getCentreX(), k.getBottom() - 6.0f }));
+        }
+    };
+    for (int n : { 0, 2, 4, 5, 7, 9, 11 }) drawKey (n, false);
+    for (int n : { 1, 3, 6, 8, 10 })       drawKey (n, true);
+}
+
+void ScaleKeys::mouseDown (const juce::MouseEvent& e)
+{
+    for (int n : { 1, 3, 6, 8, 10, 0, 2, 4, 5, 7, 9, 11 })   // black keys first: they lie on top
+        if (keyBounds (n).contains (e.position))
+        {
+            if (onRoot) onRoot (n);
+            return;
+        }
+}
+
+void VfdText::paint (juce::Graphics& g)
+{
+    const auto win = getLocalBounds().toFloat().withHeight (28.0f).reduced (0.5f);
+    drawVfdWindow (g, win);
+    g.setFont (Fonts::mono (14.0f));
+    g.setColour (colours::vfd);
+    g.drawFittedText (text, win.reduced (4.0f, 0.0f).toNearestInt(), juce::Justification::centred, 1, 0.75f);
+    g.setFont (Fonts::bold (11.0f));
+    g.setColour (colours::silkDim);
+    g.drawText (lang::upper (label), getLocalBounds().withTrimmedTop (32), juce::Justification::centredTop);
 }
 
 } // namespace atelier

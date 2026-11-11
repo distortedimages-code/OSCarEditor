@@ -635,7 +635,12 @@ static void testPerformance()
     CHECK (! isRandomisable (*findParam ("wave1")) && ! isRandomisable (*findParam ("arpMode")));
     CHECK (randomValue (freq, 100, 50, 0.5) == 100);
     CHECK (randomValue (freq, 100, 100, 1.0) == kKnobMaxEditable && randomValue (freq, 100, 100, 0.0) == 0);
-    CHECK (randomValue (freq, 100, -50, 1.0) == 100 + 127);
+    CHECK (randomValue (freq, 100, 50, 1.0) == 100 + 127 && randomValue (freq, 100, -50, 1.0) == 0);   // down: upside down
+    // unipolar: one side only, above when up, below when down
+    CHECK (randomValue (freq, 100, 50, 0.0, false) == 100 && randomValue (freq, 100, 50, 1.0, false) == 227);
+    CHECK (randomValue (freq, 100, -20, 0.5, false) == 100 - 25 && randomValue (freq, 100, -50, 0.0, false) == 100);
+    CHECK (std::abs (freeRateMs (0.0) - kFreeRateMaxMs) < 1e-6 && std::abs (freeRateMs (1.0) - kFreeRateMinMs) < 1e-6);
+    CHECK (std::abs (freeRateKnob (freeRateMs (0.37)) - 0.37) < 1e-9);
     CHECK (randomValue (tune, 7, 100, 1.0) == 14 && randomValue (tune, 7, 100, 0.0) == 0);
     std::mt19937 rng (5);
     for (int i = 0; i < 2000; ++i)
@@ -656,7 +661,7 @@ static void testPerformance()
     CHECK (same == 16 && differ >= 14);
     CHECK (randomRates()[(size_t) defaultRandomRate()].beats == 0.25);
     const auto& lengths = randomLoopLengths();
-    CHECK (lengths.front() == 2 && lengths.back() == 64 && std::find (lengths.begin(), lengths.end(), 9) != lengths.end());
+    CHECK (lengths.front() == 0 && lengths[1] == 2 && lengths.back() == 64 && std::find (lengths.begin(), lengths.end(), 9) != lengths.end());
 
     // the waves: 0..1, as MIFM1 draws them
     CHECK (modShapes()[kShapeSampleHold].random && modShapes()[kShapeSmooth].random && ! modShapes()[2].random);

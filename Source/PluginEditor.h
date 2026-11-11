@@ -46,7 +46,8 @@ public:
     void exportBankSyx();
     void showUpdateDialog();
     void showPage (int index);
-    void toggleRandomEdit();   // the RANDOM button: its layer on the Voice page, on or off
+    void toggleRandomEdit();   // the RANDOM button: its strip and its layer on the Voice page, on or off
+    void toggleScaleStrip();   // the SCALE button: its strip
     static constexpr int banksPageIndex = 3, setupPageIndex = 6;   // Voice, Generator, Morph, Banks, Waveforms, Tauntek keys, Setup
 
 private:
@@ -101,20 +102,20 @@ private:
 
     juce::OwnedArray<atelier::LedButton> memory;
 
-    // RANDOM (left of the logo) and SCALE (right of it), in the header: on every page
-    struct RandomButton : atelier::LedButton
-    {
-        RandomButton() : atelier::LedButton ("Random") {}
-        std::function<void()> onToggle, onMenu;   // a click; a right-click
-        void clicked (const juce::ModifierKeys& m) override
-        {
-            if (m.isPopupMenu()) { if (onMenu) onMenu(); }
-            else if (onToggle) onToggle();
-        }
-    };
-    RandomButton randomButton;
-    atelier::Selector shapeSelector { "Shape" }, rateSelector { "Rate" }, loopSelector { "Loop" },
-                      scaleSelector { "Scale" }, rootSelector { "Root" };
+    // RANDOM and SCALE: two buttons in the footer; each opens its strip where the memories are
+    enum class Strip { None, Random, Scale };
+    Strip strip = Strip::None;
+    void showStrip (Strip);
+    atelier::LedButton randomButton { "Random" }, scaleButton { "Scale" };
+    // the RANDOM strip
+    atelier::Selector shapeSelector { "Shape" }, loopSelector { "Loop" }, polaritySelector { "Mode" }, bpmSelector { "BPM" };
+    juce::Slider rateKnob;                  // synced: a division (clockwise faster); free: 10 s .. 10 ms
+    atelier::VfdText rateText { "Rate" };
+    atelier::LedButton syncButton { "Sync" }, newLoopButton { {} }, clearButton { {} };
+    atelier::LedButton activeButton { {} };   // lit: the randoms play; off: all switched off, kept
+    // the SCALE strip
+    atelier::Selector scaleSelector { "Scale" }, rootSelector { "Root" };
+    atelier::ScaleKeys scaleKeys;
     struct Blinker : juce::Timer
     {
         std::function<void()> tick;
@@ -124,9 +125,10 @@ private:
     double flashUntil = 0;
     void refreshRandom();       // the settings, as the processor has them
     void blinkRandom();         // the RANDOM light: a flash at each step; steady while its layer is on
-    void showRandomMenu();      // right-click on RANDOM: the tempo without a DAW, new loops, clear all
+    void askRecall();           // a project opened (Ask): recall its sound, or keep the OSCar's?
+    bool recallAsked = false;
 
-    atelier::LedButton undoButton { {} }, redoButton { {} }, selectAfterButton { {} }, liveButton { "Live CC" }, thruButton { "MIDI Thru" };
+    atelier::LedButton undoButton { {} }, redoButton { {} }, liveButton { "Live CC" }, thruButton { "MIDI Thru" };
     atelier::CopperButton sendButton { {} };
     atelier::CachedPainting panelCache;   // the brushed panel, vents and logo
     juce::String message, shownLights;   // what the backdrop shows: repainted only when they change

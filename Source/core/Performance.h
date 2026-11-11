@@ -39,9 +39,9 @@ bool isPitchInterval (const ParamDef&);   // Tune Semi, Osc 2 Semi
 
 //==============================================================================
 // Random: each control's amount, -100..100, how far it follows the shape below (100: the whole
-// travel either way). Up (> 0): S&H and Smooth draw new values, the waves move as drawn; down
-// (< 0): S&H and Smooth come back the same every loop, the waves move upside down. 0: none, the
-// control keeps its own value.
+// travel). Up (> 0) the shape as drawn, down (< 0) upside down, whatever the shape. Bipolar: the
+// control moves either side of its own value; unipolar: only above it (up) or below it (down).
+// 0: none, the control keeps its own value.
 constexpr int kRandomMax = 100;
 
 struct RandomRate
@@ -51,13 +51,16 @@ struct RandomRate
 };
 const std::vector<RandomRate>& randomRates();
 int defaultRandomRate();                      // 1/16
-const std::vector<int>& randomLoopLengths();  // steps: 2 to 64
-constexpr int kDefaultLoopLength = 16;        // MIFM1's
+const std::vector<int>& randomLoopLengths();  // 0 (no loop: new values), then 2 to 64 steps
+constexpr int kDefaultLoopLength = 0;
+// Free (not synced) rate: a step or a cycle every 10 ms to 10 s; a knob's 0..1, clockwise faster.
+constexpr double kFreeRateMinMs = 10.0, kFreeRateMaxMs = 10000.0;
+double freeRateMs (double knob);
+double freeRateKnob (double ms);
 
 // What the controls follow, as MIFM1's LFOs: S&H (a new value at each step) and Smooth (from one
-// random value to the next) are random, each control its own; the waves are one LFO that every
-// control follows, on the DAW's bars. Turned down (a negative amount), the randoms loop and the
-// waves move upside down.
+// random value to the next) are random, each control its own (looped or not: see LOOP); the waves
+// are one LFO that every control follows, on the DAW's bars when synced.
 struct ModShape
 {
     const char* name;      // as printed in the display
@@ -70,9 +73,9 @@ double waveValue (int shape, double phase);
 
 bool isRandomisable (const ParamDef&);        // the knobs, Transpose, Osc 2 Interval and Osc 2 Octave
 
-// The value at a step: 'base' moved by up to |amount| % of the travel, by x (0..1, 0.5: none),
-// kept within the travel.
-int randomValue (const ParamDef&, int base, int amount, double x);
+// The value for x (0..1, the shape's height): bipolar, 'base' + amount % of the travel times
+// (2x - 1); unipolar, 'base' + amount % times x. Kept within the travel.
+int randomValue (const ParamDef&, int base, int amount, double x, bool bipolar = true);
 
 // The looped random, 0..1: always the same for this seed, parameter and step of the loop.
 double loopRandom (std::uint32_t seed, int paramIndex, int step);

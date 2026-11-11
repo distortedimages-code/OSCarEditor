@@ -158,7 +158,7 @@ const std::vector<int>& randomLoopLengths()
 {
     static const std::vector<int> l = []
     {
-        std::vector<int> v;
+        std::vector<int> v { 0 };
         for (int n = 2; n <= 64; ++n)
             v.push_back (n);
         return v;
@@ -188,12 +188,24 @@ bool isRandomisable (const ParamDef& p)
     return p.cc >= 0 && (p.kind == ParamKind::Knob || isPitchInterval (p) || std::strcmp (p.id, "octaveShift") == 0);
 }
 
-int randomValue (const ParamDef& p, int base, int amount, double x)
+int randomValue (const ParamDef& p, int base, int amount, double x, bool bipolar)
 {
     const auto [lo, hi] = travel (p);
-    const double a = std::min (std::abs (amount), kRandomMax) / (double) kRandomMax;
-    const double v = base + a * (2.0 * x - 1.0) * (hi - lo);
+    const double a = std::clamp (amount, -kRandomMax, kRandomMax) / (double) kRandomMax;
+    const double v = base + a * (bipolar ? 2.0 * x - 1.0 : x) * (hi - lo);
     return std::clamp ((int) std::lround (v), lo, hi);
+}
+
+double freeRateMs (double knob)
+{
+    knob = std::clamp (knob, 0.0, 1.0);
+    return kFreeRateMaxMs * std::pow (kFreeRateMinMs / kFreeRateMaxMs, knob);
+}
+
+double freeRateKnob (double ms)
+{
+    ms = std::clamp (ms, kFreeRateMinMs, kFreeRateMaxMs);
+    return std::log (ms / kFreeRateMaxMs) / std::log (kFreeRateMinMs / kFreeRateMaxMs);
 }
 
 double loopRandom (std::uint32_t seed, int paramIndex, int step)

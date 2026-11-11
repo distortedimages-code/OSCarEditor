@@ -129,6 +129,25 @@ public:
 //==============================================================================
 // Widgets
 
+// A slider that hands a right-click to onMenu, when set, instead of moving.
+class MenuSlider : public juce::Slider
+{
+public:
+    std::function<void()> onMenu;
+    void mouseDown (const juce::MouseEvent& e) override
+    {
+        menuClick = onMenu != nullptr && e.mods.isPopupMenu();
+        if (menuClick) onMenu();
+        else           juce::Slider::mouseDown (e);
+    }
+    void mouseDrag (const juce::MouseEvent& e) override        { if (! menuClick) juce::Slider::mouseDrag (e); }
+    void mouseUp (const juce::MouseEvent& e) override          { if (! menuClick) juce::Slider::mouseUp (e); }
+    void mouseDoubleClick (const juce::MouseEvent& e) override { if (! menuClick) juce::Slider::mouseDoubleClick (e); }
+
+private:
+    bool menuClick = false;
+};
+
 // Rotary knob with a printed scale around it, its label below and its value underneath.
 class Knob : public juce::Component
 {
@@ -168,7 +187,7 @@ public:
     void mouseEnter (const juce::MouseEvent&) override { repaint(); }   // the value lights up under the mouse
     void mouseExit (const juce::MouseEvent&) override  { repaint(); }
 
-    juce::Slider slider;                            // public: for host-parameter attachments
+    MenuSlider slider;                              // public: for host-parameter attachments
 
     void resized() override;
     void paint (juce::Graphics&) override;
@@ -204,7 +223,7 @@ public:
     void resized() override;
     void paint (juce::Graphics&) override;
 
-    juce::Slider slider;
+    MenuSlider slider;
 
 private:
     juce::String labelText;
@@ -301,6 +320,7 @@ public:
     void setValue (int v);
     int getValue() const                            { return value; }
     std::function<void (int)> onChange;
+    std::function<void()> onMenu;                   // a right-click, when set
     void setLabel (const juce::String& t)           { labelText = t; repaint(); }
 
     static constexpr float radius = 20.0f, legendRoom = 26.0f;            // room above the knob for legends
@@ -332,7 +352,7 @@ private:
     juce::String bracketName;
     float span = 90.0f, legendSize = 10.5f;
     int value = 0, dragFrom = -1;
-    bool dragged = false, pickedLegend = false;
+    bool dragged = false, pickedLegend = false, menuClick = false;
 };
 
 // A row of LEDs on a dark strip, one per position, the current one lit, with a step button at each
@@ -473,11 +493,13 @@ private:
     juce::Image cache;
 };
 
-// The RANDOM layer over a knob, a fader or a rotary switch (it lies exactly over its control).
-// Outside the layer it only shows a small LED when the control has a random (red: a new value at
-// each step; amber: a loop) and lets the mouse through. In the layer, dragging sets the amount
-// (-100..100, a small notch at 0): up or right, a new value at each step, drawn as a solid arc
-// (a bar on a fader); down or left, a loop, drawn in steps. Double-click: none.
+// The RANDOM layer over a knob, a fader or a rotary switch (it lies over its control). Outside
+// the layer it lets the mouse through and shows the modulation as it plays: a lit arc along the
+// scale from the control's own value to where it is now, a bright tip, and a small LED (red: up,
+// the shape as drawn; amber: down, upside down; dark: switched off). In the layer, dragging sets
+// the amount (-100..100, a small notch at 0), the scale shows the range it sweeps (bipolar:
+// either side of its value; unipolar: one side), lit the same way as it plays. Double-click:
+// none; right-click: onMenu.
 class RandomTouch : public juce::Component, public juce::SettableTooltipClient
 {
 public:
@@ -486,6 +508,11 @@ public:
     void setBar (juce::Rectangle<float> track, juce::Rectangle<float> readout);                  // a fader
     void setAmount (int a);                         // no callback
     int getAmount() const                           { return amount; }
+    // the control's own value and where it plays now, 0..1 of its travel (live < 0: not playing)
+    void setSweep (float base, bool bipolarSweep)   { if (base != base01 || bipolarSweep != bipolar) { base01 = base; bipolar = bipolarSweep; repaint(); } }
+    void setLive (float v)                          { if (std::abs (v - live01) > 0.004f) { live01 = v; repaint(); } }
+    void setMuted (bool b)                          { if (b != muted) { muted = b; repaint(); } }
+    std::function<void()> onMenu;
     void setEditing (bool b);
     bool isEditing() const                          { return editing; }
     std::function<void (int)> onChange;
@@ -502,8 +529,38 @@ private:
     bool ring = true;
     juce::Rectangle<float> shape, readout;
     float ledGap = 10.0f, position = 0.0f, dragFrom = 0.0f;
+    float base01 = 0.5f, live01 = -1.0f;
+    bool bipolar = true, muted = false;
     int amount = 0;
     bool editing = false;
+};
+
+// A one-octave keyboard that shows a scale: its notes lit, the root marked. A click on a key
+// chooses the root.
+class ScaleKeys : public juce::Component, public juce::SettableTooltipClient
+{
+public:
+    void setScale (std::uint16_t mask, int root)    { if (mask != scaleMask || root != scaleRoot) { scaleMask = mask; scaleRoot = root; repaint(); } }
+    std::function<void (int)> onRoot;
+    void paint (juce::Graphics&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+
+private:
+    juce::Rectangle<float> keyBounds (int note) const;
+    std::uint16_t scaleMask = 0;
+    int scaleRoot = 0;
+};
+
+// A small orange window that shows a text (a value set elsewhere), its name printed below.
+class VfdText : public juce::Component
+{
+public:
+    explicit VfdText (juce::String labelText) : label (std::move (labelText)) { setInterceptsMouseClicks (false, false); }
+    void setText (const juce::String& t)            { if (t != text) { text = t; repaint(); } }
+    void paint (juce::Graphics&) override;
+
+private:
+    juce::String label, text;
 };
 
 // Wood side cheek (procedural grain, cached per size).

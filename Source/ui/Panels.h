@@ -34,8 +34,10 @@ public:
     void resized() override;
 
     // The RANDOM layer: while it is on, the knobs and faders, Transpose, Osc 2 Interval and Osc 2
-    // Octave set their random amounts instead of their values.
+    // Octave set their random amounts instead of their values. Lit along their scale whenever they
+    // move; a right-click on one opens showModMenu.
     void setRandomEdit (bool on);
+    void showModMenu (const std::string& id);
     bool isRandomEdit() const                       { return randomEdit; }
 
 private:
@@ -104,6 +106,12 @@ private:
     std::map<std::string, std::unique_ptr<atelier::RandomTouch>> touches;   // above the wear
     bool randomEdit = false;
     void placeTouches();
+    float travelOf (const std::string& id, int value) const;   // 0..1 along the control, as drawn
+    struct LiveTimer : juce::Timer
+    {
+        std::function<void()> tick;
+        void timerCallback() override { tick(); }
+    } liveTimer;                                         // the lit arcs follow what plays
 };
 
 //==============================================================================
@@ -278,7 +286,8 @@ private:
                        selectAfterButton { TRANS ("Select the voice after sending") }, liveButton { TRANS ("Live CC (Tauntek)") },
                        thruButton { TRANS ("MIDI Thru: play the OSCar from this track") },
                        clockButton { TRANS ("Send the DAW's MIDI clock to the OSCar") },
-                       recallButton { TRANS ("Recall the sound when the project opens") };
+                       recallNowButton { TRANS ("Recall now") };
+    juce::ComboBox recallBox;   // recall the project's sound when it opens: always, ask first, never
     atelier::LedButton checkButton { TRANS ("Check now") }, autoButton { TRANS ("Check automatically") }, notesButton { TRANS ("What's new") };
     atelier::CopperButton installButton { TRANS ("Install update") };
     atelier::LedButton frenchButton { juce::String::fromUTF8 ("Fran\xc3\xa7" "ais") }, englishButton { "English" };

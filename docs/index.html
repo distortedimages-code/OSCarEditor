@@ -426,7 +426,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Current version">
   <a class="arrow" href="#news" aria-label="What's new">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.6.4</span><span class="name">OXIDE</span><span class="state">FREE</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.7.0</span><span class="name">OXIDE</span><span class="state">FREE</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -456,7 +456,7 @@ footer a { color: var(--muted); }
         Download for Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.6.4</dd>
+        <dt>Version</dt><dd id="spec-version">0.7.0</dd>
         <dt>Formats</dt><dd>AU for Logic Pro, VST3 and standalone app</dd>
         <dt>System</dt><dd>macOS 11 or later, Apple silicon and Intel</dd>
         <dt>Synth</dt><dd>OSCar with the Tauntek MIDI board. With the original MIDI, everything works except live editing.</dd>
@@ -491,8 +491,10 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Latest versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.6.4</span><div class="cap when">latest version</div></div>
+      <div><span class="vchip">0.7.0</span><div class="cap when">latest version</div></div>
       <div class="notes">
+        <p><strong>0.7.0: RANDOM and SCALE, played from the bottom.</strong> RANDOM and SCALE leave the header: two buttons next to Live CC open their strips where the memories are. The RANDOM strip has SHAPE, a RATE knob with SYNC (a division of the DAW's tempo, or free from 10 s to 10 ms), LOOP (off, or 2 to 64 steps), New loop, MODE (bipolar or unipolar), ACTIVE and Clear all. A control turned up follows the shape as drawn, turned down upside down, whatever the shape; bipolar, it moves either side of its value, unipolar only on one side. Every control that moves lights up along its scale, all the time: a glowing arc from its own value to where it plays, with a bright tip (orange turned up, amber turned down); in the layer, a dim arc shows the whole range it sweeps. Right-click a knob, a fader or a switch: switch its random off (it is kept, its LED goes dark) or on again, remove it, go back to the saved value, or switch off or remove every random. ACTIVE off switches all of them off at once, amounts kept; the project remembers both. The SCALE strip has SCALE, ROOT and a one-octave keyboard lighting the scale's notes (click a key for the root). A double-click on a knob or a fader puts it back where the voice was when last saved (project opened, sent, dumped).</p>
+        <p><strong>0.6.5: recall, always, ask first or never.</strong> Recalling the project's sound replaces what the OSCar plays, a sound just made on its panel and not stored included. So it is now a choice on the Setup page, kept on this computer: *always*, *ask first* (the default) or *never*. With *ask first*, the plugin's window asks when a project opens, or as soon as you open it: *Recall the project's sound* or *Keep the OSCar's sound*; nothing is sent until then. *Recall now*, next to it, sends the selected voice whole at any time.</p>
         <p><strong>0.6.4: the project's sound comes back, and waveforms received as they are.</strong> A new option on the Setup page, on by default: *Recall the sound when the project opens*. When a project opens, the OSCar gets the selected voice exactly as saved in the project, whatever its memories hold: all its values as CC, the tempo, and the user waveforms if the voice plays one. So a sound changed after the last save comes back as saved. Nothing is written into the OSCar's voice memories.</p>
         <p>Waveforms dumped by the OSCar could be refused as "damaged by a text-mode copy (CR/LF)": some real harmonic levels read like that damage. Data straight from MIDI is never checked for it any more (only a copied file can be damaged that way), and the check on files is stricter, so it no longer mistakes such levels for damage.</p>
         <p><strong>0.6.3: Use channel, and strokes across the harmonics.</strong> When the OSCar sends on another MIDI channel, a Use channel button appears left of the voice display: one click and the plugin takes the OSCar's channel. (The OSCar's own channel can only be set on the OSCar, SPACE + a key from 1 to 16: its firmware takes no MIDI message for it.) On the Waveforms page, a quick stroke across the bands now draws every band it crosses, on the line between, and carries on to the first and last band when the mouse runs past them.</p>

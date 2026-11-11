@@ -932,7 +932,7 @@ static void testRandom (OscarProcessor& proc, Capture& out)
     CHECK (proc.isRandomPlaying() && proc.getRandomSteps() > 0);
     CHECK (getParam (doc.getVoice (target), freq) == 127);   // the voice stays
 
-    // looped: the same four values over and over
+    // looped: the same four values over and over (turned down: the shape upside down)
     proc.setRandomLoop (4);
     proc.setRandomAmount (freq, -50);
     pump (60);
@@ -998,6 +998,23 @@ static void testRandom (OscarProcessor& proc, Capture& out)
     values = ccValues (out.take(), freq.cc);
     CHECK (values.size() >= 40 && values.size() <= 650);
     CHECK (! values.empty() && *std::min_element (values.begin(), values.end()) < 15 && *std::max_element (values.begin(), values.end()) > 112);
+    // free rate (not synced): a cycle every 300 ms, whatever the tempo
+    proc.setRandomSync (false);
+    proc.setRandomFreeMs (300.0);
+    pump (100);
+    out.take();
+    const int stepsBefore = proc.getRandomSteps();
+    pump (1500);
+    CHECK (proc.getRandomSteps() - stepsBefore >= 4 && proc.getRandomSteps() - stepsBefore <= 6);
+    proc.setRandomSync (true);
+    // unipolar, turned up: the knob only goes above its own value (127 -> CC 63 and up)
+    proc.setRandomBipolar (false);
+    pump (100);
+    out.take();
+    pump (800);
+    values = ccValues (out.take(), freq.cc);
+    CHECK (! values.empty() && *std::min_element (values.begin(), values.end()) >= 62);
+    proc.setRandomBipolar (true);
     // SMOOTH: from one random value to the next, without jumps
     proc.setRandomShape (1);
     proc.setRandomRate (4);
@@ -1010,9 +1027,38 @@ static void testRandom (OscarProcessor& proc, Capture& out)
     for (size_t i = 1; i < values.size(); ++i)
         jump = juce::jmax (jump, std::abs (values[i] - values[i - 1]));
     CHECK (jump <= 12);
-    proc.setRandomAmount (freq, 0);
+    // switched off (right-click), then all of them (ACTIVE off): the voice's value, the amount kept
     proc.setRandomShape (0);
     proc.setRandomRate (0);
+    pump (200);
+    CHECK (proc.getRandomShown (freq) >= 0);
+    proc.setRandomMuted (freq, true);
+    values = ccValues (collect (out, hasBase), freq.cc);
+    CHECK (! values.empty() && values.back() == baseCc);
+    pump (300);
+    CHECK (ccValues (out.take(), freq.cc).empty() && proc.getRandomShown (freq) < 0 && proc.getRandomAmount (freq) == 50);
+    proc.setRandomMuted (freq, false);
+    pump (400);
+    CHECK (ccValues (out.take(), freq.cc).size() >= 3);
+    proc.setRandomBypass (true);
+    values = ccValues (collect (out, hasBase), freq.cc);
+    CHECK (! values.empty() && values.back() == baseCc);
+    pump (300);
+    CHECK (ccValues (out.take(), freq.cc).empty() && proc.hasRandoms());
+    proc.setRandomMuted (freq, true);
+    {
+        juce::MemoryBlock saved;
+        proc.getStateInformation (saved);
+        OscarProcessor other;
+        other.setStateInformation (saved.getData(), (int) saved.getSize());
+        pump (50);
+        CHECK (other.getRandomBypass() && other.isRandomMuted (freq) && other.getRandomAmount (freq) == 50);
+    }
+    proc.setRandomBypass (false);
+    pump (300);
+    CHECK (ccValues (out.take(), freq.cc).empty());   // still switched off on its own
+    proc.setRandomAmount (freq, 0);                    // removed: no longer switched off
+    CHECK (! proc.isRandomMuted (freq));
     pump (300);
     out.take();
 
@@ -1178,8 +1224,10 @@ int main()
             for (const auto& [id, amount] : { std::pair<const char*, int> { "filterFreq", 60 }, { "resonance", -40 }, { "tuneSemi", 50 },
                                               { "filtDecay", -70 }, { "lfoRate", 30 }, { "osc2Semi", -35 } })
                 proc.setRandomAmount (*findParam (id), amount);
+            proc.setRandomMuted (*findParam ("lfoRate"), true);   // switched off: a dark LED
             proc.setScale (2);
             proc.setScaleRoot (9);
+            proc.setLiveCc (true);                                // playing: lit along their scale
             auto* oe = dynamic_cast<OscarEditor*> (ed.get());
             oe->showPage (0);
             proc.addLog ("RANDOM");   // the editor refreshes
@@ -1188,6 +1236,9 @@ int main()
             oe->toggleRandomEdit();
             pump (100);
             shoot ("random-layer");
+            oe->toggleScaleStrip();
+            pump (100);
+            shoot ("scale-strip");
         }
         ed.reset();
         proc.getMidi().setTestOutput (nullptr);
@@ -1213,7 +1264,7 @@ int main()
         testMorph (proc, out);
         testRandom (proc, out);
 
-        // total recall: a project opens, the OSCar gets the saved voice whole (no programme change)
+        // recall: a project opens, the OSCar gets the saved voice whole (no programme change)
         {
             auto& doc = proc.getDocument();
             const int slot = proc.getSelectedSlot();
@@ -1222,25 +1273,49 @@ int main()
             pump (300);
             juce::MemoryBlock saved;
             proc.getStateInformation (saved);
-            doc.setParam (slot, freq, 30);                 // changed after saving, not saved
-            pump (300);
-            out.take();
-            proc.setStateInformation (saved.getData(), (int) saved.getSize());
-            CHECK (getParam (doc.getVoice (slot), freq) == 120);
-            auto sent = collect (out, ccCountAtLeast (40));
-            CHECK (countPrograms (sent, -1) == 0);
-            CHECK (ccsOf (sent).size() >= 40);
-            CHECK (ccValues (sent, freq.cc).size() == 1 && ! ccValues (sent, freq.cc).empty() && ccValues (sent, freq.cc).back() == 60);
-            CHECK (waitForLog (proc, "Sound recalled"));
-            // off: a project opens and nothing is sent
-            proc.setRecallOnLoad (false);
-            proc.getStateInformation (saved);
-            pump (100);
-            out.take();
-            proc.setStateInformation (saved.getData(), (int) saved.getSize());
+            auto reopen = [&]
+            {
+                doc.setParam (slot, freq, 30);             // changed after saving, not saved
+                pump (300);
+                out.take();
+                proc.setStateInformation (saved.getData(), (int) saved.getSize());
+                CHECK (getParam (doc.getVoice (slot), freq) == 120);
+            };
+            auto checkRecalled = [&]
+            {
+                auto sent = collect (out, ccCountAtLeast (40));
+                CHECK (countPrograms (sent, -1) == 0);
+                CHECK (ccsOf (sent).size() >= 40);
+                CHECK (ccValues (sent, freq.cc).size() == 1 && ! ccValues (sent, freq.cc).empty() && ccValues (sent, freq.cc).back() == 60);
+                CHECK (waitForLog (proc, "Sound recalled"));
+            };
+
+            // ask first (the default): nothing goes until the answer
+            CHECK (proc.getRecallMode() == OscarProcessor::RecallMode::Ask);
+            reopen();
             pump (1000);
-            CHECK (ccsOf (out.take()).empty() && ! proc.getRecallOnLoad());
-            proc.setRecallOnLoad (true);
+            CHECK (proc.isRecallWaiting() && ccsOf (out.take()).empty());
+            proc.answerRecall (true);
+            checkRecalled();
+            reopen();
+            pump (200);
+            proc.answerRecall (false);                     // keep the OSCar's sound
+            pump (1000);
+            CHECK (! proc.isRecallWaiting() && ccsOf (out.take()).empty());
+
+            // always: at once
+            proc.setRecallMode (OscarProcessor::RecallMode::Always);
+            reopen();
+            checkRecalled();
+
+            // never
+            proc.setRecallMode (OscarProcessor::RecallMode::Never);
+            reopen();
+            pump (1000);
+            CHECK (! proc.isRecallWaiting() && ccsOf (out.take()).empty());
+            proc.recallNow();                              // the Setup page's button
+            checkRecalled();
+            proc.setRecallMode (OscarProcessor::RecallMode::Ask);
         }
 
         // the OSCar on another MIDI channel: the plugin says so, until it hears it on its own
