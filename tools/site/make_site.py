@@ -17,6 +17,8 @@ from urllib.parse import quote
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "logo"))
 import make_logo as logo   # noqa: E402  (the logo, as the plug-in draws it)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import guide   # noqa: E402  (the hands-on guide and its drawings)
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
@@ -304,6 +306,7 @@ def build(lang):
         "{{PAGES_JS}}": json.dumps([[slug, name, cap, PAGE_ALT[lang].format(name)] for slug, name, cap in pages], ensure_ascii=False),
         "{{FIRST_CAPTION}}": pages[0][2], "{{FIRST_ALT}}": PAGE_ALT[lang].format(pages[0][1]),
         "{{STATIC_RELEASES}}": release_notes(lang),
+        "{{GUIDE}}": french_spacing(guide.guide_html(lang)) if lang == "fr" else guide.guide_html(lang),
         "{{JS_TEXT}}": json.dumps(TEXT[lang], ensure_ascii=False),
     }
     for k, v in values.items():

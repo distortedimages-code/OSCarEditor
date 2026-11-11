@@ -106,7 +106,8 @@ img { max-width: 100%; height: auto; display: block; }
 
 /* LED buttons (tabs) */
 .tabs-bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; background: linear-gradient(180deg, var(--panel) 80%, rgba(34,36,40,0)); padding-block: 10px 14px; }
-.tabs { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.tabs { display: flex; gap: 8px; }
+.tabs .btn { flex: 1 1 auto; min-width: 0; gap: 8px; padding: 0 10px; letter-spacing: .07em; }
 .btn {
   position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 38px;
   padding: 0 12px; border-radius: 4px; border: 0; cursor: pointer; text-decoration: none;
@@ -314,6 +315,47 @@ figure figcaption { margin-top: 6px; font-size: 14px; color: var(--faint); }
 .how li::marker { color: var(--vfd); font-family: var(--mono); }
 .tip.wide p.small { margin-top: 2px; font-size: 15px; color: var(--muted); }
 
+/* guide */
+.guide-band { margin-top: 26px; }
+.guide-band > .mini-legend { margin-bottom: 14px; }
+.scenes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.scene { display: flex; flex-direction: column; gap: 14px; padding: 16px 18px 18px; border-radius: 8px; background: rgba(0,0,0,.18); }
+.scene-art { display: flex; align-items: center; justify-content: center; height: 172px; padding: 12px; border-radius: 6px; background: radial-gradient(ellipse at 50% 40%, #1d1f23 0%, var(--inset) 75%); box-shadow: inset 0 1px 5px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.04); }
+.scene-art svg { display: block; flex: none; width: 212px; height: 148px; max-width: 100%; overflow: visible; }
+.scene-art text { font-family: var(--label); }
+.scene-art .mono { font-family: var(--mono); }
+.scene .situation { margin: 0 0 4px; color: var(--muted); font-size: 15.5px; font-style: italic; }
+.scene .how { margin: 6px 0 8px; font-size: 15.5px; gap: 5px; }
+ul.how { list-style: none; padding-left: 0; }
+ul.how li { padding-left: 16px; position: relative; }
+ul.how li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: var(--vfd); }
+.scene .small { margin: 0; font-size: 14.5px; }
+.ui { font: 13px/1 var(--mono); color: var(--vfd); background: var(--vfd-bg); padding: 2px 5px 1px; border-radius: 3px; white-space: nowrap; text-shadow: 0 0 6px rgba(255,140,50,.35); }
+.scene-art .blink { animation: g-blink 2.4s steps(1) infinite; }
+.scene-art .zz { animation: g-zz 3s ease-in-out infinite; }
+.scene-art .spin { transform-box: fill-box; transform-origin: center; animation: g-spin 14s linear infinite; }
+.scene-art .beat { transform-box: fill-box; transform-origin: center; animation: g-beat 1.4s ease-in-out infinite; }
+.scene-art .puff { transform-box: fill-box; transform-origin: center; animation: g-puff 3s ease-in-out infinite; }
+.scene-art .puff.late { animation-delay: 1.5s; }
+.scene-art .pumpH { animation: g-pump 1s ease-in-out infinite; }
+.scene-art .snail { animation: g-snail 7s ease-in-out infinite alternate; }
+.scene-art .rub { animation: g-rub .9s ease-in-out infinite alternate; }
+.scene-art .slide { animation: g-slide 4s ease-in-out infinite alternate; }
+.scene-art .wobble { transform-box: fill-box; transform-origin: center; animation: g-wobble 4s ease-in-out infinite; }
+.scene-art .hop { stroke-dasharray: 4 5; animation: g-hop 1.2s linear infinite; }
+@keyframes g-blink { 0%, 70% { opacity: 1; } 71%, 100% { opacity: .25; } }
+@keyframes g-zz { 0%, 100% { opacity: .35; transform: translateY(2px); } 50% { opacity: 1; transform: translateY(-2px); } }
+@keyframes g-spin { to { transform: rotate(360deg); } }
+@keyframes g-beat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.18); } 30% { transform: scale(1); } 45% { transform: scale(1.12); } }
+@keyframes g-puff { 0%, 100% { opacity: 0; transform: scale(.5) translateY(6px); } 40%, 60% { opacity: .9; transform: scale(1) translateY(0); } }
+@keyframes g-pump { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(14px); } }
+@keyframes g-snail { from { transform: translateX(-10px); } to { transform: translateX(12px); } }
+@keyframes g-rub { from { transform: translate(-6px, 3px); } to { transform: translate(6px, -2px); } }
+@keyframes g-slide { from { transform: translateX(-40px); } to { transform: translateX(40px); } }
+@keyframes g-wobble { 0%, 100% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(30deg) scale(1.05); } }
+@keyframes g-hop { to { stroke-dashoffset: -18; } }
+@media (prefers-reduced-motion: reduce) { .scene-art * { animation: none !important; } }
+
 /* feedback + support */
 .duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
@@ -329,7 +371,8 @@ footer a { color: var(--muted); }
   .hero, .duo, .keys-top { grid-template-columns: minmax(0, 1fr); }
   .step { grid-template-columns: 54px minmax(0, 1fr); }
   .step-art { grid-column: 2; }
-  .tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .scenes { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 640px) {
   :root { --cheek: 10px; }
@@ -347,6 +390,9 @@ footer a { color: var(--muted); }
   .step-art, .step.wide .step-text, .step.wide .step-art { grid-column: auto; }
   .cabling { min-width: 520px; }
   .tips { grid-template-columns: minmax(0, 1fr); }
+  .scene { padding: 14px; }
+  .scene-art { height: 144px; }
+  .scene-art svg { width: 172px; height: 120px; }
   .keys-top { grid-template-columns: minmax(0, 1fr); }
   .minis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mini span { white-space: normal; text-align: center; }
@@ -428,6 +474,7 @@ footer a { color: var(--muted); }
   <div class="tabs">
     <a class="btn" href="#download"><span>[[fr]]Télécharger[[en]]Download[[/]]</span><i class="led"></i></a>
     <a class="btn" href="#news"><span>[[fr]]Nouveautés[[en]]What's new[[/]]</span><i class="led"></i></a>
+    <a class="btn" href="#guide"><span>Guide</span><i class="led"></i></a>
     <a class="btn" href="#install"><span>Installation</span><i class="led"></i></a>
     <a class="btn" href="#shortcuts"><span>[[fr]]Raccourcis[[en]]Shortcuts[[/]]</span><i class="led"></i></a>
     <a class="btn" href="#tips"><span>[[fr]]Astuces[[en]]Tips[[/]]</span><i class="led"></i></a>
@@ -481,6 +528,11 @@ footer a { color: var(--muted); }
 {{STATIC_RELEASES}}
   </div>
   <p class="update-hint"><i class="led on" aria-hidden="true"></i>[[fr]]Une fois installé, le plugin te prévient lui-même quand une version sort : un bouton Mise à jour apparaît en haut de sa fenêtre. Un clic, puis tu relances Logic.[[en]]Once installed, the plug-in tells you itself when a version comes out: an Update button appears at the top of its window. One click, then restart Logic.[[/]]</p>
+</section>
+
+<!-- install -->
+<section class="group" id="guide" aria-labelledby="t-guide">
+  {{GUIDE}}
 </section>
 
 <!-- install -->
