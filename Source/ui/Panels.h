@@ -237,6 +237,7 @@ public:
     void mouseDrag (const juce::MouseEvent&) override;
     juce::Rectangle<float> barsArea() const         { return bars; }   // where the harmonics are drawn
     int currentTable() const                        { return table; }
+    void showTable (int t)                          { table = juce::jlimit (0, oscar::kNumWaveTables - 1, t); refresh(); }
 
 private:
     void draw (const juce::MouseEvent&);

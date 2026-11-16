@@ -476,13 +476,13 @@ SCENES = {
                 "Choisis une forme, de −8 à −12, et trace un trait à travers les barres : chaque barre traversée prend la hauteur du trait, même en allant vite.",
                 "Une pente qui descend donne un son brillant, proche de la dent de scie ; un zigzag, une barre sur deux, un son plus creux, façon carré.",
                 "Du rouge dans « Ce que joue l'OSCar » ? Ça sature : « Ajuster le niveau ». Puis « Envoyer les formes d'onde »."],
-               "ol", "Live CC allumé, l'OSCar joue tout de suite la nouvelle forme si la voix l'utilise."),
+               "ol", "Live CC allumé, l'OSCar joue tout de suite la nouvelle forme si la voix l'utilise. Le tuto illustré est <a href=\"#tuto-formes\">juste en dessous</a>."),
         "en": ("Draw a waveform in one stroke", "",
                ["Waveforms page: first receive the OSCar's ({INSERT}, a {WAVEFORM} button, then {SPACE}), or click \"Start from sines\".",
                 "Pick a waveform, from −8 to −12, and draw a line across the bars: every bar you cross takes the line's height, even when you go fast.",
                 "A falling slope gives a bright sound, close to a sawtooth; a zigzag, every other bar, a hollower sound, square-like.",
                 "Red in \"What the OSCar plays\"? It saturates: \"Fit level\". Then \"Send waveforms\"."],
-               "ol", "With Live CC on, the OSCar plays the new waveform right away if the voice uses it."),
+               "ol", "With Live CC on, the OSCar plays the new waveform right away if the voice uses it. The illustrated tutorial is <a href=\"#tuto-formes\">just below</a>."),
     },
 }
 
@@ -504,7 +504,7 @@ INTRO = {
 def markup(text):
     text = text.replace("&", "&amp;").replace("&amp;amp;", "&amp;")
     text = re.sub(r"\[([^\]]+)\]", r'<span class="ui">\1</span>', text)
-    return re.sub(r"\{([A-Z/ ]+)\}", r"<kbd>\1</kbd>", text)
+    return re.sub(r"\{([A-Z0-9/ ]+)\}", r"<kbd>\1</kbd>", text)
 
 
 def scene_html(key, lang):
@@ -521,10 +521,108 @@ def scene_html(key, lang):
     return "".join(out)
 
 
+# ---------------------------------------------------------------- the waveforms tutorial
+def art_send():
+    # the computer sends its waveform to the little OSCar, which is pleased
+    screen = (f'<rect x="8" y="22" width="56" height="40" rx="4" fill="{RA}" stroke="{IV}" stroke-width="2"/>'
+              f'<rect x="14" y="28" width="44" height="28" rx="2" fill="{VBG}"/>'
+              f'<path d="M17 44 L22 34 L27 46 L32 36 L37 44 L42 38 L47 42 L54 40" fill="none" stroke="{OR}" stroke-width="1.8" stroke-linejoin="round"/>'
+              f'<path d="M2 70 H70 L64 62 H8 Z" fill="{RA}" stroke="{IV}" stroke-width="2" stroke-linejoin="round"/>')
+    bits = "".join(f'<rect class="bit" style="animation-delay:{d:.2f}s" x="70" y="{40 + (i % 2) * 6}" width="7" height="5" rx="1.5" fill="{OR}"/>'
+                   for i, d in enumerate((0, 0.3, 0.6, 0.9)))
+    return svg(screen + bits + bot(100, 26, 52, 44, "wow") + note(140, 92, OR))
+
+
+def art_listen():
+    wave = "M18 92 " + " ".join(f"L{x} {92 - 10 * math.sin((x - 18) / 34 * 2 * math.pi) - 4 * math.sin((x - 18) / 17 * 2 * math.pi):.1f}" for x in range(20, 143, 3))
+    return svg(bot(52, 16, 56, 46, "happy")
+               + f'<path class="sing" d="{wave}" fill="none" stroke="{OR}" stroke-width="2.4" stroke-linecap="round"/>'
+               + note(126, 30, OR) + note(30, 34, IV))
+
+
+TUTO = {
+    "fr": {
+        "legend": "tuto : formes d'onde",
+        "lead": "Dessiner tes propres formes d'onde pour l'OSCar, en cinq étapes.",
+        "steps": [
+            ("Recevoir les formes de l'OSCar",
+             "Sur l'OSCar, maintiens {INSERT}, appuie sur un bouton {WAVEFORM}, puis {SPACE} : il envoie ses cinq formes utilisateur, qui s'affichent dans la page Formes d'onde. Pas d'OSCar sous la main ? « Partir de sinus » donne cinq sinus à modifier ; les envoyer remplacera celles de l'OSCar.",
+             ("img", "tuto-recevoir.webp", 1000, 494, "La page Formes d'onde avant d'avoir reçu les formes de l'OSCar")),
+            ("Choisir une forme et dessiner",
+             "Clique une des formes, de [ONDE -8] à [ONDE -12], puis trace un trait à travers les barres : chaque harmonique traversée prend la hauteur du trait, même en allant vite. Les barres vont de 0 à 127 ; 127, c'est une harmonique seule à plein niveau.",
+             ("img", "tuto-dessin.webp", 1000, 604, "Une forme dessinée : une pente qui descend")),
+            ("Regarder ce que joue l'OSCar",
+             "L'écran de droite montre la forme telle que l'OSCar la calcule. En rouge, elle sature : la somme des harmoniques dépasse ce qu'il peut jouer, et le haut de l'onde est coupé. Clique [AJUSTER LE NIVEAU] : tout est remis à l'échelle, comme l'OSCar le fait avec ses propres formes.",
+             ("pair", ("tuto-sature.webp", "Sature"), ("tuto-ajuste.webp", "Ajustée"), 500, 704)),
+            ("Envoyer",
+             "Clique « Envoyer les formes d'onde », en haut à droite, et confirme. Si une forme sature encore, le plugin propose « Ajuster et envoyer ». Les cinq formes −8 à −12 de l'OSCar sont remplacées ; une copie part dans les sauvegardes.",
+             ("art", "send")),
+            ("L'écouter",
+             "Pour qu'une voix joue ta forme, mets Wave 1 ou Wave 2 sur −8 à −12, page Voix. Live CC allumé, l'OSCar rejoue tout de suite la nouvelle forme ; sinon, rechoisis la voix ou la forme sur l'OSCar.",
+             ("art", "listen")),
+        ],
+        "box_title": "Sur la machine, sans le plugin",
+        "box": ["{OSC1} + {0} : l'oscillateur 1 joue la forme en cours d'écriture.",
+                "{OSC1} (INS) puis une touche de 1 à 24 : ajoute de cette harmonique ; {OSC2} (DEL) puis la touche : en retire.",
+                "Pour sortir : {OSC1} + une autre touche, qui choisit une autre forme."],
+        "box_note": "D'après les essais de Vincent.",
+    },
+    "en": {
+        "legend": "tutorial: waveforms",
+        "lead": "Draw your own waveforms for the OSCar, in five steps.",
+        "steps": [
+            ("Receive the OSCar's waveforms",
+             "On the OSCar, hold {INSERT}, press a {WAVEFORM} button, then {SPACE}: it sends its five user waveforms, which show up on the Waveforms page. No OSCar at hand? \"Start from sines\" gives five sines to change; sending them will replace the OSCar's.",
+             ("img", "tuto-recevoir.webp", 1000, 494, "The Waveforms page before the OSCar's waveforms are received")),
+            ("Pick a waveform and draw",
+             "Click one of the waveforms, [WAVE -8] to [WAVE -12], then draw a line across the bars: every harmonic you cross takes the line's height, even when you go fast. The bars go from 0 to 127; 127 is a harmonic alone at full level.",
+             ("img", "tuto-dessin.webp", 1000, 604, "A waveform drawn: a falling slope")),
+            ("Look at what the OSCar plays",
+             "The screen on the right shows the waveform as the OSCar computes it. Red means it saturates: the sum of the harmonics is more than it can play, and the top of the wave is cut off. Click [FIT LEVEL]: everything is scaled back, as the OSCar does with its own waveforms.",
+             ("pair", ("tuto-sature.webp", "Saturates"), ("tuto-ajuste.webp", "Fitted"), 500, 704)),
+            ("Send",
+             "Click \"Send waveforms\", top right, and confirm. If a waveform still saturates, the plug-in offers \"Fit and send\". The OSCar's five waveforms −8 to −12 are replaced; a copy goes to the backups.",
+             ("art", "send")),
+            ("Listen",
+             "For a voice to play your waveform, set Wave 1 or Wave 2 to −8 to −12 on the Voice page. With Live CC on, the OSCar plays the new waveform right away; otherwise, choose the voice or the waveform again on the OSCar.",
+             ("art", "listen")),
+        ],
+        "box_title": "On the synth, without the plug-in",
+        "box": ["{OSC1} + {0}: oscillator 1 plays the waveform being written.",
+                "{OSC1} (INS) then a key from 1 to 24: adds some of that harmonic; {OSC2} (DEL) then the key: takes some away.",
+                "To leave: {OSC1} + another key, which picks another waveform."],
+        "box_note": "From Vincent's tests.",
+    },
+}
+
+
+def tuto_html(lang):
+    t = TUTO[lang]
+    img = "img/" if lang == "fr" else "img/en/"
+    steps = []
+    for i, (title, text, fig) in enumerate(t["steps"], 1):
+        if fig[0] == "img":
+            _, src, w, h, alt = fig
+            figure = f'<img class="tuto-shot" src="{img}{src}" width="{w}" height="{h}" alt="{alt}" loading="lazy">'
+        elif fig[0] == "pair":
+            _, (a, ca), (b, cb), w, h = fig
+            figure = ('<div class="tuto-pair">'
+                      f'<figure><img class="tuto-shot" src="{img}{a}" width="{w}" height="{h}" alt="{ca}" loading="lazy"><figcaption>{ca}</figcaption></figure>'
+                      f'<figure><img class="tuto-shot" src="{img}{b}" width="{w}" height="{h}" alt="{cb}" loading="lazy"><figcaption>{cb}</figcaption></figure></div>')
+        else:
+            figure = f'<div class="scene-art tuto-art">{ {"send": art_send, "listen": art_listen}[fig[1]]() }</div>'
+        steps.append(f'<li class="tuto-step"><div class="tuto-text"><span class="tuto-num">{i}</span><h4>{markup(title)}</h4>'
+                     f'<p>{markup(text)}</p></div><div class="tuto-fig">{figure}</div></li>')
+    box = "".join(f"<li>{markup(x)}</li>" for x in t["box"])
+    return (f'<div class="guide-band tuto" id="tuto-formes"><h3 class="mini-legend">{t["legend"]}</h3>'
+            f'<p class="tuto-lead">{t["lead"]}</p><ol class="tuto-steps">{"".join(steps)}</ol>'
+            f'<aside class="tuto-box"><h4>{t["box_title"]}</h4><ul class="how">{box}</ul><p class="small">{t["box_note"]}</p></aside></div>')
+
+
 def guide_html(lang):
     title, lead = INTRO[lang]
     bands = "".join(
         f'<div class="guide-band"><h3 class="mini-legend">{name[lang]}</h3><div class="scenes">'
         + "".join(scene_html(k, lang) for k in keys) + "</div></div>"
         for name, keys in BANDS)
-    return (f'<p class="legend">guide</p>\n  <h2 id="t-guide">{title}</h2>\n  <p class="lead-text">{lead}</p>\n  {bands}')
+    return (f'<p class="legend">guide</p>\n  <h2 id="t-guide">{title}</h2>\n  <p class="lead-text">{lead}</p>\n  {bands}\n  {tuto_html(lang)}')

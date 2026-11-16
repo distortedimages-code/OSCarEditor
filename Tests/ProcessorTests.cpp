@@ -1262,6 +1262,33 @@ int main()
             pump (50);
             shoot ("page" + juce::String (page));
         }
+        // OSCAR_SHOTS_WAVES=1: the Waveforms page with a waveform drawn too loud, then fitted (the site's tutorial)
+        if (juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_WAVES", "0") == "1" && proc.getDocument().getWaves())
+        {
+            auto* oe = dynamic_cast<OscarEditor*> (ed.get());
+            oe->showPage (4);
+            panels::WavesPanel* wp = nullptr;
+            std::function<void (juce::Component&)> findWaves = [&] (juce::Component& c)
+            {
+                for (auto* child : c.getChildren())
+                {
+                    if (auto* w = dynamic_cast<panels::WavesPanel*> (child)) wp = w;
+                    else findWaves (*child);
+                }
+            };
+            findWaves (*ed);
+            if (wp != nullptr)
+            {
+                wp->showTable (1);
+                for (int h = 0; h < kNumHarmonics; ++h)   // a falling slope, drawn high: it saturates
+                    proc.getDocument().setHarmonic (1, h, juce::roundToInt (127.0 - 4.6 * h));
+                pump (100);
+                shoot ("waves-clip");
+                proc.getDocument().fitWaveTable (1);
+                pump (100);
+                shoot ("waves-fit");
+            }
+        }
         // OSCAR_SHOTS_RANDOM=1: the Voice page again with a few randoms and a scale, then in the RANDOM layer
         if (juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_RANDOM", {}).isNotEmpty())
         {

@@ -364,6 +364,27 @@ ul.how li::before { content: ""; position: absolute; left: 2px; top: .62em; widt
 @keyframes g-twinkle { 0%, 100% { opacity: .3; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
 @media (prefers-reduced-motion: reduce) { .scene-art * { animation: none !important; } }
 
+/* tutorial */
+.tuto-lead { margin: -4px 0 18px; color: var(--muted); font-size: 16px; }
+.tuto-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; }
+.tuto-step { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 26px; align-items: center; padding: 18px 20px; border-radius: 8px; background: rgba(0,0,0,.18); }
+.tuto-step:nth-child(even) .tuto-text { order: 2; }
+.tuto-text h4 { display: inline; margin: 0; font: 600 19px/1.3 var(--label); letter-spacing: .02em; color: var(--text); }
+.tuto-text p { margin: 10px 0 0; font-size: 16px; }
+.tuto-num { display: inline-grid; place-items: center; width: 30px; height: 30px; margin-right: 10px; border-radius: 50%; font: 600 16px/1 var(--mono); color: var(--vfd); background: var(--vfd-bg); box-shadow: 0 0 10px rgba(255,140,50,.25); vertical-align: 2px; }
+.tuto-shot { display: block; width: 100%; height: auto; border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,.55); }
+.tuto-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 520px; margin: 0 auto; }
+.tuto-pair figure { margin: 0; }
+.tuto-pair figcaption { margin-top: 6px; text-align: center; font: 600 13px/1.2 var(--label); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.tuto-pair figure:first-child figcaption { color: #ff6a4d; }
+.tuto-art { height: 190px; }
+.tuto-art svg { width: 240px; height: 168px; }
+.tuto-box { margin-top: 22px; padding: 16px 20px; border-radius: 8px; border: 1px dashed rgba(255,255,255,.14); }
+.tuto-box h4 { margin: 0 0 6px; font: 600 17px/1.3 var(--label); color: var(--text); }
+.scene-art .bit { animation: g-bit 1.2s linear infinite; }
+.scene-art .sing { stroke-dasharray: 6 4; animation: g-hop 1.2s linear infinite; }
+@keyframes g-bit { from { transform: translateX(0); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } to { transform: translateX(24px); opacity: 0; } }
+
 /* feedback + support */
 .duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
@@ -381,6 +402,8 @@ footer a { color: var(--muted); }
   .step-art { grid-column: 2; }
   .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .scenes { grid-template-columns: minmax(0, 1fr); }
+  .tuto-step { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .tuto-step:nth-child(even) .tuto-text { order: 0; }
 }
 @media (max-width: 640px) {
   :root { --cheek: 10px; }
