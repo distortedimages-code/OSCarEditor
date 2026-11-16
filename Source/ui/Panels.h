@@ -228,6 +228,7 @@ private:
 class WavesPanel : public juce::Component
 {
 public:
+    static constexpr int kHarmonicTop = 127;   // the bars' full height: a harmonic alone at full level
     WavesPanel (OscarProcessor&, OscarEditor&);
     void refresh();
     void paint (juce::Graphics&) override;
@@ -242,6 +243,7 @@ private:
     OscarProcessor& proc;
     OscarEditor& editor;
     juce::OwnedArray<atelier::LedButton> tables;
+    atelier::LedButton fitButton { TRANS ("Fit level") }, sinesButton { TRANS ("Start from sines") };
     atelier::CopperButton sendButton { TRANS ("Send waveforms") };
     juce::Rectangle<float> group, bars, scope, infoArea;   // bars: the slots only (values above, numbers below)
     juce::String info;

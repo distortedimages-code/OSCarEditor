@@ -674,14 +674,55 @@ static void testEditor (OscarProcessor& proc, Capture& out)
         waves->mouseDrag (event (to, from));
         const auto& w = *proc.getDocument().getWaves();
         const int t = waves->currentTable();
-        CHECK (w.getHarmonic (t, 2) == 0 && w.getHarmonic (t, 10) == 255);
+        CHECK (w.getHarmonic (t, 2) == 0 && w.getHarmonic (t, 10) == panels::WavesPanel::kHarmonicTop);
         bool rising = true;
         for (int h = 3; h <= 10; ++h)
             rising = rising && w.getHarmonic (t, h) > w.getHarmonic (t, h - 1);
         CHECK (rising);   // bands 3 to 9 on the line between
         // past the last band: the stroke goes on to it
         waves->mouseDrag (event ({ b.getRight() + 40.0f, b.getCentreY() }, from));
-        CHECK (proc.getDocument().getWaves()->getHarmonic (t, kNumHarmonics - 1) > 100);
+        CHECK (proc.getDocument().getWaves()->getHarmonic (t, kNumHarmonics - 1) > 40);
+
+        // so many harmonics this high saturate on the OSCar; Fit level brings the sum back in
+        bool clipped = false;
+        oscarWaveSamples (*proc.getDocument().getWaves(), t, &clipped);
+        CHECK (clipped);
+        proc.getDocument().fitWaveTable (t);
+        oscarWaveSamples (*proc.getDocument().getWaves(), t, &clipped);
+        CHECK (! clipped && proc.getDocument().getWaves()->getHarmonic (t, 10) > 0);
+
+        // every table can be chosen (before a dump too: the buttons are never greyed out)
+        for (auto* c : waves->getChildren())
+            if (auto* lb = dynamic_cast<atelier::LedButton*> (c); lb != nullptr && lb->getButtonText() == "Wave -11")
+            {
+                CHECK (lb->isEnabled());
+                lb->triggerClick();
+            }
+        pump (50);
+        CHECK (waves->currentTable() == 3);
+
+        // sent while the voice plays a user waveform: Wave 1 and 2 again, so the OSCar rebuilds it
+        auto& doc = proc.getDocument();
+        const auto& wave1 = *findParam ("wave1");
+        doc.setParam (proc.getSelectedSlot(), wave1, 12);   // -9
+        proc.setLiveCc (true);
+        pump (200);
+        out.take();
+        CHECK (proc.sendWaves().isEmpty());
+        const auto sent = collect (out, [&wave1] (const std::vector<juce::MidiMessage>& m)
+        {
+            for (const auto& x : m)
+                if (x.isController() && x.getControllerNumber() == wave1.cc) return true;
+            return false;
+        });
+        bool sysexFirst = false, ccAfter = false;
+        for (const auto& x : sent)
+        {
+            if (x.isSysEx()) sysexFirst = ! ccAfter;
+            if (x.isController() && x.getControllerNumber() == wave1.cc) ccAfter = sysexFirst;
+        }
+        CHECK (sysexFirst && ccAfter);
+        CHECK (waitForLog (proc, "Wave 1 and Wave 2 sent again"));
     }
 
     ed.reset();
@@ -1192,7 +1233,10 @@ int main()
             for (int h = 0; h < kNumHarmonics; ++h)
                 w.setHarmonic (t, h, juce::jlimit (0, 255, juce::roundToInt (255.0 / std::pow (h + 1.0, 0.8 + 0.15 * t)
                                                                                * (h % 2 == 0 || t == 0 ? 1.0 : 0.35 + 0.5 * std::sin (h * 0.9) * std::sin (h * 0.9)))));
-        demo.waves = w;
+        for (int t = 0; t < kNumWaveTables; ++t)
+            oscar::fitWaveTable (w, t);   // as the OSCar stores them
+        if (juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_NOWAVES", "0") != "1")   // 1: as before a dump
+            demo.waves = w;
         oscar::VoiceBank voices;   // and as if the OSCar had just sent its voices, with a MIDI output open
         for (int i = 0; i < kNumVoices; ++i)
             voices.voices[(size_t) i] = proc.getDocument().getVoice (i);

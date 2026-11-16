@@ -280,6 +280,10 @@ private:
     bool recallWaiting = false;
     int recallStage = 0;                        // 0: nothing to do; 1: waveforms (if used); 2: the voice
     double recallAt = 0, recallGiveUp = 0;
+    // after the waveforms went: Wave 1 and Wave 2 again, so the OSCar rebuilds the one it plays
+    // (it only builds a user waveform when it is chosen)
+    double rewaveAt = 0;
+    void rewaveTick (double now);
     void recallTick (double now);
     bool selectAfterSend = true;
     std::atomic<bool> liveCc { true };

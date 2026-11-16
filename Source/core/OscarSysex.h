@@ -68,6 +68,17 @@ struct WaveBank
     void setHarmonic (int table, int harmonic, int value);
 };
 
+// What the OSCar plays for a user waveform, as its firmware builds it (routine at 0x19A2): one
+// period in 256 samples, 0..255, each 128 plus the sum of the harmonics (level x sine / 256),
+// clipped at 0 and 255. So a harmonic alone at level L swings +-L, and a sum over 127 saturates.
+// 'clipped': whether some samples hit the rails.
+std::array<int, 256> oscarWaveSamples (const WaveBank&, int table, bool* clipped = nullptr);
+// The levels scaled so the sum just fits (peak 127), as the OSCar does with the waveforms made on
+// its own keys. Nothing to do for an empty table.
+void fitWaveTable (WaveBank&, int table);
+// A starting point when the OSCar's own waveforms haven't been received: a sine in each.
+WaveBank sineWaveBank();
+
 struct DumpContents
 {
     std::optional<VoiceBank>                 voices;

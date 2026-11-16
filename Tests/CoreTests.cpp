@@ -450,6 +450,57 @@ static void testKnownFactoryValues()
                 CHECK (getParam (v, p) <= kKnobMaxEditable);
 }
 
+static void testWaveEmulation()
+{
+    // what the OSCar plays: 128 + the sum, clipped
+    WaveBank w {};
+    bool clipped = true;
+    auto s = oscarWaveSamples (w, 0, &clipped);
+    CHECK (! clipped && s[0] == 128 && s[100] == 128);
+    w.setHarmonic (0, 0, 127);                       // a sine at full level, just inside
+    s = oscarWaveSamples (w, 0, &clipped);
+    CHECK (! clipped && s[64] >= 250 && s[192] <= 6 && s[0] >= 128 && s[0] <= 130);   // its sine table starts half a step in
+    w.setHarmonic (0, 0, 200);                       // over it: the tops are cut
+    s = oscarWaveSamples (w, 0, &clipped);
+    CHECK (clipped && s[64] == 255 && s[192] == 0);
+
+    // fit: the proportions kept, the sum just inside
+    for (int h = 0; h < kNumHarmonics; ++h)
+        w.setHarmonic (1, h, 255);
+    oscarWaveSamples (w, 1, &clipped);
+    CHECK (clipped);
+    fitWaveTable (w, 1);
+    s = oscarWaveSamples (w, 1, &clipped);
+    CHECK (! clipped);
+    int lo = 255, hi = 0;
+    for (int h = 0; h < kNumHarmonics; ++h)
+    {
+        lo = std::min (lo, w.getHarmonic (1, h));
+        hi = std::max (hi, w.getHarmonic (1, h));
+    }
+    CHECK (lo > 0 && hi - lo <= 1);
+    int peak = 0;
+    for (int v : s)
+        peak = std::max (peak, std::abs (v - 128));
+    CHECK (peak >= 90 && peak <= 127);   // 24 equal levels: 7 each fits, 8 would not
+    // a quiet one goes up to full level
+    WaveBank q {};
+    q.setHarmonic (2, 2, 20);
+    fitWaveTable (q, 2);
+    CHECK (q.getHarmonic (2, 2) >= 127 && q.getHarmonic (2, 2) <= 128);
+    WaveBank e {};
+    fitWaveTable (e, 3);                             // empty: nothing
+    CHECK (e == WaveBank {});
+
+    // five sines to start from: none saturates
+    const auto sines = sineWaveBank();
+    for (int t = 0; t < kNumWaveTables; ++t)
+    {
+        oscarWaveSamples (sines, t, &clipped);
+        CHECK (! clipped && sines.getHarmonic (t, 0) == 127 && sines.getHarmonic (t, 1) == 0);
+    }
+}
+
 static void testHarmonics()
 {
     WaveBank w {};
@@ -714,6 +765,7 @@ int main (int argc, char** argv)
     testRecallFromDump();
     testKnownFactoryValues();
     testHarmonics();
+    testWaveEmulation();
     testRejections();
     testCombinedMessage();
     testFuzz();

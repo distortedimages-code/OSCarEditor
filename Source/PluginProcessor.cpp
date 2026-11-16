@@ -1015,7 +1015,33 @@ juce::String OscarProcessor::sendWaves()
     document.markWavesSent();
     addLog (tr ("Sent waveforms -8 to -12 (%1 bytes).", { juce::String ((int) msg.size()) })
             + (backup.existsAsFile() ? juce::String() : " " + tr ("Warning: backup file could not be written.")));
+
+    // the OSCar keeps playing the waveform it built before: choosing it again rebuilds it
+    const auto& v = document.getVoice (selectedSlot);
+    const bool userWave = getParam (v, *findParam ("wave1")) >= 11 || getParam (v, *findParam ("wave2")) >= 11;
+    if (userWave && liveCc && recallStage == 0)
+        rewaveAt = juce::Time::getMillisecondCounterHiRes() + 80.0;
+    else if (userWave)
+        addLog (tr ("To hear the new waveforms, choose the voice again on the OSCar (or turn Live CC on)."));
     return {};
+}
+
+void OscarProcessor::rewaveTick (double now)
+{
+    if (rewaveAt == 0 || now < rewaveAt || midi.isBusy())
+        return;
+    rewaveAt = 0;
+    if (! midi.isOutputOpen())
+        return;
+    const auto& v = document.getVoice (selectedSlot);
+    std::vector<CcMessage> msgs;
+    for (const char* id : { "wave1", "wave2" })
+    {
+        const auto m = ccMessagesFor (*findParam (id), v);
+        msgs.insert (msgs.end(), m.begin(), m.end());
+    }
+    queueCc (msgs);
+    addLog (tr ("The OSCar plays the new waveforms (Wave 1 and Wave 2 sent again)."));
 }
 
 juce::String OscarProcessor::sendSequences()
@@ -1116,6 +1142,7 @@ void OscarProcessor::timerCallback()
 {
     publishRandom();   // whatever changed meanwhile (cheap: a copy of the voice and the amounts)
     recallTick (juce::Time::getMillisecondCounterHiRes());
+    rewaveTick (juce::Time::getMillisecondCounterHiRes());
 
     // the OSCar on another MIDI channel: say so once, as soon as it sends something
     if (const int ch = midi.lastChannelFromOscar(); ch > 0 && ch != oscarChannel)

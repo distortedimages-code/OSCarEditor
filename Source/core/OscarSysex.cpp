@@ -1,7 +1,9 @@
 #include "OscarSysex.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
+#include <cstdlib>
 
 namespace oscar
 {
@@ -64,6 +66,94 @@ void WaveBank::setHarmonic (int table, int harmonic, int value)
     const auto o = (std::size_t) (table * kWaveTableSize + harmonic * 2);
     raw[o]     = (std::uint8_t) (value & 0x0F);
     raw[o + 1] = (std::uint8_t) ((value >> 4) & 0x0F);
+}
+
+//==============================================================================
+namespace
+{
+    // the firmware's quarter sine: 64 steps, 3..255, mirrored and signed for the full turn
+    int signedSine (int phase)
+    {
+        static const std::array<int, 64> quarter = []
+        {
+            std::array<int, 64> q {};
+            for (int i = 0; i < 64; ++i)
+                q[(std::size_t) i] = (int) std::lround (255.0 * std::sin ((i + 0.5) * 3.14159265358979323846 / 128.0));
+            return q;
+        }();
+        phase &= 0xFF;
+        const int q = phase & 0x3F;
+        const int v = quarter[(std::size_t) ((phase & 0x40) != 0 ? 63 - q : q)];
+        return (phase & 0x80) != 0 ? -v : v;
+    }
+
+    // the sum around 0, unclipped
+    std::array<int, 256> waveSums (const WaveBank& w, int table)
+    {
+        std::array<int, 256> s {};
+        for (int c = 0; c < 256; ++c)
+            for (int k = 1; k <= kNumHarmonics; ++k)
+                if (const int level = w.getHarmonic (table, k - 1); level > 0)
+                {
+                    const int sine = signedSine (k * c);
+                    const int term = (std::abs (sine) * level) >> 8;
+                    s[(std::size_t) c] += sine < 0 ? -term : term;
+                }
+        return s;
+    }
+
+    int peakOf (const std::array<int, 256>& s)
+    {
+        int peak = 0;
+        for (int v : s)
+            peak = std::max (peak, std::abs (v));
+        return peak;
+    }
+}
+
+std::array<int, 256> oscarWaveSamples (const WaveBank& w, int table, bool* clipped)
+{
+    auto s = waveSums (w, table);
+    bool hit = false;
+    for (auto& v : s)
+    {
+        v += 128;
+        hit = hit || v < 0 || v > 255;
+        v = std::clamp (v, 0, 255);
+    }
+    if (clipped != nullptr)
+        *clipped = hit;
+    return s;
+}
+
+void fitWaveTable (WaveBank& w, int table)
+{
+    const int peak = peakOf (waveSums (w, table));
+    if (peak == 0)
+        return;
+    std::array<int, kNumHarmonics> levels {};
+    for (int k = 0; k < kNumHarmonics; ++k)
+        levels[(std::size_t) k] = w.getHarmonic (table, k);
+    // scaled to a peak of 127; the rounding can overshoot by a little, so a step down until it fits
+    for (double target = 127.0; target > 60.0; target -= 1.0)
+    {
+        WaveBank t = w;
+        for (int k = 0; k < kNumHarmonics; ++k)
+            t.setHarmonic (table, k, (int) std::lround (levels[(std::size_t) k] * target / peak));
+        if (peakOf (waveSums (t, table)) <= 127)
+        {
+            w = t;
+            return;
+        }
+    }
+}
+
+WaveBank sineWaveBank()
+{
+    WaveBank w;
+    for (int t = 0; t < kNumWaveTables; ++t)
+        w.setHarmonic (t, 0, 127);
+    return w;
 }
 
 //==============================================================================

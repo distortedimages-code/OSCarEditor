@@ -1121,14 +1121,35 @@ void OscarEditor::confirmThenSendWaves()
         return;
     }
 
-    juce::AlertWindow::showAsync (juce::MessageBoxOptions().withAssociatedComponent (this)
-        .withIconType (juce::MessageBoxIconType::QuestionIcon)
-        .withTitle (tr ("Replace the user waveforms in the OSCar?"))
-        .withMessage (tr ("Waveforms -8 to -12 are all rewritten. Voices that use them will sound different.\n\nA copy of what is sent is saved in the backups."))
-        .withButton (tr ("Send waveforms")).withButton (tr ("Cancel")),
-        [safe = juce::Component::SafePointer<OscarEditor> (this)] (int r)
+    // the ones that would saturate on the OSCar: offer to fit them first
+    juce::StringArray clipping;
+    if (const auto& w = proc.getDocument().getWaves())
+        for (int t = 0; t < kNumWaveTables; ++t)
         {
-            if (safe == nullptr || r != 1) return;
+            bool clipped = false;
+            oscarWaveSamples (*w, t, &clipped);
+            if (clipped)
+                clipping.add (juce::String (-8 - t));
+        }
+    auto options = juce::MessageBoxOptions().withAssociatedComponent (this)
+        .withIconType (juce::MessageBoxIconType::QuestionIcon)
+        .withTitle (tr ("Replace the user waveforms in the OSCar?"));
+    if (clipping.isEmpty())
+        options = options.withMessage (tr ("Waveforms -8 to -12 are all rewritten. Voices that use them will sound different.\n\nA copy of what is sent is saved in the backups."))
+                         .withButton (tr ("Send waveforms")).withButton (tr ("Cancel"));
+    else
+        options = options.withMessage (tr ("Waveforms -8 to -12 are all rewritten. Voices that use them will sound different.\n\nThese saturate on the OSCar: %1. Fit level brings them back in, as the OSCar does with its own.\n\nA copy of what is sent is saved in the backups.",
+                                           { clipping.joinIntoString (", ") }))
+                         .withButton (tr ("Fit and send")).withButton (tr ("Send as they are")).withButton (tr ("Cancel"));
+    const bool canFit = clipping.size() > 0;
+    juce::AlertWindow::showAsync (options,
+        [safe = juce::Component::SafePointer<OscarEditor> (this), canFit] (int r)
+        {
+            // buttons: 1 the first (send, or fit and send), 2 the second, 0 the last (cancel)
+            if (safe == nullptr || r == 0 || (! canFit && r != 1)) return;
+            if (canFit && r == 1)
+                for (int t = 0; t < kNumWaveTables; ++t)
+                    safe->proc.getDocument().fitWaveTable (t);
             const auto err = safe->proc.sendWaves();
             if (err.isNotEmpty()) safe->proc.addLog (err);
         });

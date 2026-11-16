@@ -1800,6 +1800,12 @@ WavesPanel::WavesPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
         b->onClick = [this, t] { table = t; refresh(); };
         addAndMakeVisible (b);
     }
+    fitButton.onClick = [this] { proc.getDocument().fitWaveTable (table); };
+    fitButton.setTooltip (tr ("Scales this waveform's harmonics so their sum just fits, as the OSCar does with the waveforms made on its own keys: no saturation, full level."));
+    addAndMakeVisible (fitButton);
+    sinesButton.onClick = [this] { proc.getDocument().startSineWaves(); };
+    sinesButton.setTooltip (tr ("Five sines to draw from. Sending them replaces the OSCar's five user waveforms."));
+    addChildComponent (sinesButton);
     sendButton.onClick = [this] { editor.confirmThenSendWaves(); };
     addAndMakeVisible (sendButton);
 }
@@ -1809,17 +1815,27 @@ void WavesPanel::refresh()
     const auto& doc = proc.getDocument();
     const bool has = doc.getWaves().has_value();
     sendButton.setEnabled (has);
+    sinesButton.setVisible (! has);
     for (int i = 0; i < tables.size(); ++i)
+        tables[i]->setLit (i == table);   // always: each can be looked at, with or without data
+    bool clipped = false, empty = true;
+    if (has)
     {
-        tables[i]->setEnabled (has);
-        tables[i]->setLit (i == table);
+        oscarWaveSamples (*doc.getWaves(), table, &clipped);
+        for (int h = 0; h < kNumHarmonics; ++h)
+            empty = empty && doc.getWaves()->getHarmonic (table, h) == 0;
     }
+    fitButton.setEnabled (has && ! empty);
     if (! has)
-        info = tr ("No waveform data yet. On the OSCar: hold INSERT, press a WAVEFORM button, then SPACE.");
+        info = tr ("No waveforms from the OSCar yet: nothing to draw on.");
+    else if (! doc.areWavesFromOscar())
+        info = tr ("Started from sines, not the OSCar's waveforms: sending replaces all five. Drag across the bars to draw.");
     else if (doc.areWavesEdited())
-        info = tr ("Edited, not sent. 24 harmonic levels per user waveform (raw 0-255, to be confirmed on hardware). Drag to draw.");
+        info = tr ("Edited, not sent. Drag across the bars to draw, then Send waveforms.");
     else
-        info = tr ("Same as in the OSCar. 24 harmonic levels per user waveform (raw 0-255, to be confirmed on hardware). Drag to draw.");
+        info = tr ("Same as in the OSCar. Drag across the bars to draw.");
+    if (clipped)
+        info += " " + tr ("Saturates on the OSCar (red in the preview): Fit level brings it back.");
     repaint();
 }
 
@@ -1833,6 +1849,8 @@ void WavesPanel::resized()
         b->setBounds (top.removeFromLeft (110));
         top.removeFromLeft (8);
     }
+    top.removeFromLeft (16);
+    fitButton.setBounds (top.removeFromLeft (170));
     sendButton.setFace (top.removeFromRight (230).withSizeKeepingCentre (230, 40));
     g.removeFromTop (8);
     infoArea = g.removeFromTop (22).toFloat();
@@ -1841,7 +1859,9 @@ void WavesPanel::resized()
     scope = area.removeFromRight (300.0f).withTrimmedTop (22.0f).withTrimmedBottom (40.0f);
     area.removeFromRight (24.0f);
     bars = area.withTrimmedLeft (44.0f).withTrimmedTop (22.0f).withTrimmedBottom (26.0f);
+    sinesButton.setBounds (juce::Rectangle<int> (220, 34).withCentre (bars.getCentre().toInt().translated (0, 78)));
     addAndMakeVisible (wear);
+    sinesButton.toFront (false);
     setupWear (*this, wear, { juce::Rectangle<float> (0, 0, (float) width, (float) height) },
                { bars.withTrimmedTop (-22.0f), scope },
                { { bars.getCentre(), 160.0f } });
@@ -1866,14 +1886,16 @@ void WavesPanel::paint (juce::Graphics& g)
     }
     g.setFont (Fonts::bold (10.0f));
     g.setColour (colours::silk);
-    g.drawText ("255", juce::Rectangle<float> (bars.getX() - 46.0f, bars.getY() - 6.0f, 30.0f, 12.0f), juce::Justification::centredRight);
+    // 127 at the top: a harmonic alone at full level (the OSCar plays 128 +- the sum, so above it
+    // saturates; the OSCar keeps its own waveforms under it)
+    g.drawText (juce::String (kHarmonicTop), juce::Rectangle<float> (bars.getX() - 46.0f, bars.getY() - 6.0f, 30.0f, 12.0f), juce::Justification::centredRight);
     g.drawText ("0", juce::Rectangle<float> (bars.getX() - 46.0f, bars.getBottom() - 6.0f, 30.0f, 12.0f), juce::Justification::centredRight);
 
     std::array<float, kNumHarmonics> levels {};
     for (int h = 0; h < kNumHarmonics; ++h)
     {
         const int v = waves ? waves->getHarmonic (table, h) : 0;
-        levels[(size_t) h] = (float) v / 255.0f;
+        levels[(size_t) h] = (float) juce::jmin (v, kHarmonicTop) / (float) kHarmonicTop;
         const float cx = bars.getX() + step * ((float) h + 0.5f);
         auto slot = juce::Rectangle<float> (slotW, bars.getHeight()).withCentre ({ cx, bars.getCentreY() });
 
@@ -1895,6 +1917,11 @@ void WavesPanel::paint (juce::Graphics& g)
             g.fillRoundedRectangle (lit, 1.5f);
             g.setColour (juce::Colour (0xffffc0a0).withAlpha (0.7f));
             g.fillRect (lit.getX() + lit.getWidth() * 0.32f, lit.getY() + 1.0f, 2.0f, lit.getHeight() - 2.0f);
+            if (v > kHarmonicTop)   // over the top (data made elsewhere): saturates even alone
+            {
+                g.setColour (juce::Colours::white);
+                g.fillRect (lit.getX() - 2.0f, lit.getY() - 3.0f, lit.getWidth() + 4.0f, 2.0f);
+            }
         }
 
         g.setFont (Fonts::mono (11.0f));
@@ -1922,38 +1949,52 @@ void WavesPanel::paint (juce::Graphics& g)
 
     if (waves)
     {
-        constexpr int points = 240;
-        std::array<float, points + 1> ys {};
-        float peak = 0.0f;
-        for (int k = 0; k <= points; ++k)
+        // what the OSCar plays: its own sum, clipped at its rails (red where it saturates)
+        const auto samples = oscarWaveSamples (*waves, table);
+        auto yOf = [&screen] (int s) { return screen.getBottom() - screen.getHeight() * (0.06f + 0.88f * (float) s / 255.0f); };
+        g.setColour (colours::vfd.withAlpha (0.2f));
+        g.drawHorizontalLine (juce::roundToInt (yOf (255)), screen.getX(), screen.getRight());
+        g.drawHorizontalLine (juce::roundToInt (yOf (0)), screen.getX(), screen.getRight());
+        juce::Path trace, rails;
+        for (int k = 0; k <= 256; ++k)
         {
-            float sum = 0.0f;
-            for (int h = 0; h < kNumHarmonics; ++h)
-                sum += levels[(size_t) h] * std::sin (juce::MathConstants<float>::twoPi * (float) ((h + 1) * k) / (float) points);
-            ys[(size_t) k] = sum;
-            peak = juce::jmax (peak, std::abs (sum));
-        }
-        juce::Path trace;
-        for (int k = 0; k <= points; ++k)
-        {
-            const float x = screen.getX() + screen.getWidth() * (float) k / (float) points;
-            const float y = screen.getCentreY() - (peak > 0.0f ? ys[(size_t) k] / peak : 0.0f) * screen.getHeight() * 0.42f;
+            const int s = samples[(size_t) (k & 0xFF)];
+            const float x = screen.getX() + screen.getWidth() * (float) k / 256.0f, y = yOf (s);
             if (k == 0) trace.startNewSubPath (x, y); else trace.lineTo (x, y);
+            if (s == 0 || s == 255)
+                rails.addRectangle (x - 1.0f, y - 1.5f, screen.getWidth() / 256.0f + 2.0f, 3.0f);
         }
         g.setColour (colours::vfd.withAlpha (0.25f));
         g.strokePath (trace, juce::PathStrokeType (4.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
         g.setColour (colours::vfd);
         g.strokePath (trace, juce::PathStrokeType (1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        g.setColour (colours::ledOn);
+        g.fillPath (rails);
     }
     else
     {
         g.setFont (Fonts::mono (13.0f));
         g.setColour (colours::vfdDim);
         g.drawFittedText (tr ("Dump the waveforms from the OSCar to edit them here."), screen.reduced (16.0f).toNearestInt(), juce::Justification::centred, 3);
+
+        // over the bars: how to get the OSCar's waveforms, or start from sines
+        g.setColour (juce::Colours::black.withAlpha (0.55f));
+        g.fillRoundedRectangle (bars.expanded (10.0f, 30.0f), 6.0f);
+        auto t = bars.withSizeKeepingCentre (juce::jmin (bars.getWidth() - 40.0f, 620.0f), 150.0f).translated (0.0f, -30.0f);
+        g.setFont (Fonts::bold (17.0f));
+        g.setColour (colours::label);
+        g.drawText (tr ("To edit the OSCar's own waveforms, receive them first:"), t.removeFromTop (26.0f), juce::Justification::centred);
+        g.setFont (Fonts::mono (15.0f));
+        g.setColour (colours::vfd);
+        g.drawText (tr ("hold INSERT, press a WAVEFORM button, then SPACE"), t.removeFromTop (30.0f), juce::Justification::centred);
+        g.setFont (Fonts::label (14.0f));
+        g.setColour (colours::dim);
+        g.drawFittedText (tr ("The OSCar sends its five user waveforms (-8 to -12); they show up here. Or start from five sines (sending them replaces the OSCar's)."),
+                          t.toNearestInt(), juce::Justification::centredTop, 3);
     }
     g.setFont (Fonts::label (11.5f).withExtraKerningFactor (0.05f));
     g.setColour (colours::label);
-    g.drawText (lang::upper (tr ("Preview (sum of sines)")), scope.withY (scope.getBottom() + 6.0f).withHeight (16.0f), juce::Justification::centred);
+    g.drawText (lang::upper (tr ("What the OSCar plays")), scope.withY (scope.getBottom() + 6.0f).withHeight (16.0f), juce::Justification::centred);
 }
 
 void WavesPanel::mouseDown (const juce::MouseEvent& e)
@@ -1975,7 +2016,7 @@ void WavesPanel::draw (const juce::MouseEvent& e)
                       || e.position.y < bars.getY() - 30.0f || e.position.y > bars.getBottom() + 10.0f))
         return;
     const int h = juce::jlimit (0, kNumHarmonics - 1, (int) std::floor ((e.position.x - bars.getX()) / (bars.getWidth() / (float) kNumHarmonics)));
-    const int v = juce::jlimit (0, 255, juce::roundToInt ((bars.getBottom() - 2.0f - e.position.y) / (bars.getHeight() - 4.0f) * 255.0f));
+    const int v = juce::jlimit (0, kHarmonicTop, juce::roundToInt ((bars.getBottom() - 2.0f - e.position.y) / (bars.getHeight() - 4.0f) * (float) kHarmonicTop));
     auto& doc = proc.getDocument();
     if (started && h != lastHarmonic)
     {

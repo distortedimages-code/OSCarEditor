@@ -156,6 +156,25 @@ void BankDocument::setHarmonic (int table, int harmonic, int value)
     changed();
 }
 
+void BankDocument::fitWaveTable (int table)
+{
+    if (! waves) return;
+    auto w = *waves;
+    oscar::fitWaveTable (w, table);
+    if (w == *waves) return;
+    pushUndo();
+    waves = w;
+    changed();
+}
+
+void BankDocument::startSineWaves()
+{
+    if (waves) return;
+    pushUndo();
+    waves = oscar::sineWaveBank();
+    changed();
+}
+
 void BankDocument::rename (int slot, const juce::String& newName)
 {
     if (slot < 0 || slot >= kNumVoices) return;

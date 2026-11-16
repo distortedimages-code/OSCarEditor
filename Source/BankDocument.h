@@ -54,6 +54,9 @@ public:
     // Editing (every call records undo)
     void setParam (int slot, const oscar::ParamDef& p, int value);
     void setHarmonic (int table, int harmonic, int value);
+    void fitWaveTable (int table);       // its levels scaled to fit, as the OSCar does (no saturation)
+    void startSineWaves();               // no waveforms from the OSCar yet: a sine in each, to draw from
+    bool areWavesFromOscar() const       { return oscarWaves.has_value(); }
     void rename (int slot, const juce::String& newName);
     void copySlot (int slot);
     bool canPaste() const                        { return clipboard.has_value(); }
