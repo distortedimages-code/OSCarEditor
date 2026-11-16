@@ -738,6 +738,28 @@ static void testEditor (OscarProcessor& proc, Capture& out)
             if (x.isController() && x.getControllerNumber() == wave1.cc)
                 wave1Values.push_back (x.getControllerValue());
         CHECK (wave1Values.size() == 2 && wave1Values[0] == ccValueFor (wave1.coding, 0) && wave1Values[1] == ccValueFor (wave1.coding, 12));
+
+        // Listen on the OSCar: Wave 1 on the waveform shown; the same again: rebuilt (Triangle and back)
+        waves->showTable (2);   // -10
+        atelier::LedButton* listen = nullptr;
+        for (auto* c : waves->getChildren())
+            if (auto* lb = dynamic_cast<atelier::LedButton*> (c); lb != nullptr && lb->getButtonText() == "Listen on the OSCar")
+                listen = lb;
+        CHECK (listen != nullptr && listen->isEnabled());
+        if (listen != nullptr)
+        {
+            out.take();
+            listen->triggerClick();
+            pump (100);
+            CHECK (getParam (doc.getVoice (proc.getSelectedSlot()), wave1) == 13);
+            int lastWave1 = -1;
+            for (const auto& x : out.take())
+                if (x.isController() && x.getControllerNumber() == wave1.cc)
+                    lastWave1 = x.getControllerValue();
+            CHECK (lastWave1 == ccValueFor (wave1.coding, 13));
+            listen->triggerClick();
+            CHECK (waitForLog (proc, "went to Triangle and back"));
+        }
     }
 
     ed.reset();

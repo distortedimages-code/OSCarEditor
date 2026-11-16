@@ -1804,6 +1804,9 @@ WavesPanel::WavesPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
     fitButton.onClick = [this] { proc.getDocument().fitWaveTable (table); };
     fitButton.setTooltip (tr ("Scales this waveform's harmonics so their sum just fits, as the OSCar does with the waveforms made on its own keys: no saturation, full level."));
     addAndMakeVisible (fitButton);
+    listenButton.onClick = [this] { listen(); };
+    listenButton.setTooltip (tr ("Sets Wave 1 of the selected voice to this waveform (an edit you can undo), sends the waveforms if they were edited, and makes the OSCar play it at once. Live CC must be on."));
+    addAndMakeVisible (listenButton);
     sinesButton.onClick = [this] { proc.getDocument().startSineWaves(); };
     sinesButton.setTooltip (tr ("Five sines to draw from. Sending them replaces the OSCar's five user waveforms."));
     addChildComponent (sinesButton);
@@ -1827,6 +1830,7 @@ void WavesPanel::refresh()
             empty = empty && doc.getWaves()->getHarmonic (table, h) == 0;
     }
     fitButton.setEnabled (has && ! empty);
+    listenButton.setEnabled (has);
     if (! has)
         info = tr ("No waveforms from the OSCar yet: nothing to draw on.");
     else if (! doc.areWavesFromOscar())
@@ -1852,6 +1856,8 @@ void WavesPanel::resized()
     }
     top.removeFromLeft (16);
     fitButton.setBounds (top.removeFromLeft (170));
+    top.removeFromLeft (8);
+    listenButton.setBounds (top.removeFromLeft (210));
     sendButton.setFace (top.removeFromRight (230).withSizeKeepingCentre (230, 40));
     g.removeFromTop (8);
     infoArea = g.removeFromTop (22).toFloat();
@@ -1996,6 +2002,25 @@ void WavesPanel::paint (juce::Graphics& g)
     g.setFont (Fonts::label (11.5f).withExtraKerningFactor (0.05f));
     g.setColour (colours::label);
     g.drawText (lang::upper (tr ("What the OSCar plays")), scope.withY (scope.getBottom() + 6.0f).withHeight (16.0f), juce::Justification::centred);
+}
+
+void WavesPanel::listen()
+{
+    if (! proc.getLiveCc())
+    {
+        proc.addLog (tr ("Turn Live CC on to play the waveform on the OSCar."));
+        return;
+    }
+    const auto& wave1 = *findParam ("wave1");
+    const int slot = proc.getSelectedSlot(), want = 11 + table;   // 11: -8 ... 15: -12
+    const bool changed = getParam (proc.getDocument().getVoice (slot), wave1) != want;
+    if (changed)
+        proc.editParam (slot, wave1, want);   // a new number: the OSCar builds it from its memory
+    if (proc.getDocument().areWavesEdited())
+        editor.confirmThenSendWaves();        // then sent, and rebuilt once they are through
+    else if (! changed)
+        proc.rebuildUserWaves();              // the same number: Triangle and back
+    proc.addLog (tr ("Wave 1 of voice %1 plays waveform %2.", { juce::String (slotLabel (slot)), juce::String (-8 - table) }));
 }
 
 void WavesPanel::mouseDown (const juce::MouseEvent& e)

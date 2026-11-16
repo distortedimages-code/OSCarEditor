@@ -97,6 +97,9 @@ public:
     //==============================================================================
     // Actions (message thread). Return an error text, empty on success.
     void editParam (int slot, const oscar::ParamDef& p, int value);   // UI edits go through here
+    // The oscillators of the selected voice that play a user waveform: to Triangle and back, so the
+    // OSCar rebuilds them from its memory (Live CC on). False when there is none or Live CC is off.
+    bool rebuildUserWaves();
     void chooseVoice (int slot);          // list click: select, and in live mode play it on the OSCar
     juce::String sendVoices (bool selectSlotAfter);
     juce::String sendWaves();

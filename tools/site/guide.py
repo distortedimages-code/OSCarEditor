@@ -547,7 +547,7 @@ TUTO = {
         "steps": [
             ("Recevoir les formes de l'OSCar",
              "Sur l'OSCar, maintiens {INSERT}, appuie sur un bouton {WAVEFORM}, puis {SPACE} : il envoie ses cinq formes utilisateur, qui s'affichent dans la page Formes d'onde. Pas d'OSCar sous la main ? « Partir de sinus » donne cinq sinus à modifier ; les envoyer remplacera celles de l'OSCar.",
-             ("img", "tuto-recevoir.webp", 1000, 494, "La page Formes d'onde avant d'avoir reçu les formes de l'OSCar")),
+             ("img", "tuto-recevoir.webp", 1000, 408, "La page Formes d'onde avant d'avoir reçu les formes de l'OSCar")),
             ("Choisir une forme et dessiner",
              "Clique une des formes, de [ONDE -12] à [ONDE -8], puis trace un trait à travers les barres : chaque harmonique traversée prend la hauteur du trait, même en allant vite. Les barres vont de 0 à 127 ; 127, c'est une harmonique seule à plein niveau.",
              ("img", "tuto-dessin.webp", 1000, 604, "Une forme dessinée : une pente qui descend")),
@@ -558,7 +558,7 @@ TUTO = {
              "Clique « Envoyer les formes d'onde », en haut à droite, et confirme. Si une forme sature encore, le plugin propose « Ajuster et envoyer ». Les cinq formes −8 à −12 de l'OSCar sont remplacées ; une copie part dans les sauvegardes.",
              ("art", "send")),
             ("L'écouter",
-             "Pour qu'une voix joue ta forme, mets Wave 1 ou Wave 2 sur −8 à −12, page Voix. Live CC allumé, le plugin passe un instant l'oscillateur sur une autre forme et le remet, et l'OSCar joue la nouvelle. Sans Live CC, fais-le à la main sur l'OSCar : une autre forme, puis la tienne (il ne reconstruit une forme que quand on change de numéro).",
+             "Le plus simple : clique [ÉCOUTER SUR L'OSCAR], Live CC allumé. Le plugin met Wave 1 de la voix sur ta forme et l'OSCar la joue. À la main : mets Wave 1 ou Wave 2 sur −8 à −12, page Voix. Live CC allumé, le plugin passe un instant l'oscillateur sur une autre forme et le remet, et l'OSCar joue la nouvelle. Sans Live CC, fais-le à la main sur l'OSCar : une autre forme, puis la tienne (il ne reconstruit une forme que quand on change de numéro).",
              ("art", "listen")),
         ],
         "box_title": "Sur la machine, sans le plugin",
@@ -573,7 +573,7 @@ TUTO = {
         "steps": [
             ("Receive the OSCar's waveforms",
              "On the OSCar, hold {INSERT}, press a {WAVEFORM} button, then {SPACE}: it sends its five user waveforms, which show up on the Waveforms page. No OSCar at hand? \"Start from sines\" gives five sines to change; sending them will replace the OSCar's.",
-             ("img", "tuto-recevoir.webp", 1000, 494, "The Waveforms page before the OSCar's waveforms are received")),
+             ("img", "tuto-recevoir.webp", 1000, 408, "The Waveforms page before the OSCar's waveforms are received")),
             ("Pick a waveform and draw",
              "Click one of the waveforms, [WAVE -12] to [WAVE -8], then draw a line across the bars: every harmonic you cross takes the line's height, even when you go fast. The bars go from 0 to 127; 127 is a harmonic alone at full level.",
              ("img", "tuto-dessin.webp", 1000, 604, "A waveform drawn: a falling slope")),
@@ -584,7 +584,7 @@ TUTO = {
              "Click \"Send waveforms\", top right, and confirm. If a waveform still saturates, the plug-in offers \"Fit and send\". The OSCar's five waveforms −8 to −12 are replaced; a copy goes to the backups.",
              ("art", "send")),
             ("Listen",
-             "For a voice to play your waveform, set Wave 1 or Wave 2 to −8 to −12 on the Voice page. With Live CC on, the plug-in switches the oscillator to another waveform for a moment and back, and the OSCar plays the new one. Without Live CC, do it by hand on the OSCar: another waveform, then yours (it only rebuilds a waveform when the number changes).",
+             "Simplest: click [LISTEN ON THE OSCAR], with Live CC on. The plug-in sets Wave 1 of the voice to your waveform and the OSCar plays it. By hand: set Wave 1 or Wave 2 to −8 to −12 on the Voice page. With Live CC on, the plug-in switches the oscillator to another waveform for a moment and back, and the OSCar plays the new one. Without Live CC, do it by hand on the OSCar: another waveform, then yours (it only rebuilds a waveform when the number changes).",
              ("art", "listen")),
         ],
         "box_title": "On the synth, without the plug-in",
@@ -594,6 +594,128 @@ TUTO = {
         "box_note": "From Vincent's tests.",
     },
 }
+
+
+# ---------------------------------------------------------------- how the OSCar keeps its waveforms, as a kitchen
+def chef(x, y, w, h, mood="happy"):
+    """The little OSCar box with a chef's hat."""
+    cx = x + w / 2
+    hat = (f'<path d="M{cx - 15:.1f} {y + 1} v-9 a7 7 0 0 1 4 -13 a9 9 0 0 1 22 0 a7 7 0 0 1 4 13 v9 Z" fill="{IV}"/>'
+           f'<rect x="{cx - 15:.1f}" y="{y - 2}" width="30" height="5" rx="1.5" fill="#d8cfbd"/>')
+    return bot(x, y, w, h, mood) + hat
+
+
+def card(x, y, label, colour=IV, rot=0, fresh=False):
+    """A recipe card with its waveform number and a little wave drawn on it."""
+    wave = f'M{x + 5} {y + 22} q4 -9 8 0 t8 0 t8 0' if not fresh else f'M{x + 5} {y + 22} l4 -8 l4 12 l4 -10 l4 8 l4 -5 l4 3'
+    return (f'<g transform="rotate({rot} {x + 18} {y + 16})"><rect x="{x}" y="{y}" width="36" height="30" rx="3" fill="{colour}"/>'
+            f'<text class="mono" x="{x + 3}" y="{y + 10}" font-size="9" fill="{DK}">{label}</text>'
+            f'<path d="{wave}" fill="none" stroke="{OR if fresh else CU}" stroke-width="1.6" stroke-linecap="round"/></g>')
+
+
+def art_box():
+    # the recipe box: five cards kept, and the draft "0" on the side, with a coffee stain
+    box = (f'<path d="M14 54 H112 V100 H14 Z" fill="{CU}" stroke="{IV}" stroke-width="2"/>'
+           f'<path d="M14 54 L24 44 H122 L112 54" fill="#a8562a" stroke="{IV}" stroke-width="2" stroke-linejoin="round"/>'
+           f'<path d="M112 54 L122 44 V90 L112 100" fill="#a8562a" stroke="{IV}" stroke-width="2" stroke-linejoin="round"/>')
+    cards = "".join(card(12 + i * 20, 8 + (i % 2) * 4, f"-{12 - i}", IV, -6 + i * 3) for i in range(5))
+    draft = (f'<g transform="rotate(10 138 30)"><rect x="124" y="12" width="30" height="36" rx="2" fill="#f4eedc"/>'
+             f'<text class="mono" x="139" y="26" text-anchor="middle" font-size="11" fill="{DK}">0</text>'
+             f'<path d="M128 38 q3 -5 6 0 t6 0 t6 0" fill="none" stroke="{MU}" stroke-width="1.4" stroke-dasharray="2 2"/></g>'
+             f'<circle cx="146" cy="56" r="7" fill="none" stroke="#8a5a32" stroke-width="2" opacity=".7"/>')
+    return svg(cards + box + draft)
+
+
+def art_cook():
+    # the oscillator reads its card once and bakes the wave; then it plays that one
+    return svg(card(8, 40, "-8", IV, -8)
+               + f'<path d="M48 56 h14" stroke="{MU}" stroke-width="2" stroke-dasharray="3 3"/>' + arrowhead(66, 56, 0, MU)
+               + chef(70, 34, 44, 38)
+               + f'<path d="M120 80 h32 v10 a4 4 0 0 1 -4 4 h-24 a4 4 0 0 1 -4 -4 Z" fill="#3a3d43"/>'
+               + f'<path class="sing" d="M122 80 q4 -12 8 0 t8 0 t8 0" fill="none" stroke="{OR}" stroke-width="2.4" stroke-linecap="round"/>'
+               + note(136, 30, OR))
+
+
+def art_post():
+    # OXIde, the postman, swaps the five cards at once; the cook still serves the old cake
+    env = (f'<g class="bob"><rect x="6" y="22" width="52" height="34" rx="3" fill="{IV}"/>'
+           f'<path d="M6 24 L32 42 L58 24" fill="none" stroke="#bdb6a6" stroke-width="2"/>'
+           f'<text class="mono" x="32" y="66" text-anchor="middle" font-size="9" fill="{OR}">x5</text></g>')
+    box = (f'<rect x="64" y="40" width="40" height="30" rx="3" fill="{CU}" stroke="{IV}" stroke-width="2"/>'
+           + "".join(f'<rect x="{68 + i * 6}" y="{32 + (i % 2) * 2}" width="8" height="12" rx="1" fill="#f4eedc"/>' for i in range(5)))
+    bubble = (f'<path d="M110 14 H154 a4 4 0 0 1 4 4 V40 a4 4 0 0 1 -4 4 H130 l-6 8 l-1 -8 H110 a4 4 0 0 1 -4 -4 V18 a4 4 0 0 1 4 -4 Z" fill="{RA}" stroke="{IV}" stroke-width="1.6"/>'
+              f'<path d="M116 34 q4 -10 8 0 t8 0 t8 0" fill="none" stroke="{CU}" stroke-width="2"/>'
+              f'<text x="148" y="30" font-size="12" font-weight="700" fill="{IV}">?</text>')
+    return svg(env + f'<path d="M58 50 h4" stroke="{MU}" stroke-width="2"/>' + box + bubble + chef(112, 66, 40, 34, "worried"))
+
+
+def art_reorder():
+    # another number for a moment, then yours: the cook bakes the new card
+    tickets = (f'<g transform="rotate(-8 30 34)"><rect x="10" y="20" width="40" height="26" rx="2" fill="#f4eedc"/>'
+               f'<path d="M16 38 l8 -12 l8 12 Z" fill="none" stroke="{DK}" stroke-width="1.6" stroke-linejoin="round"/>'
+               f'<path d="M14 30 l26 12 M40 30 l-26 12" stroke="{RD}" stroke-width="2" opacity=".8"/></g>'
+               f'<g transform="rotate(5 30 76)"><rect x="10" y="62" width="40" height="26" rx="2" fill="#f4eedc"/>'
+               f'<text class="mono" x="30" y="80" text-anchor="middle" font-size="12" fill="{DK}">-8</text></g>')
+    arrows = (f'<path d="M54 34 C70 34 70 52 82 54" fill="none" stroke="{MU}" stroke-width="2" stroke-dasharray="3 3"/>'
+              f'<path d="M54 76 C70 76 70 60 82 58" fill="none" stroke="{OR}" stroke-width="2"/>' + arrowhead(84, 57, -10, OR))
+    cake = (f'<path d="M124 84 h30 v10 a4 4 0 0 1 -4 4 h-22 a4 4 0 0 1 -4 -4 Z" fill="#3a3d43"/>'
+            f'<path d="M126 84 l4 -10 l4 14 l4 -12 l4 9 l4 -6 l4 4" fill="none" stroke="{OR}" stroke-width="2.2" stroke-linejoin="round"/>')
+    return svg(tickets + arrows + chef(88, 34, 40, 34, "wow") + cake)
+
+
+def art_mold():
+    # a cake too big overflows the mould (saturates); fitted, it holds
+    mould = lambda x: (f'<path d="M{x} 50 h56 l-6 40 h-44 Z" fill="#3a3d43" stroke="{IV}" stroke-width="2" stroke-linejoin="round"/>')
+    over = (f'<path d="M14 52 C14 26 30 18 42 30 C54 16 72 26 70 52" fill="#f6c69a"/>'
+            f'<path d="M12 50 q-6 8 -2 16 M72 50 q6 8 2 18" stroke="#f6c69a" stroke-width="6" stroke-linecap="round" fill="none"/>'
+            f'<path d="M12 50 h60" stroke="{RD}" stroke-width="3"/>')
+    fit = (f'<path d="M94 52 C94 40 106 34 116 40 C126 34 140 40 140 52 Z" fill="#f6c69a"/>')
+    return svg(mould(14) + over + mould(88) + fit
+               + f'<text x="42" y="106" text-anchor="middle" font-size="10" font-weight="700" fill="{RD}">!</text>'
+               + f'<path d="M108 102 l4 4 l8 -8" fill="none" stroke="{OR}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>')
+
+
+KITCHEN = {
+    "fr": {
+        "title": "D'abord, comment l'OSCar range ses formes (version cuisine)",
+        "cards": [
+            ("box", "La boîte à recettes",
+             "L'OSCar a <b>cinq fiches recettes</b> gardées dans une boîte : les formes −12 à −8. Elles restent même éteint. Il a aussi un <b>brouillon</b>, la forme « 0 », griffonné à côté avec ses touches OSC1 et OSC2 : un brouillon, pas une fiche."),
+            ("cook", "Le cuistot",
+             "Chaque oscillateur est un <b>cuistot</b>. Quand on lui demande une forme, il lit la fiche <b>une seule fois</b>, fait cuire son gâteau (il calcule l'onde), puis sert ce gâteau-là tant qu'on ne lui demande rien d'autre."),
+            ("post", "Le facteur OXIde",
+             "« Envoyer les formes d'onde », c'est OXIde en <b>facteur</b> : il remplace les cinq fiches de la boîte d'un coup (il ne sait pas en livrer une seule). Mais le cuistot ne regarde pas la boîte : il continue de servir l'<b>ancien gâteau</b>."),
+            ("reorder", "Recommander",
+             "Pour qu'il recuise, il faut lui <b>commander autre chose une seconde, puis ta forme</b> : il relit la fiche, la nouvelle. OXIde le fait tout seul (Triangle, puis ta forme)… à condition de savoir quelle forme il cuisine. Si tu l'as commandée <b>directement à l'OSCar</b>, OXIde ne l'a pas vu : clique [ÉCOUTER SUR L'OSCAR], c'est OXIde qui passe la commande."),
+            ("mold", "Le moule",
+             "Le gâteau doit tenir dans un <b>moule</b> : si la somme des harmoniques est trop grosse, ça déborde et l'onde est coupée (le rouge dans « Ce que joue l'OSCar »). [AJUSTER LE NIVEAU] réduit la recette pour qu'elle tienne, comme l'OSCar le fait avec ses propres fiches."),
+        ],
+    },
+    "en": {
+        "title": "First, how the OSCar keeps its waveforms (kitchen version)",
+        "cards": [
+            ("box", "The recipe box",
+             "The OSCar has <b>five recipe cards</b> kept in a box: waveforms −12 to −8. They stay there even when it's off. It also has a <b>draft</b>, waveform \"0\", scribbled next to it with its OSC1 and OSC2 keys: a draft, not a card."),
+            ("cook", "The cook",
+             "Each oscillator is a <b>cook</b>. Asked for a waveform, it reads the card <b>once</b>, bakes its cake (computes the wave), then serves that cake until it's asked for something else."),
+            ("post", "OXIde the postman",
+             "\"Send waveforms\" is OXIde as a <b>postman</b>: it swaps the five cards in the box at once (it can't deliver just one). But the cook doesn't look in the box: it keeps serving the <b>old cake</b>."),
+            ("reorder", "Order again",
+             "To make it bake again, <b>order something else for a second, then your waveform</b>: it reads the card again, the new one. OXIde does it for you (Triangle, then yours)… as long as it knows what the cook is baking. If you ordered it <b>on the OSCar itself</b>, OXIde didn't see: click [LISTEN ON THE OSCAR], and OXIde places the order."),
+            ("mold", "The mould",
+             "The cake has to fit in a <b>mould</b>: if the harmonics add up to too much, it overflows and the wave gets cut (the red in \"What the OSCar plays\"). [FIT LEVEL] scales the recipe down so it fits, as the OSCar does with its own cards."),
+        ],
+    },
+}
+KITCHEN_ART = {"box": art_box, "cook": art_cook, "post": art_post, "reorder": art_reorder, "mold": art_mold}
+
+
+def kitchen_html(lang):
+    k = KITCHEN[lang]
+    cards = "".join(f'<article class="scene kitchen-card"><div class="scene-art">{KITCHEN_ART[key]()}</div><div class="scene-text">'
+                    f'<h3>{markup(title)}</h3><p>{markup(text)}</p></div></article>'
+                    for key, title, text in k["cards"])
+    return f'<div class="kitchen"><h4 class="kitchen-title">{k["title"]}</h4><div class="scenes kitchen-grid">{cards}</div></div>'
 
 
 def tuto_html(lang):
@@ -615,7 +737,7 @@ def tuto_html(lang):
                      f'<p>{markup(text)}</p></div><div class="tuto-fig">{figure}</div></li>')
     box = "".join(f"<li>{markup(x)}</li>" for x in t["box"])
     return (f'<div class="guide-band tuto" id="tuto-formes"><h3 class="mini-legend">{t["legend"]}</h3>'
-            f'<p class="tuto-lead">{t["lead"]}</p><ol class="tuto-steps">{"".join(steps)}</ol>'
+            f'<p class="tuto-lead">{t["lead"]}</p>{kitchen_html(lang)}<ol class="tuto-steps">{"".join(steps)}</ol>'
             f'<aside class="tuto-box"><h4>{t["box_title"]}</h4><ul class="how">{box}</ul><p class="small">{t["box_note"]}</p></aside></div>')
 
 

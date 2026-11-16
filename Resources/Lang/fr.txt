@@ -499,3 +499,8 @@ countries: fr be ch lu mc ca
 
 "To hear the new waveforms: on the OSCar, switch the oscillator to another waveform and back (or turn Live CC on and send again: the plugin does it)." = "Pour entendre les nouvelles formes d'onde : sur l'OSCar, passe l'oscillateur sur une autre forme puis reviens (ou allume Live CC et renvoie : le plugin le fait)."
 "The OSCar plays the new waveforms (its oscillators went to Triangle and back, so it rebuilds them)." = "L'OSCar joue les nouvelles formes d'onde (ses oscillateurs sont passés sur Triangle puis revenus, pour qu'il les reconstruise)."
+"Listen on the OSCar" = "Écouter sur l'OSCar"
+"Sets Wave 1 of the selected voice to this waveform (an edit you can undo), sends the waveforms if they were edited, and makes the OSCar play it at once. Live CC must be on." = "Met Wave 1 de la voix choisie sur cette forme (une modification qu'on peut annuler), envoie les formes si elles ont été modifiées, et fait jouer la forme à l'OSCar tout de suite. Live CC doit être allumé."
+"Turn Live CC on to play the waveform on the OSCar." = "Allume Live CC pour faire jouer la forme à l'OSCar."
+"Wave 1 of voice %1 plays waveform %2." = "Wave 1 de la voix %1 joue la forme %2."
+"The voice in the plugin plays no user waveform. If the OSCar plays one chosen on its panel, switch that oscillator to another waveform and back to hear the new one, or click Listen on the OSCar (Waveforms page)." = "La voix du plugin ne joue aucune forme utilisateur. Si l'OSCar en joue une choisie sur sa façade, passe cet oscillateur sur une autre forme puis reviens pour entendre la nouvelle, ou clique Écouter sur l'OSCar (page Formes d'onde)."

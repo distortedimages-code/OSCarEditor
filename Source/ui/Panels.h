@@ -244,7 +244,9 @@ private:
     OscarProcessor& proc;
     OscarEditor& editor;
     juce::OwnedArray<atelier::LedButton> tables;
-    atelier::LedButton fitButton { TRANS ("Fit level") }, sinesButton { TRANS ("Start from sines") };
+    atelier::LedButton fitButton { TRANS ("Fit level") }, sinesButton { TRANS ("Start from sines") },
+                       listenButton { TRANS ("Listen on the OSCar") };
+    void listen();   // Wave 1 of the voice on this waveform, sent first if edited, rebuilt on the OSCar
     atelier::CopperButton sendButton { TRANS ("Send waveforms") };
     juce::Rectangle<float> group, bars, scope, infoArea;   // bars: the slots only (values above, numbers below)
     juce::String info;

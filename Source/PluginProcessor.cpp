@@ -1029,7 +1029,23 @@ juce::String OscarProcessor::sendWaves()
     {
         addLog (tr ("To hear the new waveforms: on the OSCar, switch the oscillator to another waveform and back (or turn Live CC on and send again: the plugin does it)."));
     }
+    else
+    {
+        // a user waveform chosen on the OSCar's panel: the plugin doesn't see it
+        addLog (tr ("The voice in the plugin plays no user waveform. If the OSCar plays one chosen on its panel, switch that oscillator to another waveform and back to hear the new one, or click Listen on the OSCar (Waveforms page)."));
+    }
     return {};
+}
+
+bool OscarProcessor::rebuildUserWaves()
+{
+    const auto& v = document.getVoice (selectedSlot);
+    const bool userWave = getParam (v, *findParam ("wave1")) >= 11 || getParam (v, *findParam ("wave2")) >= 11;
+    if (! userWave || ! liveCc)
+        return false;
+    rewaveAt = juce::Time::getMillisecondCounterHiRes() + 60.0;
+    rewaveStage = 1;
+    return true;
 }
 
 void OscarProcessor::rewaveTick (double now)

@@ -1,5 +1,7 @@
 ## English
 
+**0.7.4: Listen on the OSCar.** The plugin can't see the waveform chosen on the OSCar's panel, so after sending it could only rebuild the waveforms the voice plays in the plugin. A new button on the Waveforms page, *Listen on the OSCar*, sets Wave 1 of the voice to the waveform shown, sends the waveforms if they were edited, and makes the OSCar play it at once (Live CC on). When the voice plays no user waveform, sending now says what to do.
+
 **0.7.3: sent waveforms heard at once, for real.** Vincent found that after sending the waveforms, the OSCar kept the old sound until the waveform was chosen again. Its firmware only rebuilds a user waveform when an oscillator's waveform number changes, so sending the same number again (0.7.2) did nothing. Now the oscillators that play a user waveform go to Triangle for a moment, then back (Live CC on, and in the sound recall). Without Live CC, the plugin says how to do it on the OSCar. The waveform buttons go from -12 to -8, left to right, as on the OSCar's keyboard and the memory row.
 
 **0.7.2: the Waveforms page, fixed with Vincent's tests.** The five waveform buttons could not be clicked before a dump: they always can now. Without the OSCar's waveforms, the page says how to get them (INSERT + a WAVEFORM button + SPACE) or starts from five sines. The bars go up to 127 and the preview shows what the OSCar plays, computed the way its firmware does, in red where it saturates; *Fit level* scales a waveform so it just fits, as the OSCar does with its own, and sending offers it for the ones that saturate. After sending, Wave 1 and Wave 2 go again (Live CC on), so the OSCar rebuilds the waveform it plays: it only builds a user waveform when it is chosen.
@@ -54,6 +56,8 @@ Waveforms dumped by the OSCar could be refused as "damaged by a text-mode copy (
 - **A panel with a past**: the printed ink is lightly worn in places; the controls stay clean.
 
 ## Français
+
+**0.7.4 : Écouter sur l'OSCar.** Le plugin ne voit pas la forme choisie sur la façade de l'OSCar : après l'envoi, il ne pouvait reconstruire que les formes que la voix joue dans le plugin. Un nouveau bouton de la page Formes d'onde, *Écouter sur l'OSCar*, met Wave 1 de la voix sur la forme affichée, envoie les formes si elles ont été modifiées, et la fait jouer à l'OSCar tout de suite (Live CC allumé). Quand la voix ne joue aucune forme utilisateur, l'envoi dit maintenant quoi faire.
 
 **0.7.3 : les formes envoyées s'entendent tout de suite, pour de bon.** Vincent a vu qu'après l'envoi des formes d'onde, l'OSCar gardait l'ancien son jusqu'à ce qu'on rechoisisse la forme. Son firmware ne reconstruit une forme utilisateur que quand le numéro de forme d'un oscillateur change : renvoyer le même numéro (0.7.2) ne faisait rien. Maintenant, les oscillateurs qui jouent une forme utilisateur passent un instant sur Triangle, puis reviennent (Live CC allumé, et au rappel du son). Sans Live CC, le plugin dit comment le faire sur l'OSCar. Les boutons des formes d'onde vont de -12 à -8, de gauche à droite, comme sur le clavier de l'OSCar et la rangée des mémoires.
 
