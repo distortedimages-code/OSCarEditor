@@ -488,13 +488,14 @@ countries: fr be ch lu mc ca
 "Scales this waveform's harmonics so their sum just fits, as the OSCar does with the waveforms made on its own keys: no saturation, full level." = "Met les harmoniques de cette forme à l'échelle pour que leur somme tienne tout juste, comme l'OSCar le fait avec les formes faites sur ses touches : pas de saturation, plein niveau."
 "Start from sines" = "Partir de sinus"
 "Started from sines, not the OSCar's waveforms: sending replaces all five. Drag across the bars to draw." = "Partie de sinus, pas des formes de l'OSCar : l'envoi remplace les cinq. Glisse à travers les barres pour dessiner."
-"The OSCar plays the new waveforms (Wave 1 and Wave 2 sent again)." = "L'OSCar joue les nouvelles formes d'onde (Wave 1 et Wave 2 renvoyés)."
 "The OSCar sends its five user waveforms (-8 to -12); they show up here. Or start from five sines (sending them replaces the OSCar's)." = "L'OSCar envoie ses cinq formes utilisateur (-8 à -12) ; elles s'affichent ici. Ou pars de cinq sinus (les envoyer remplace celles de l'OSCar)."
 "To edit the OSCar's own waveforms, receive them first:" = "Pour modifier les formes d'onde de l'OSCar, reçois-les d'abord :"
-"To hear the new waveforms, choose the voice again on the OSCar (or turn Live CC on)." = "Pour entendre les nouvelles formes d'onde, choisis à nouveau la voix sur l'OSCar (ou allume Live CC)."
 "hold INSERT, press a WAVEFORM button, then SPACE" = "maintiens INSERT, appuie sur un bouton WAVEFORM, puis SPACE"
 "Waveforms -8 to -12 are all rewritten. Voices that use them will sound different.\n\nThese saturate on the OSCar: %1. Fit level brings them back in, as the OSCar does with its own.\n\nA copy of what is sent is saved in the backups." = "Les formes -8 à -12 sont toutes réécrites. Les voix qui les utilisent sonneront autrement.\n\nCelles-ci saturent sur l'OSCar : %1. Ajuster le niveau les ramène, comme l'OSCar le fait avec les siennes.\n\nUne copie de ce qui est envoyé est gardée dans les sauvegardes."
 "Fit and send" = "Ajuster et envoyer"
 "Send as they are" = "Envoyer telles quelles"
 
 "What the OSCar plays" = "Ce que joue l'OSCar"
+
+"To hear the new waveforms: on the OSCar, switch the oscillator to another waveform and back (or turn Live CC on and send again: the plugin does it)." = "Pour entendre les nouvelles formes d'onde : sur l'OSCar, passe l'oscillateur sur une autre forme puis reviens (ou allume Live CC et renvoie : le plugin le fait)."
+"The OSCar plays the new waveforms (its oscillators went to Triangle and back, so it rebuilds them)." = "L'OSCar joue les nouvelles formes d'onde (ses oscillateurs sont passés sur Triangle puis revenus, pour qu'il les reconstruise)."

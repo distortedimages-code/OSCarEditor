@@ -1019,29 +1019,49 @@ juce::String OscarProcessor::sendWaves()
     // the OSCar keeps playing the waveform it built before: choosing it again rebuilds it
     const auto& v = document.getVoice (selectedSlot);
     const bool userWave = getParam (v, *findParam ("wave1")) >= 11 || getParam (v, *findParam ("wave2")) >= 11;
-    if (userWave && liveCc && recallStage == 0)
-        rewaveAt = juce::Time::getMillisecondCounterHiRes() + 80.0;
+    if (userWave && (liveCc || recallStage != 0))
+    {
+        // in a recall, after the voice's CC (they would bring the number back in between)
+        rewaveAt = juce::Time::getMillisecondCounterHiRes() + (recallStage != 0 ? 400.0 : 80.0);
+        rewaveStage = 1;
+    }
     else if (userWave)
-        addLog (tr ("To hear the new waveforms, choose the voice again on the OSCar (or turn Live CC on)."));
+    {
+        addLog (tr ("To hear the new waveforms: on the OSCar, switch the oscillator to another waveform and back (or turn Live CC on and send again: the plugin does it)."));
+    }
     return {};
 }
 
 void OscarProcessor::rewaveTick (double now)
 {
-    if (rewaveAt == 0 || now < rewaveAt || midi.isBusy())
+    if (rewaveStage == 0 || now < rewaveAt || midi.isBusy())
         return;
-    rewaveAt = 0;
     if (! midi.isOutputOpen())
+    {
+        rewaveStage = 0;
         return;
+    }
     const auto& v = document.getVoice (selectedSlot);
     std::vector<CcMessage> msgs;
     for (const char* id : { "wave1", "wave2" })
     {
-        const auto m = ccMessagesFor (*findParam (id), v);
+        const auto& p = *findParam (id);
+        if (getParam (v, p) < 11)
+            continue;   // not a user waveform: nothing to rebuild
+        auto away = v;
+        setParam (away, p, 0);   // Triangle, for a moment
+        const auto m = ccMessagesFor (p, rewaveStage == 1 ? away : v);
         msgs.insert (msgs.end(), m.begin(), m.end());
     }
     queueCc (msgs);
-    addLog (tr ("The OSCar plays the new waveforms (Wave 1 and Wave 2 sent again)."));
+    if (rewaveStage == 1)
+    {
+        rewaveStage = 2;
+        rewaveAt = now + 150.0;   // the OSCar looks at its oscillators every few ms: it sees the change
+        return;
+    }
+    rewaveStage = 0;
+    addLog (tr ("The OSCar plays the new waveforms (its oscillators went to Triangle and back, so it rebuilds them)."));
 }
 
 juce::String OscarProcessor::sendSequences()

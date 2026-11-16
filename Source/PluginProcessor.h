@@ -280,9 +280,11 @@ private:
     bool recallWaiting = false;
     int recallStage = 0;                        // 0: nothing to do; 1: waveforms (if used); 2: the voice
     double recallAt = 0, recallGiveUp = 0;
-    // after the waveforms went: Wave 1 and Wave 2 again, so the OSCar rebuilds the one it plays
-    // (it only builds a user waveform when it is chosen)
+    // after the waveforms went, the OSCar keeps playing the user waveform it built before: it only
+    // builds one when an oscillator's waveform number changes (firmware 0x0AD0), not when the same
+    // number comes again. So the oscillators that play one go to Triangle, then back (stage 1, 2).
     double rewaveAt = 0;
+    int rewaveStage = 0;
     void rewaveTick (double now);
     void recallTick (double now);
     bool selectAfterSend = true;

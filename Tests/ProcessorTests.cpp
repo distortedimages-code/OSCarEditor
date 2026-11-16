@@ -722,7 +722,16 @@ static void testEditor (OscarProcessor& proc, Capture& out)
             if (x.isController() && x.getControllerNumber() == wave1.cc) ccAfter = sysexFirst;
         }
         CHECK (sysexFirst && ccAfter);
-        CHECK (waitForLog (proc, "Wave 1 and Wave 2 sent again"));
+        // the same number again wouldn't do: Triangle first, then back to -9 a moment later
+        CHECK (waitForLog (proc, "went to Triangle and back"));
+        auto all = sent;
+        for (const auto& x : out.take())
+            all.push_back (x);
+        std::vector<int> wave1Values;
+        for (const auto& x : all)
+            if (x.isController() && x.getControllerNumber() == wave1.cc)
+                wave1Values.push_back (x.getControllerValue());
+        CHECK (wave1Values.size() == 2 && wave1Values[0] == ccValueFor (wave1.coding, 0) && wave1Values[1] == ccValueFor (wave1.coding, 12));
     }
 
     ed.reset();
