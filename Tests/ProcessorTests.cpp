@@ -700,6 +700,12 @@ static void testEditor (OscarProcessor& proc, Capture& out)
             }
         pump (50);
         CHECK (waves->currentTable() == 3);
+        // in the OSCar's order, -12 on the left
+        std::vector<juce::String> order;
+        for (auto* c : waves->getChildren())
+            if (auto* lb = dynamic_cast<atelier::LedButton*> (c); lb != nullptr && lb->getButtonText().startsWith ("Wave -"))
+                order.push_back (lb->getButtonText());
+        CHECK (order.size() == 5 && order.front() == "Wave -12" && order.back() == "Wave -8");
 
         // sent while the voice plays a user waveform: Wave 1 and 2 again, so the OSCar rebuilds it
         auto& doc = proc.getDocument();

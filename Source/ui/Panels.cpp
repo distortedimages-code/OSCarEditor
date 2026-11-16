@@ -1794,7 +1794,8 @@ void MorphPanel::paint (juce::Graphics& g)
 //==============================================================================
 WavesPanel::WavesPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e)
 {
-    for (int t = 0; t < kNumWaveTables; ++t)
+    // -12 to -8 from left to right, as on the OSCar's keyboard and the memory row
+    for (int t = kNumWaveTables - 1; t >= 0; --t)
     {
         auto* b = tables.add (new LedButton (tr ("Wave %1", { juce::String (-8 - t) })));
         b->onClick = [this, t] { table = t; refresh(); };
@@ -1817,7 +1818,7 @@ void WavesPanel::refresh()
     sendButton.setEnabled (has);
     sinesButton.setVisible (! has);
     for (int i = 0; i < tables.size(); ++i)
-        tables[i]->setLit (i == table);   // always: each can be looked at, with or without data
+        tables[i]->setLit (kNumWaveTables - 1 - i == table);   // always clickable, with or without data
     bool clipped = false, empty = true;
     if (has)
     {
