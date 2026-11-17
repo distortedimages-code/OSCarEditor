@@ -1,5 +1,7 @@
 ## English
 
+**0.7.5: new versions offered at launch.** When OXIde opens (the app, or the plug-in's window) and a new version is out, a tile says so: the version, what it brings in a few words, a link to the full notes, and *Update now*, which replaces the app, the AU and the VST3 on this Mac in one go. The app can then relaunch itself; a DAW loads the new plug-in when you reopen it. *Later* puts it off until the next launch, *Skip this version* for good. A version found once is offered again at each launch until it is installed, even without a connection, and the plug-in looks for new ones at most once an hour.
+
 **0.7.4: Listen on the OSCar.** The plugin can't see the waveform chosen on the OSCar's panel, so after sending it could only rebuild the waveforms the voice plays in the plugin. A new button on the Waveforms page, *Listen on the OSCar*, sets Wave 1 of the voice to the waveform shown, sends the waveforms if they were edited, and makes the OSCar play it at once (Live CC on). When the voice plays no user waveform, sending now says what to do.
 
 **0.7.3: sent waveforms heard at once, for real.** Vincent found that after sending the waveforms, the OSCar kept the old sound until the waveform was chosen again. Its firmware only rebuilds a user waveform when an oscillator's waveform number changes, so sending the same number again (0.7.2) did nothing. Now the oscillators that play a user waveform go to Triangle for a moment, then back (Live CC on, and in the sound recall). Without Live CC, the plugin says how to do it on the OSCar. The waveform buttons go from -12 to -8, left to right, as on the OSCar's keyboard and the memory row.
@@ -56,6 +58,8 @@ Waveforms dumped by the OSCar could be refused as "damaged by a text-mode copy (
 - **A panel with a past**: the printed ink is lightly worn in places; the controls stay clean.
 
 ## Français
+
+**0.7.5 : les nouvelles versions proposées au lancement.** Quand OXIde s'ouvre (l'app, ou la fenêtre du plugin) et qu'une nouvelle version est sortie, une tuile l'annonce : la version, ce qu'elle apporte en quelques mots, un lien vers les notes complètes, et *Mettre à jour*, qui remplace d'un coup l'app, l'AU et le VST3 de ce Mac. L'app peut ensuite se relancer seule ; un DAW charge le nouveau plugin quand vous le rouvrez. *Plus tard* la repousse au prochain lancement, *Ignorer cette version* pour de bon. Une version trouvée une fois est reproposée à chaque lancement jusqu'à ce qu'elle soit installée, même sans connexion, et le plugin en cherche de nouvelles au plus une fois par heure.
 
 **0.7.4 : Écouter sur l'OSCar.** Le plugin ne voit pas la forme choisie sur la façade de l'OSCar : après l'envoi, il ne pouvait reconstruire que les formes que la voix joue dans le plugin. Un nouveau bouton de la page Formes d'onde, *Écouter sur l'OSCar*, met Wave 1 de la voix sur la forme affichée, envoie les formes si elles ont été modifiées, et la fait jouer à l'OSCar tout de suite (Live CC allumé). Quand la voix ne joue aucune forme utilisateur, l'envoi dit maintenant quoi faire.
 

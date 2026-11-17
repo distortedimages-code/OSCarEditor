@@ -88,8 +88,21 @@ OscarEditor::OscarEditor (OscarProcessor& p)
     root.addAndMakeVisible (nextVoice);
 
     updateButton.setLit (true);
-    updateButton.onClick = [this] { showUpdateDialog(); };
+    updateButton.onClick = [this] { showUpdateTile(); };
     root.addChildComponent (updateButton);
+    updateTile = std::make_unique<UpdateTile> (proc.getUpdater(), [this] { return proc.getLanguage(); },
+                                               proc.wrapperType == juce::AudioProcessor::wrapperType_Standalone);
+    updateTile->onDismiss = [this]
+    {
+        updateTileLaterFor() = proc.getUpdater().getRelease().version;
+        updateTile->setVisible (false);
+    };
+    updateTile->onQuit = []
+    {
+        if (auto* app = juce::JUCEApplicationBase::getInstance())
+            app->systemRequestedQuit();   // the app saves its state, then quits; the new one opens
+    };
+    root.addChildComponent (*updateTile);
 
     // The OSCar's channel can only be set on the OSCar (SPACE + a key): no MIDI message changes it in
     // the Tauntek firmware (keypad routine at 0x1F11). So the plugin goes to the OSCar's channel.
@@ -235,6 +248,7 @@ OscarEditor::OscarEditor (OscarProcessor& p)
     startTimerHz (10);
 
     proc.getUpdater().checkIfDue();
+    showUpdateTile (false);   // a version already on offer (window opened again)
 }
 
 OscarEditor::~OscarEditor()
@@ -429,6 +443,16 @@ void OscarEditor::changeListenerCallback (juce::ChangeBroadcaster* source)
         applyTexts();
         createPages();
         root.repaint();
+        if (updateTile != nullptr && updateTile->isVisible())
+            showUpdateTile();
+    }
+    if (source == &proc.getUpdater().changes && updateTile != nullptr)
+    {
+        // the tile comes up by itself for a new version (unless put off) and for the end of an install
+        using S = Updater::State;
+        const auto s = proc.getUpdater().getState();
+        if (updateTile->isVisible() || s == S::Available || s == S::Installed || proc.getUpdater().installFailed())
+            showUpdateTile (updateTile->isVisible() || s != S::Available);
     }
     refreshAll();
 }
@@ -512,6 +536,8 @@ void OscarEditor::createPages()
         root.addChildComponent (pg);
         pg->setBounds (innerX, pageY, panels::width, panels::height);
     }
+    if (updateTile != nullptr)
+        updateTile->toFront (false);   // above the pages just made
     showPage (page);
 }
 
@@ -548,7 +574,8 @@ void OscarEditor::refreshAll()
         channelButton.setTooltip (tr ("The OSCar sends on MIDI channel %1 and the plugin on %2: the OSCar doesn't take the plugin's edits (nor its notes, outside omni mode). Click: the plugin uses channel %1 (Setup page). The OSCar's own channel can only be changed on the OSCar: hold SPACE and press a key from 1 to 16; no MIDI message can do it.",
                                       { juce::String (proc.getOscarChannel()), juce::String (proc.getChannel()) }));
     }
-    updateButton.setButtonText (up.getState() == Updater::State::Installed ? tr ("Restart the DAW")
+    const bool standalone = proc.wrapperType == juce::AudioProcessor::wrapperType_Standalone;
+    updateButton.setButtonText (up.getState() == Updater::State::Installed ? (standalone ? tr ("Relaunch OXIde") : tr ("Restart the DAW"))
                                                                           : tr ("Update %1", { up.getRelease().version }));
 
     refreshStatus();
@@ -972,6 +999,31 @@ void OscarEditor::showResult (const juce::Result& r, const juce::String& success
     {
         proc.addLog (successText);
     }
+}
+
+//==============================================================================
+juce::String& OscarEditor::updateTileLaterFor()
+{
+    static juce::String version;   // "Later" for this version: not offered again until the host restarts
+    return version;
+}
+
+void OscarEditor::showUpdateTile (bool asked)
+{
+    if (updateTile == nullptr)
+        return;
+    auto& up = proc.getUpdater();
+    updateTile->refresh();
+    if (! updateTile->hasSomethingToShow()
+        || (! asked && up.getState() == Updater::State::Available && updateTileLaterFor() == up.getRelease().version))
+    {
+        updateTile->setVisible (false);
+        return;
+    }
+    const int w = UpdateTile::tileWidth, m = UpdateTile::shadow;
+    updateTile->setBounds (innerX + innerW - 6 - w - m, displayY + displayH + 8 - m, w + 2 * m, updateTile->getPreferredHeight());
+    updateTile->setVisible (true);
+    updateTile->toFront (false);
 }
 
 //==============================================================================

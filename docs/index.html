@@ -511,7 +511,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Current version">
   <a class="arrow" href="#news" aria-label="What's new">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.7.4</span><span class="name">OXIDE</span><span class="state">FREE</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.7.5</span><span class="name">OXIDE</span><span class="state">FREE</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -542,7 +542,7 @@ footer a { color: var(--muted); }
         Download for Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.7.4</dd>
+        <dt>Version</dt><dd id="spec-version">0.7.5</dd>
         <dt>Formats</dt><dd>AU for Logic Pro, VST3 and standalone app</dd>
         <dt>System</dt><dd>macOS 11 or later, Apple silicon and Intel</dd>
         <dt>Synth</dt><dd>OSCar with the Tauntek MIDI board. With the original MIDI, everything works except live editing.</dd>
@@ -577,8 +577,9 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Latest versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.7.4</span><div class="cap when">latest version</div></div>
+      <div><span class="vchip">0.7.5</span><div class="cap when">latest version</div></div>
       <div class="notes">
+        <p><strong>0.7.5: new versions offered at launch.</strong> When OXIde opens (the app, or the plug-in's window) and a new version is out, a tile says so: the version, what it brings in a few words, a link to the full notes, and *Update now*, which replaces the app, the AU and the VST3 on this Mac in one go. The app can then relaunch itself; a DAW loads the new plug-in when you reopen it. *Later* puts it off until the next launch, *Skip this version* for good. A version found once is offered again at each launch until it is installed, even without a connection, and the plug-in looks for new ones at most once an hour.</p>
         <p><strong>0.7.4: Listen on the OSCar.</strong> The plugin can't see the waveform chosen on the OSCar's panel, so after sending it could only rebuild the waveforms the voice plays in the plugin. A new button on the Waveforms page, *Listen on the OSCar*, sets Wave 1 of the voice to the waveform shown, sends the waveforms if they were edited, and makes the OSCar play it at once (Live CC on). When the voice plays no user waveform, sending now says what to do.</p>
         <p><strong>0.7.3: sent waveforms heard at once, for real.</strong> Vincent found that after sending the waveforms, the OSCar kept the old sound until the waveform was chosen again. Its firmware only rebuilds a user waveform when an oscillator's waveform number changes, so sending the same number again (0.7.2) did nothing. Now the oscillators that play a user waveform go to Triangle for a moment, then back (Live CC on, and in the sound recall). Without Live CC, the plugin says how to do it on the OSCar. The waveform buttons go from -12 to -8, left to right, as on the OSCar's keyboard and the memory row.</p>
         <p><strong>0.7.2: the Waveforms page, fixed with Vincent's tests.</strong> The five waveform buttons could not be clicked before a dump: they always can now. Without the OSCar's waveforms, the page says how to get them (INSERT + a WAVEFORM button + SPACE) or starts from five sines. The bars go up to 127 and the preview shows what the OSCar plays, computed the way its firmware does, in red where it saturates; *Fit level* scales a waveform so it just fits, as the OSCar does with its own, and sending offers it for the ones that saturate. After sending, Wave 1 and Wave 2 go again (Live CC on), so the OSCar rebuilds the waveform it plays: it only builds a user waveform when it is chosen.</p>

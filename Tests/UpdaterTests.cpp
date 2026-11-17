@@ -258,6 +258,66 @@ static void testNotesLanguage()
     CHECK (Updater::notesForLanguage (reversed, "fr") == "Un.");
 }
 
+// The tile's summary: the headline of each version newer than the one in use, newest first.
+static void testHeadlines()
+{
+    const auto notes = juce::String::fromUTF8 (
+        "## English\n\n"
+        "**0.7.5: new versions offered at launch.** A tile says so.\n\n"
+        "**0.7.4: Listen on the OSCar.** A button.\n\n"
+        "**Softer copper.** Not a version.\n\n"
+        "**0.7.3: sent waveforms heard at once, for real.** Text.\n\n"
+        "**0.7.2: the Waveforms page.** Text.\n\n"
+        "## Fran\xc3\xa7" "ais\n\n"
+        "**0.7.5 : les nouvelles versions propos\xc3\xa9" "es au lancement.** Une tuile.\n\n"
+        "**0.7.4\xc2\xa0: \xc3\x89" "couter sur l'OSCar.** Un bouton.\n");
+
+    auto h = Updater::headlines (notes, "en", "0.7.3");
+    CHECK (h.size() == 2);
+    if (h.size() == 2)
+    {
+        CHECK (h[0].version == "0.7.5" && h[0].text == "New versions offered at launch");
+        CHECK (h[1].version == "0.7.4" && h[1].text == "Listen on the OSCar");
+    }
+    h = Updater::headlines (notes, "fr", "0.7.4");
+    CHECK (h.size() == 1 && h[0].text == juce::String::fromUTF8 ("Les nouvelles versions propos\xc3\xa9" "es au lancement"));
+    h = Updater::headlines (notes, "fr", "0.7.0");   // a no-break space before the colon too
+    CHECK (h.size() == 2 && h[1].text == juce::String::fromUTF8 ("\xc3\x89" "couter sur l'OSCar"));
+    CHECK (Updater::headlines (notes, "en", "0.1.0", 3).size() == 3);
+    CHECK (Updater::headlines (notes, "en", "0.7.5").empty() == false);   // nothing newer: the first line instead
+    CHECK (Updater::headlines (notes, "en", "0.7.5")[0].version.isEmpty());
+    const auto plain = Updater::headlines ("Bug fixes and a faster display.\n\nMore.", "en", "0.7.5");
+    CHECK (plain.size() == 1 && plain[0].text == "Bug fixes and a faster display.");
+    CHECK (Updater::headlines ({}, "en", "0.7.5").empty());
+}
+
+// The release kept between sessions: read back as written; anything but GitHub links is refused.
+static void testKnownRelease()
+{
+    Updater::Release r;
+    r.version = "0.7.5";
+    r.title = "OXIde 0.7.5";
+    r.notes = juce::String::fromUTF8 ("## English\n\n**0.7.5: a tile.**\n\"quoted\" \xc3\xa9");
+    r.pageUrl = "https://github.com/o/r/releases/tag/v0.7.5";
+    r.zipUrl = "https://github.com/o/r/releases/download/v0.7.5/OXIde-mac.zip";
+    r.shaUrl = r.zipUrl + ".sha256";
+    const auto back = Updater::releaseFromJson (Updater::releaseToJson (r));
+    CHECK (back.has_value());
+    if (back)
+        CHECK (back->version == r.version && back->title == r.title && back->notes == r.notes
+               && back->pageUrl == r.pageUrl && back->zipUrl == r.zipUrl && back->shaUrl == r.shaUrl);
+
+    auto evil = r;
+    evil.zipUrl = "https://example.com/OXIde-mac.zip";
+    CHECK (! Updater::releaseFromJson (Updater::releaseToJson (evil)).has_value());
+    evil = r;
+    evil.shaUrl = "http://github.com/o/r/x.sha256";
+    const auto noSha = Updater::releaseFromJson (Updater::releaseToJson (evil));
+    CHECK (noSha.has_value() && noSha->shaUrl.isEmpty());   // then install refuses it (no checksum)
+    CHECK (! Updater::releaseFromJson ("").has_value());
+    CHECK (! Updater::releaseFromJson ("{ \"version\": \"garbage\" }").has_value());
+}
+
 int main()
 {
     juce::ScopedJuceInitialiser_GUI init;
@@ -267,6 +327,8 @@ int main()
     testRename();
     testElevated();
     testNotesLanguage();
+    testHeadlines();
+    testKnownRelease();
     std::printf ("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;
 }

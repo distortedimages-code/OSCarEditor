@@ -1,6 +1,10 @@
 #include "Updater.h"
 #include "ui/Lang.h"
 
+#if JUCE_MAC
+ #include <unistd.h>   // getpid
+#endif
+
 using lang::tr;
 
 #ifndef OSCAR_UPDATE_REPO
@@ -124,6 +128,8 @@ void Updater::setAutoCheck (bool b)
 
 void Updater::setState (State s, const juce::String& text)
 {
+    if (s != State::Failed)
+        failedInstall = false;
     state = s;
     status = text;
     changes.sendChangeMessage();
@@ -146,21 +152,48 @@ void Updater::skipThisVersion()
 //==============================================================================
 void Updater::checkIfDue()
 {
-    if (state != State::Idle || ! getAutoCheck())
+    if (! getAutoCheck())
+        return;
+    restoreKnown();
+    if (state != State::Idle && state != State::Available)
         return;
     const auto last = settings().getValue ("updateLastCheck", "0").getLargeIntValue();
-    if (juce::Time::currentTimeMillis() - last < (juce::int64) 24 * 3600 * 1000)
+    if (juce::Time::currentTimeMillis() - last < (juce::int64) 3600 * 1000)
         return;
     automatic = true;
     checkNow();
 }
 
+void Updater::restoreKnown()
+{
+    if (std::exchange (restored, true) || state != State::Idle)
+        return;
+    const auto known = releaseFromJson (settings().getValue ("updateKnown"));
+    if (! known || ! isNewer (known->version, currentVersion()))
+        return;
+    release = *known;
+    if (settings().getValue ("updateSkip") != known->version)
+        setState (State::Available, tr ("Version %1 is available (you have %2).", { known->version, currentVersion() }));
+}
+
+void Updater::remember (const Release* newer)
+{
+    if (newer != nullptr)
+        settings().setValue ("updateKnown", releaseToJson (*newer));
+    else
+        settings().removeValue ("updateKnown");
+    settings().saveIfNeeded();
+}
+
 void Updater::checkNow()
 {
-    if (repository().isEmpty() || state == State::Checking || state == State::Installing)
+    if (repository().isEmpty() || state == State::Checking || state == State::Installing || checking)
         return;
 
-    setState (State::Checking, tr ("Checking for updates..."));
+    // An automatic check behind a known update leaves it offered meanwhile.
+    if (! (automatic && state == State::Available))
+        setState (State::Checking, tr ("Checking for updates..."));
+    checking = true;
     settings().setValue ("updateLastCheck", juce::String (juce::Time::currentTimeMillis()));
     settings().saveIfNeeded();
 
@@ -178,10 +211,20 @@ void Updater::checkNow()
             auto* u = weak.get();
             if (u == nullptr)
                 return;
+            u->checking = false;
             const bool wasAutomatic = std::exchange (u->automatic, false);
+            const bool newer = rel && isNewer (rel->version, currentVersion());
+            if (rel)
+                u->remember (newer ? &*rel : nullptr);
+
+            // Installing the known update meanwhile, or done: the answer changes nothing on screen.
+            if (u->state == State::Installing || u->state == State::Installed)
+                return;
 
             if (err.isNotEmpty() || ! rel)
             {
+                if (u->state == State::Available)   // the known update stays offered
+                    return;
                 u->setState (wasAutomatic ? State::Idle : State::Failed,
                              tr ("Couldn't check for updates: %1", { err.isNotEmpty() ? err : tr ("unexpected answer from GitHub.") }));
                 return;
@@ -189,7 +232,7 @@ void Updater::checkNow()
 
             u->release = *rel;
             const bool skipped = wasAutomatic && u->settings().getValue ("updateSkip") == rel->version;
-            if (isNewer (rel->version, currentVersion()) && ! skipped)
+            if (newer && ! skipped)
                 u->setState (State::Available, tr ("Version %1 is available (you have %2).", { rel->version, currentVersion() }));
             else
                 u->setState (State::UpToDate, tr ("You have the latest version (%1).", { currentVersion() }));
@@ -199,7 +242,8 @@ void Updater::checkNow()
 
 void Updater::install()
 {
-    if (state != State::Available)
+    const bool retry = installFailed() && release.zipUrl.isNotEmpty() && isNewer (release.version, currentVersion());
+    if (state != State::Available && ! retry)
         return;
 
    #if ! JUCE_MAC
@@ -257,12 +301,17 @@ void Updater::install()
             auto* u = weak.get();
             if (u == nullptr)
                 return;
+            u->installedPaths = installed;
+            u->installWarning = installed.isEmpty() ? juce::String() : err;
             if (! installed.isEmpty())
                 u->setState (State::Installed, tr ("Version %1 installed (%2 items). Quit and reopen your DAW (or the app) to use it.",
                                                    { rel.version, juce::String (installed.size()) })
                                                + (err.isNotEmpty() ? "\n" + err : juce::String()));
             else
+            {
+                u->failedInstall = true;   // kept by setState (Failed): Try again installs it
                 u->setState (State::Failed, err.isNotEmpty() ? err : tr ("Nothing was installed."));
+            }
         });
     });
    #endif
@@ -339,6 +388,112 @@ juce::String Updater::notesForLanguage (const juce::String& notes, const juce::S
     for (int i = start; i < end; ++i)
         section.add (lines[i]);
     return section.joinIntoString ("\n").trim();
+}
+
+std::vector<Updater::Headline> Updater::headlines (const juce::String& notes, const juce::String& language,
+                                                  const juce::String& current, int maxItems)
+{
+    std::vector<Headline> out;
+    const auto section = notesForLanguage (notes, language);
+    const auto lines = juce::StringArray::fromLines (section);
+    auto isSpace = [] (juce::juce_wchar c) { return c == ' ' || c == 0xa0 || c == 0x202f || c == '\t'; };
+
+    for (const auto& raw : lines)
+    {
+        const auto l = raw.trim();
+        if (! l.startsWith ("**"))
+            continue;
+        const auto bold = l.substring (2).upToFirstOccurrenceOf ("**", false, false);
+        auto p = bold.getCharPointer();
+        juce::String version;
+        if (*p == 'v' || *p == 'V')
+            ++p;
+        while (juce::CharacterFunctions::isDigit (*p) || *p == '.')
+            version += juce::String::charToString (*p++);
+        version = version.trimCharactersAtEnd (".");
+        if (version.isEmpty() || ! version.containsChar ('.'))
+            continue;
+        while (isSpace (*p)) ++p;
+        if (*p != ':')
+            continue;
+        ++p;
+        while (isSpace (*p)) ++p;
+        auto text = juce::String (p).trim().trimCharactersAtEnd (".").trim();
+        if (text.isEmpty() || ! isNewer (version, current))
+            continue;
+        text = juce::String::charToString (juce::CharacterFunctions::toUpperCase (text[0])) + text.substring (1);
+        out.push_back ({ version, text });
+        if ((int) out.size() >= maxItems)
+            break;
+    }
+
+    if (out.empty())
+        for (const auto& raw : lines)
+        {
+            auto l = raw.trim().removeCharacters ("*#_`>").trim();
+            if (l.startsWith ("- ")) l = l.substring (2).trim();
+            if (l.isEmpty())
+                continue;
+            if (l.length() > 140)
+                l = l.substring (0, 140).upToLastOccurrenceOf (" ", false, false) + "...";
+            out.push_back ({ {}, l });
+            break;
+        }
+    return out;
+}
+
+juce::String Updater::releaseToJson (const Release& r)
+{
+    auto* o = new juce::DynamicObject();
+    o->setProperty ("version", r.version);
+    o->setProperty ("title", r.title);
+    o->setProperty ("notes", r.notes);
+    o->setProperty ("page", r.pageUrl);
+    o->setProperty ("zip", r.zipUrl);
+    o->setProperty ("sha", r.shaUrl);
+    return juce::JSON::toString (juce::var (o), true);
+}
+
+std::optional<Updater::Release> Updater::releaseFromJson (const juce::String& json)
+{
+    const auto v = juce::JSON::parse (json);
+    if (! v.isObject())
+        return std::nullopt;
+    Release r;
+    r.version = normalise (v.getProperty ("version", {}).toString());
+    r.title   = v.getProperty ("title", {}).toString();
+    r.notes   = v.getProperty ("notes", {}).toString();
+    r.pageUrl = v.getProperty ("page", {}).toString();
+    r.zipUrl  = v.getProperty ("zip", {}).toString();
+    r.shaUrl  = v.getProperty ("sha", {}).toString();
+    for (auto* u : { &r.pageUrl, &r.zipUrl, &r.shaUrl })
+        if (! u->startsWith ("https://github.com/"))
+            u->clear();
+    if (parts (r.version) == std::array<int, 3> { 0, 0, 0 } || r.zipUrl.isEmpty())
+        return std::nullopt;
+    return r;
+}
+
+bool Updater::relaunchWhenQuit()
+{
+   #if JUCE_MAC
+    auto app = juce::File::getSpecialLocation (juce::File::currentApplicationFile);
+    if (! app.isDirectory() || ! app.getFileName().endsWith (".app"))
+        return false;
+    if (app.getFileNameWithoutExtension() == legacyName)   // the update renamed it
+        app = app.getSiblingFile (juce::String (productName) + ".app");
+    if (! app.isDirectory())
+        return false;
+    // Waits (10 s at most) for this process to end, so that macOS starts the new app rather than
+    // bringing the old one forward.
+    const auto pid = juce::String ((int) getpid());
+    const auto script = "i=0; while kill -0 " + pid + " 2>/dev/null && [ $i -lt 50 ]; do sleep 0.2; i=$((i+1)); done; "
+                        "/usr/bin/open " + shellQuote (app.getFullPathName());
+    juce::ChildProcess p;
+    return p.start (juce::StringArray { "/bin/sh", "-c", script }, 0);
+   #else
+    return false;
+   #endif
 }
 
 juce::Array<juce::File> Updater::installedBundles()

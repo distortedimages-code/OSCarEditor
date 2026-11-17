@@ -5,6 +5,7 @@
 #include "PluginProcessor.h"
 #include "ui/Atelier.h"
 #include "ui/Panels.h"
+#include "ui/UpdateTile.h"
 
 class OscarEditor : public juce::AudioProcessorEditor,
                     private juce::ChangeListener,
@@ -44,7 +45,8 @@ public:
     void importIntoSelectedVoice();
     void loadBankFromFile();
     void exportBankSyx();
-    void showUpdateDialog();
+    void showUpdateDialog();   // the full release notes
+    void showUpdateTile (bool asked = true);   // the new version, in a tile (not asked: unless put off in this session)
     void showPage (int index);
     void toggleRandomEdit();   // the RANDOM button: its strip and its layer on the Voice page, on or off
     void toggleScaleStrip();   // the SCALE button: its strip
@@ -89,6 +91,8 @@ private:
     Display display;
     atelier::LedButton prevVoice { "<", atelier::LedButton::LedPlace::None }, nextVoice { ">", atelier::LedButton::LedPlace::None };
     atelier::LedButton updateButton { {} };
+    std::unique_ptr<UpdateTile> updateTile;   // a new version: offered when the window opens
+    static juce::String& updateTileLaterFor();
     atelier::LedButton channelButton { {} };   // the OSCar on another channel: the plugin takes it
 
     juce::OwnedArray<atelier::LedButton> tabs;

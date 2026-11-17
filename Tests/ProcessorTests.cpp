@@ -575,6 +575,131 @@ static void testFrench()
     CHECK (TRANS ("Internal") == "Internal");
 }
 
+// A newer version found by an earlier check, kept in the settings: the next window offers it.
+static void writeKnownRelease (const juce::String& version, const juce::String& notes)
+{
+    const auto file = juce::File (juce::SystemStats::getEnvironmentVariable ("OSCAR_EDITOR_TEST_DIR", {})).getChildFile ("test.settings");
+    juce::PropertiesFile s (file, {});
+    Updater::Release r;
+    r.version = version;
+    r.title = "OXIde " + version;
+    r.notes = notes;
+    r.pageUrl = "https://github.com/distortedimages-code/OSCarEditor/releases/tag/v" + version;
+    r.zipUrl = "https://github.com/distortedimages-code/OSCarEditor/releases/download/v" + version + "/OXIde-mac.zip";
+    r.shaUrl = r.zipUrl + ".sha256";
+    if (version.isEmpty())
+        s.removeValue ("updateKnown");
+    else
+        s.setValue ("updateKnown", Updater::releaseToJson (r));
+    s.setValue ("updateLastCheck", juce::String (juce::Time::currentTimeMillis()));   // no network check meanwhile
+    s.removeValue ("updateSkip");
+    s.saveIfNeeded();
+}
+
+static UpdateTile* findTile (juce::Component& c)
+{
+    if (auto* t = dynamic_cast<UpdateTile*> (&c))
+        return t;
+    for (auto* child : c.getChildren())
+        if (auto* t = findTile (*child))
+            return t;
+    return nullptr;
+}
+
+static atelier::LedButton* findLedButton (juce::Component& c, const juce::String& text)
+{
+    for (auto* child : c.getChildren())
+    {
+        if (auto* b = dynamic_cast<atelier::LedButton*> (child); b != nullptr && b->isVisible() && b->getButtonText() == text)
+            return b;
+        if (auto* b = findLedButton (*child, text))
+            return b;
+    }
+    return nullptr;
+}
+
+// The update tile: a version found earlier comes up as soon as the window opens, offline; Later
+// puts it off for the session, Skip for good.
+static void testUpdateTile()
+{
+    writeKnownRelease ("99.0.0", juce::String::fromUTF8 ("## English\n\n**99.0.0: a tile.** Text.\n\n## Fran\xc3\xa7" "ais\n\n**99.0.0 : une tuile.** Texte."));
+    {
+        OscarProcessor proc;
+        std::unique_ptr<juce::AudioProcessorEditor> ed (proc.createEditor());
+        pump (200);
+        CHECK (proc.getUpdater().getState() == Updater::State::Available);
+        CHECK (proc.getUpdater().getRelease().version == "99.0.0");
+        auto* tile = findTile (*ed);
+        CHECK (tile != nullptr && tile->isVisible());
+        if (tile == nullptr)
+            return;
+        CHECK (tile->getHeight() > 150 && tile->getHeight() < 420);
+        CHECK (findLedButton (*tile, "Later") != nullptr);
+
+        // Later: hidden, and not offered again by a new window in this session
+        if (auto* later = findLedButton (*tile, "Later"))
+            later->triggerClick();
+        pump (100);
+        CHECK (! tile->isVisible());
+        ed.reset (proc.createEditor());
+        pump (200);
+        tile = findTile (*ed);
+        CHECK (tile != nullptr && ! tile->isVisible());
+
+        // the header's button brings it back
+        if (auto* oe = dynamic_cast<OscarEditor*> (ed.get()))
+            oe->showUpdateTile();
+        CHECK (tile != nullptr && tile->isVisible());
+
+        // the end of a download shows it by itself; a failed one offers Try again
+        proc.getUpdater().simulateForTest (Updater::State::Installing, "Downloading version 99.0.0...");
+        pump (100);
+        CHECK (tile->isVisible() && findLedButton (*tile, "Hide") != nullptr);
+        if (auto* hide = findLedButton (*tile, "Hide"))
+            hide->triggerClick();
+        pump (50);
+        CHECK (! tile->isVisible());
+        proc.getUpdater().simulateForTest (Updater::State::Failed, "The download is damaged (checksum mismatch). Nothing was installed.", true);
+        pump (100);
+        CHECK (tile->isVisible() && proc.getUpdater().installFailed());
+        proc.getUpdater().simulateForTest (Updater::State::Failed, "Couldn't check for updates: timeout");   // a check, not an install
+        pump (100);
+        CHECK (! tile->isVisible());
+        proc.getUpdater().simulateForTest (Updater::State::Installed, "Version 99.0.0 installed (3 items).");
+        pump (100);
+        CHECK (tile->isVisible() && findLedButton (*tile, "Later") == nullptr);   // in a DAW: OK only
+
+        // Skip this version: gone, and the next session doesn't offer it
+        proc.getUpdater().simulateForTest (Updater::State::Available, "Version 99.0.0 is available.");
+        proc.getUpdater().skipThisVersion();
+        pump (100);
+        CHECK (! tile->isVisible());
+        ed.reset();
+        pump (50);
+    }
+    {
+        OscarProcessor proc;
+        std::unique_ptr<juce::AudioProcessorEditor> ed (proc.createEditor());
+        pump (200);
+        CHECK (proc.getUpdater().getState() != Updater::State::Available);
+        auto* tile = findTile (*ed);
+        CHECK (tile != nullptr && ! tile->isVisible());
+        ed.reset();
+        pump (50);
+    }
+    // a version no newer than this one is never offered
+    writeKnownRelease (Updater::currentVersion(), "**" + Updater::currentVersion() + ": this.**");
+    {
+        OscarProcessor proc;
+        std::unique_ptr<juce::AudioProcessorEditor> ed (proc.createEditor());
+        pump (200);
+        CHECK (proc.getUpdater().getState() != Updater::State::Available);
+        ed.reset();
+        pump (50);
+    }
+    writeKnownRelease ({}, {});
+}
+
 // The editor opens on every page, at several sizes, and sends nothing by itself.
 static void testEditor (OscarProcessor& proc, Capture& out)
 {
@@ -1261,6 +1386,10 @@ int main()
     if (const auto shots = juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS", {}); shots.isNotEmpty())
     {
         atelier::applyFinish (juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_FINISH", "0").getIntValue());
+        // OSCAR_SHOTS_UPDATE=<version> [OSCAR_SHOTS_NOTES=<file>]: that version is out; the update tile in its states
+        const auto updateShot = juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_UPDATE", {});
+        if (updateShot.isNotEmpty())
+            writeKnownRelease (updateShot, juce::File (juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_NOTES", "/nonexistent")).loadFileAsString());
         OscarProcessor proc;
         proc.setLanguage (juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_LANG", "en"));
         pump (100);
@@ -1299,6 +1428,27 @@ int main()
             pump (50);
             shoot ("page" + juce::String (page));
         }
+        if (updateShot.isNotEmpty())
+        {
+            auto& up = proc.getUpdater();
+            UpdateTile::inPlaceUpdates = true;   // as on a Mac
+            dynamic_cast<OscarEditor*> (ed.get())->showPage (0);
+            dynamic_cast<OscarEditor*> (ed.get())->showUpdateTile();
+            pump (100);
+            shoot ("update-offer");
+            up.simulateForTest (Updater::State::Installing, lang::tr ("Downloading version %1...", { updateShot }));
+            pump (100);
+            shoot ("update-installing");
+            up.simulateForTest (Updater::State::Installed, lang::tr ("Version %1 installed (%2 items). Quit and reopen your DAW (or the app) to use it.", { updateShot, "3" }),
+                                false, { "/Applications/OXIde.app", "/Library/Audio/Plug-Ins/Components/OXIde.component",
+                                         "/Library/Audio/Plug-Ins/VST3/OXIde.vst3" });
+            pump (100);
+            shoot ("update-installed");
+            up.simulateForTest (Updater::State::Failed, lang::tr ("The download is damaged (checksum mismatch). Nothing was installed."), true);
+            pump (100);
+            shoot ("update-failed");
+        }
+
         // OSCAR_SHOTS_WAVES=1: the Waveforms page with a waveform drawn too loud, then fitted (the site's tutorial)
         if (juce::SystemStats::getEnvironmentVariable ("OSCAR_SHOTS_WAVES", "0") == "1" && proc.getDocument().getWaves())
         {
@@ -1498,6 +1648,7 @@ int main()
 
     testRecallWithUnknownMemory();
     testFrench();
+    testUpdateTile();
 
     // backups went to the test folder: one received and one sent bank
     const auto backups = juce::File (testDir).getChildFile ("Backups").findChildFiles (juce::File::findFiles, false, "*.syx");

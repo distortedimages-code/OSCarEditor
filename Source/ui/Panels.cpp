@@ -2275,7 +2275,7 @@ SetupPanel::SetupPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
     checkButton.onClick = [&up] { up.checkNow(); };
     autoButton.onClick = [&up] { up.setAutoCheck (! up.getAutoCheck()); };
     notesButton.onClick = [this] { editor.showUpdateDialog(); };
-    installButton.onClick = [this] { editor.showUpdateDialog(); };
+    installButton.onClick = [this] { editor.showUpdateTile(); };
     up.changes.addChangeListener (this);
 
     frenchButton.onClick = [this] { proc.setLanguage ("fr"); };
