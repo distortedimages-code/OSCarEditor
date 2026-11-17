@@ -618,6 +618,51 @@ static atelier::LedButton* findLedButton (juce::Component& c, const juce::String
     return nullptr;
 }
 
+// Nothing in the window keeps the keyboard, so the host gets the keys the plugin doesn't use (the
+// space bar plays Logic even with the plugin's window in front), on every page and after a
+// change of language (the pages are made again).
+static int countKeyTakers (juce::Component& c, juce::StringArray& names)
+{
+    int n = 0;
+    if (c.getWantsKeyboardFocus())
+    {
+        names.add (typeid (c).name() + juce::String (" ") + c.getName());
+        ++n;
+    }
+    for (auto* child : c.getChildren())
+        n += countKeyTakers (*child, names);
+    return n;
+}
+
+static void testKeysLeftToHost()
+{
+    OscarProcessor proc;
+    std::unique_ptr<juce::AudioProcessorEditor> ed (proc.createEditor());
+    auto* oe = dynamic_cast<OscarEditor*> (ed.get());
+    CHECK (oe != nullptr);
+    if (oe == nullptr)
+        return;
+    for (int page = 0; page < 7; ++page)
+    {
+        oe->showPage (page);
+        pump (30);
+        juce::StringArray names;
+        const int n = countKeyTakers (*ed, names);
+        CHECK (n == 0);
+        if (n != 0)
+            std::printf ("  takes the keyboard (page %d): %s\n", page, names.joinIntoString (", ").toRawUTF8());
+    }
+    const auto lang = proc.getLanguage();
+    proc.setLanguage (lang == "fr" ? "en" : "fr");
+    pump (50);
+    juce::StringArray names;
+    CHECK (countKeyTakers (*ed, names) == 0);
+    proc.setLanguage (lang);
+    pump (50);
+    ed.reset();
+    pump (30);
+}
+
 // The update tile: a version found earlier comes up as soon as the window opens, offline; Later
 // puts it off for the session, Skip for good.
 static void testUpdateTile()
@@ -1649,6 +1694,7 @@ int main()
     testRecallWithUnknownMemory();
     testFrench();
     testUpdateTile();
+    testKeysLeftToHost();
 
     // backups went to the test folder: one received and one sent bank
     const auto backups = juce::File (testDir).getChildFile ("Backups").findChildFiles (juce::File::findFiles, false, "*.syx");

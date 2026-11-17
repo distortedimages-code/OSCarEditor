@@ -1,5 +1,7 @@
 ## English
 
+**0.7.6: the space bar plays Logic, even with the plug-in in front.** The plug-in's window no longer keeps the keyboard: the space bar, Return, the arrows and the other key commands go to the DAW whatever you clicked in OXIde last. Before, a clicked button took Return (and clicked itself again), the lists and menus took the arrows, and the Setup page's texts took every key. Their text can still be selected and copied with a right-click.
+
 **0.7.5: new versions offered at launch.** When OXIde opens (the app, or the plug-in's window) and a new version is out, a tile says so: the version, what it brings in a few words, a link to the full notes, and *Update now*, which replaces the app, the AU and the VST3 on this Mac in one go. The app can then relaunch itself; a DAW loads the new plug-in when you reopen it. *Later* puts it off until the next launch, *Skip this version* for good. A version found once is offered again at each launch until it is installed, even without a connection, and the plug-in looks for new ones at most once an hour.
 
 **0.7.4: Listen on the OSCar.** The plugin can't see the waveform chosen on the OSCar's panel, so after sending it could only rebuild the waveforms the voice plays in the plugin. A new button on the Waveforms page, *Listen on the OSCar*, sets Wave 1 of the voice to the waveform shown, sends the waveforms if they were edited, and makes the OSCar play it at once (Live CC on). When the voice plays no user waveform, sending now says what to do.
@@ -58,6 +60,8 @@ Waveforms dumped by the OSCar could be refused as "damaged by a text-mode copy (
 - **A panel with a past**: the printed ink is lightly worn in places; the controls stay clean.
 
 ## Français
+
+**0.7.6 : la barre espace pilote Logic, même plugin au premier plan.** La fenêtre du plugin ne garde plus le clavier : barre espace, Entrée, flèches et autres raccourcis vont au DAW, quoi que tu aies cliqué en dernier dans OXIde. Avant, un bouton cliqué prenait Entrée (et se recliquait), les listes et les menus prenaient les flèches, et les textes de la page Réglages toutes les touches. Leur texte se sélectionne et se copie toujours avec un clic droit.
 
 **0.7.5 : les nouvelles versions proposées au lancement.** Quand OXIde s'ouvre (l'app, ou la fenêtre du plugin) et qu'une nouvelle version est sortie, une tuile l'annonce : la version, ce qu'elle apporte en quelques mots, un lien vers les notes complètes, et *Mettre à jour*, qui remplace d'un coup l'app, l'AU et le VST3 de ce Mac. L'app peut ensuite se relancer seule ; un DAW charge le nouveau plugin quand vous le rouvrez. *Plus tard* la repousse au prochain lancement, *Ignorer cette version* pour de bon. Une version trouvée une fois est reproposée à chaque lancement jusqu'à ce qu'elle soit installée, même sans connexion, et le plugin en cherche de nouvelles au plus une fois par heure.
 

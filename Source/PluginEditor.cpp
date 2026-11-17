@@ -249,6 +249,7 @@ OscarEditor::OscarEditor (OscarProcessor& p)
 
     proc.getUpdater().checkIfDue();
     showUpdateTile (false);   // a version already on offer (window opened again)
+    leaveKeysToHost (*this);
 }
 
 OscarEditor::~OscarEditor()
@@ -538,6 +539,7 @@ void OscarEditor::createPages()
     }
     if (updateTile != nullptr)
         updateTile->toFront (false);   // above the pages just made
+    leaveKeysToHost (root);
     showPage (page);
 }
 
@@ -1002,6 +1004,19 @@ void OscarEditor::showResult (const juce::Result& r, const juce::String& success
 }
 
 //==============================================================================
+// Nothing in the window takes the keyboard: a key the plugin doesn't use goes on to the host, so
+// the space bar, Return, the arrows and the other key commands work in Logic even while the plugin's
+// window is in front. (JUCE widgets keep keys once clicked: buttons take Return, lists and menus
+// the arrows, the Setup page's texts every key.) The texts can still be selected and copied with
+// a right-click; the naming dialogs are windows of their own and type as usual.
+void OscarEditor::leaveKeysToHost (juce::Component& c)
+{
+    c.setWantsKeyboardFocus (false);
+    c.setMouseClickGrabsKeyboardFocus (false);
+    for (auto* child : c.getChildren())
+        leaveKeysToHost (*child);
+}
+
 juce::String& OscarEditor::updateTileLaterFor()
 {
     static juce::String version;   // "Later" for this version: not offered again until the host restarts

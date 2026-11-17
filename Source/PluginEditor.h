@@ -47,6 +47,7 @@ public:
     void exportBankSyx();
     void showUpdateDialog();   // the full release notes
     void showUpdateTile (bool asked = true);   // the new version, in a tile (not asked: unless put off in this session)
+    static void leaveKeysToHost (juce::Component&);   // no part of 'c' keeps the keyboard from the host
     void showPage (int index);
     void toggleRandomEdit();   // the RANDOM button: its strip and its layer on the Voice page, on or off
     void toggleScaleStrip();   // the SCALE button: its strip

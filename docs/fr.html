@@ -511,7 +511,7 @@ footer a { color: var(--muted); }
 
 <div class="display-row" aria-label="Version actuelle">
   <a class="arrow" href="#news" aria-label="Nouveautés">&lt;</a>
-  <div class="display"><span class="num" id="vfd-version">0.7.5</span><span class="name">OXIDE</span><span class="state">GRATUIT</span></div>
+  <div class="display"><span class="num" id="vfd-version">0.7.6</span><span class="name">OXIDE</span><span class="state">GRATUIT</span></div>
   <a class="arrow" href="#install" aria-label="Installation">&gt;</a>
 </div>
 
@@ -542,7 +542,7 @@ footer a { color: var(--muted); }
         Télécharger pour Mac
       </a>
       <dl class="specs">
-        <dt>Version</dt><dd id="spec-version">0.7.5</dd>
+        <dt>Version</dt><dd id="spec-version">0.7.6</dd>
         <dt>Formats</dt><dd>AU pour Logic Pro, VST3 et application autonome</dd>
         <dt>Système</dt><dd>macOS 11 ou plus récent, Apple Silicon et Intel</dd>
         <dt>Synthé</dt><dd>OSCar avec la carte MIDI Tauntek. Avec le MIDI d'origine, tout marche sauf l'édition en direct.</dd>
@@ -577,8 +577,9 @@ footer a { color: var(--muted); }
   <h2 id="t-news">Les dernières versions</h2>
   <div id="releases">
     <article class="release">
-      <div><span class="vchip">0.7.5</span><div class="cap when">dernière version</div></div>
+      <div><span class="vchip">0.7.6</span><div class="cap when">dernière version</div></div>
       <div class="notes">
+        <p><strong>0.7.6 : la barre espace pilote Logic, même plugin au premier plan.</strong> La fenêtre du plugin ne garde plus le clavier : barre espace, Entrée, flèches et autres raccourcis vont au DAW, quoi que tu aies cliqué en dernier dans OXIde. Avant, un bouton cliqué prenait Entrée (et se recliquait), les listes et les menus prenaient les flèches, et les textes de la page Réglages toutes les touches. Leur texte se sélectionne et se copie toujours avec un clic droit.</p>
         <p><strong>0.7.5 : les nouvelles versions proposées au lancement.</strong> Quand OXIde s'ouvre (l'app, ou la fenêtre du plugin) et qu'une nouvelle version est sortie, une tuile l'annonce : la version, ce qu'elle apporte en quelques mots, un lien vers les notes complètes, et *Mettre à jour*, qui remplace d'un coup l'app, l'AU et le VST3 de ce Mac. L'app peut ensuite se relancer seule ; un DAW charge le nouveau plugin quand vous le rouvrez. *Plus tard* la repousse au prochain lancement, *Ignorer cette version* pour de bon. Une version trouvée une fois est reproposée à chaque lancement jusqu'à ce qu'elle soit installée, même sans connexion, et le plugin en cherche de nouvelles au plus une fois par heure.</p>
         <p><strong>0.7.4 : Écouter sur l'OSCar.</strong> Le plugin ne voit pas la forme choisie sur la façade de l'OSCar : après l'envoi, il ne pouvait reconstruire que les formes que la voix joue dans le plugin. Un nouveau bouton de la page Formes d'onde, *Écouter sur l'OSCar*, met Wave 1 de la voix sur la forme affichée, envoie les formes si elles ont été modifiées, et la fait jouer à l'OSCar tout de suite (Live CC allumé). Quand la voix ne joue aucune forme utilisateur, l'envoi dit maintenant quoi faire.</p>
         <p><strong>0.7.3 : les formes envoyées s'entendent tout de suite, pour de bon.</strong> Vincent a vu qu'après l'envoi des formes d'onde, l'OSCar gardait l'ancien son jusqu'à ce qu'on rechoisisse la forme. Son firmware ne reconstruit une forme utilisateur que quand le numéro de forme d'un oscillateur change : renvoyer le même numéro (0.7.2) ne faisait rien. Maintenant, les oscillateurs qui jouent une forme utilisateur passent un instant sur Triangle, puis reviennent (Live CC allumé, et au rappel du son). Sans Live CC, le plugin dit comment le faire sur l'OSCar. Les boutons des formes d'onde vont de -12 à -8, de gauche à droite, comme sur le clavier de l'OSCar et la rangée des mémoires.</p>
