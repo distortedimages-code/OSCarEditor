@@ -244,11 +244,15 @@ private:
     OscarProcessor& proc;
     OscarEditor& editor;
     juce::OwnedArray<atelier::LedButton> tables;
-    atelier::LedButton fitButton { TRANS ("Fit level") }, sinesButton { TRANS ("Start from sines") },
-                       listenButton { TRANS ("Listen on the OSCar") };
-    void listen();   // Wave 1 of the voice on this waveform, sent first if edited, rebuilt on the OSCar
+    atelier::LedButton fitButton { TRANS ("Fit level") }, sinesButton { TRANS ("Start from sines") };
+    // Listen on the OSCar, on oscillator 1, 2 or both: lit when that oscillator of the selected
+    // voice plays this waveform
+    atelier::LedButton listenOsc1 { TRANS ("Osc 1") }, listenOsc2 { TRANS ("Osc 2") }, listenBoth { TRANS ("Osc 1 + 2") };
+    // Wave 1 and/or Wave 2 of the voice on this waveform (bit 0: Wave 1, bit 1: Wave 2), the
+    // waveforms sent first if edited, rebuilt on the OSCar
+    void listen (int oscillators);
     atelier::CopperButton sendButton { TRANS ("Send waveforms") };
-    juce::Rectangle<float> group, bars, scope, infoArea;   // bars: the slots only (values above, numbers below)
+    juce::Rectangle<float> group, bars, scope, infoArea, listenCaption;   // bars: the slots only (values above, numbers below)
     juce::String info;
     int table = 0;
     int lastHarmonic = -1, lastLevel = 0;   // the stroke so far: the bands in between are drawn on its line

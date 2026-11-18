@@ -330,6 +330,8 @@ private:
     std::array<int, 128> thruMap {}, thruOutCount {};   // CC engine thread only: the note sent for each received (scale)
     int thruLastNote = -1;                                                  // CC engine thread only: the last sent
     bool thruBent = false;                                                  // CC engine thread only
+    std::atomic<int> thruProgram { -1 };                                    // a programme change sent through thru
+    void programSentThru (int program);
 
     // Outbox shared by the message thread and the CC engine thread
     juce::CriticalSection outboxLock;

@@ -1804,9 +1804,14 @@ WavesPanel::WavesPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
     fitButton.onClick = [this] { proc.getDocument().fitWaveTable (table); };
     fitButton.setTooltip (tr ("Scales this waveform's harmonics so their sum just fits, as the OSCar does with the waveforms made on its own keys: no saturation, full level."));
     addAndMakeVisible (fitButton);
-    listenButton.onClick = [this] { listen(); };
-    listenButton.setTooltip (tr ("Sets Wave 1 of the selected voice to this waveform (an edit you can undo), sends the waveforms if they were edited, and makes the OSCar play it at once. Live CC must be on."));
-    addAndMakeVisible (listenButton);
+    listenOsc1.onClick = [this] { listen (1); };
+    listenOsc2.onClick = [this] { listen (2); };
+    listenBoth.onClick = [this] { listen (3); };
+    listenOsc1.setTooltip (tr ("Sets Wave 1 of the selected voice to this waveform (an edit you can undo), sends the waveforms if they were edited, and makes the OSCar play it at once. Live CC must be on."));
+    listenOsc2.setTooltip (tr ("Sets Wave 2 of the selected voice to this waveform (an edit you can undo), sends the waveforms if they were edited, and makes the OSCar play it at once. Live CC must be on."));
+    listenBoth.setTooltip (tr ("Sets Wave 1 and Wave 2 of the selected voice to this waveform (an edit you can undo), sends the waveforms if they were edited, and makes the OSCar play it at once. Live CC must be on."));
+    for (auto* b : { &listenOsc1, &listenOsc2, &listenBoth })
+        addAndMakeVisible (b);
     sinesButton.onClick = [this] { proc.getDocument().startSineWaves(); };
     sinesButton.setTooltip (tr ("Five sines to draw from. Sending them replaces the OSCar's five user waveforms."));
     addChildComponent (sinesButton);
@@ -1830,7 +1835,16 @@ void WavesPanel::refresh()
             empty = empty && doc.getWaves()->getHarmonic (table, h) == 0;
     }
     fitButton.setEnabled (has && ! empty);
-    listenButton.setEnabled (has);
+    {
+        const auto& v = doc.getVoice (proc.getSelectedSlot());
+        const bool on1 = getParam (v, *findParam ("wave1")) == 11 + table;
+        const bool on2 = getParam (v, *findParam ("wave2")) == 11 + table;
+        listenOsc1.setLit (on1 && ! on2);
+        listenOsc2.setLit (on2 && ! on1);
+        listenBoth.setLit (on1 && on2);
+        for (auto* b : { &listenOsc1, &listenOsc2, &listenBoth })
+            b->setEnabled (has);
+    }
     if (! has)
         info = tr ("No waveforms from the OSCar yet: nothing to draw on.");
     else if (! doc.areWavesFromOscar())
@@ -1856,14 +1870,23 @@ void WavesPanel::resized()
     }
     top.removeFromLeft (16);
     fitButton.setBounds (top.removeFromLeft (170));
-    top.removeFromLeft (8);
-    listenButton.setBounds (top.removeFromLeft (210));
     sendButton.setFace (top.removeFromRight (230).withSizeKeepingCentre (230, 40));
     g.removeFromTop (8);
     infoArea = g.removeFromTop (22).toFloat();
     g.removeFromTop (8);
     auto area = g.toFloat();
-    scope = area.removeFromRight (300.0f).withTrimmedTop (22.0f).withTrimmedBottom (40.0f);
+    // the right column: what the OSCar plays, and below it, Listen on the OSCar on one oscillator or both
+    auto column = area.removeFromRight (300.0f);
+    column.removeFromBottom (6.0f);
+    auto row = column.removeFromBottom (34.0f).toNearestInt();
+    listenCaption = column.removeFromBottom (22.0f);
+    const int bw = (row.getWidth() - 2 * 6) / 3;
+    listenOsc1.setBounds (row.removeFromLeft (bw));
+    row.removeFromLeft (6);
+    listenOsc2.setBounds (row.removeFromLeft (bw));
+    row.removeFromLeft (6);
+    listenBoth.setBounds (row);
+    scope = column.withTrimmedTop (22.0f).withTrimmedBottom (30.0f);
     area.removeFromRight (24.0f);
     bars = area.withTrimmedLeft (44.0f).withTrimmedTop (22.0f).withTrimmedBottom (26.0f);
     sinesButton.setBounds (juce::Rectangle<int> (220, 34).withCentre (bars.getCentre().toInt().translated (0, 78)));
@@ -2002,25 +2025,38 @@ void WavesPanel::paint (juce::Graphics& g)
     g.setFont (Fonts::label (11.5f).withExtraKerningFactor (0.05f));
     g.setColour (colours::label);
     g.drawText (lang::upper (tr ("What the OSCar plays")), scope.withY (scope.getBottom() + 6.0f).withHeight (16.0f), juce::Justification::centred);
+    g.setColour (colours::silk);
+    g.drawText (lang::upper (tr ("Listen on the OSCar")), listenCaption, juce::Justification::centredBottom);
 }
 
-void WavesPanel::listen()
+void WavesPanel::listen (int oscillators)
 {
     if (! proc.getLiveCc())
     {
         proc.addLog (tr ("Turn Live CC on to play the waveform on the OSCar."));
         return;
     }
-    const auto& wave1 = *findParam ("wave1");
     const int slot = proc.getSelectedSlot(), want = 11 + table;   // 11: -8 ... 15: -12
-    const bool changed = getParam (proc.getDocument().getVoice (slot), wave1) != want;
-    if (changed)
-        proc.editParam (slot, wave1, want);   // a new number: the OSCar builds it from its memory
+    bool changed = false;
+    for (int o = 0; o < 2; ++o)
+        if ((oscillators >> o) & 1)
+        {
+            const auto& wave = *findParam (o == 0 ? "wave1" : "wave2");
+            if (getParam (proc.getDocument().getVoice (slot), wave) != want)
+            {
+                proc.editParam (slot, wave, want);   // a new number: the OSCar builds it from its memory
+                changed = true;
+            }
+        }
     if (proc.getDocument().areWavesEdited())
         editor.confirmThenSendWaves();        // then sent, and rebuilt once they are through
     else if (! changed)
         proc.rebuildUserWaves();              // the same number: Triangle and back
-    proc.addLog (tr ("Wave 1 of voice %1 plays waveform %2.", { juce::String (slotLabel (slot)), juce::String (-8 - table) }));
+    const juce::String voice (slotLabel (slot)), wave (-8 - table);
+    proc.addLog (oscillators == 3 ? tr ("Waves 1 and 2 of voice %1 play waveform %2.", { voice, wave })
+                 : oscillators == 2 ? tr ("Wave 2 of voice %1 plays waveform %2.", { voice, wave })
+                                    : tr ("Wave 1 of voice %1 plays waveform %2.", { voice, wave }));
+    refresh();
 }
 
 void WavesPanel::mouseDown (const juce::MouseEvent& e)
@@ -2260,7 +2296,7 @@ SetupPanel::SetupPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
     liveButton.onClick = [this] { proc.setLiveCc (! proc.getLiveCc()); };
     liveButton.setTooltip (tr ("Every edit is sent to the OSCar as CC at once, and clicking a voice plays it on the OSCar."));
     thruButton.onClick = [this] { proc.setMidiThru (! proc.getMidiThru()); };
-    thruButton.setTooltip (tr ("Notes and pitch bend reaching this plugin from the DAW are played on the OSCar. Off if your DAW already sends MIDI to the OSCar (External Instrument...), to avoid double notes."));
+    thruButton.setTooltip (tr ("Notes, pitch bend, CCs, program changes and aftertouch reaching this plugin from the DAW are passed on to the OSCar. Off if your DAW already sends MIDI to the OSCar (External Instrument...), to avoid double notes."));
     recallBox.addItem (tr ("Recall the project's sound when it opens: always"), 1);
     recallBox.addItem (tr ("Recall the project's sound when it opens: ask first"), 2);
     recallBox.addItem (tr ("Recall the project's sound when it opens: never"), 3);
@@ -2300,7 +2336,7 @@ SetupPanel::SetupPanel (OscarProcessor& p, OscarEditor& e) : proc (p), editor (e
     help.setColour (juce::TextEditor::textColourId, colours::label);
     help.setFont (Fonts::label (14.0f));
     logView.setFont (Fonts::mono (13.0f));
-    help.setText (tr ("CONNECTIONS\nOSCar MIDI OUT -> interface MIDI IN, interface MIDI OUT -> OSCar MIDI IN. Choose both ports on the left.\n\nON THE OSCAR\nProgram change: hold SPACE and press key -9 (LED -9 lit), so the plugin and the OSCar play the same voice. Patch CC dump: hold TUNE/TRANSPOSE and press the 'Enable patch CC dump' key (see the Tauntek keys page). The OSCar then reports each voice it loads and the plugin shows exactly what it plays. If the OSCar stops following after a power cycle, do these two steps again.\n\nRECEIVE: hold INSERT, press VOICE (or SEQ, a WAVEFORM button, or STORE for all three), then SPACE. Everything received is backed up (Banks page).\n\nSEND: the OSCar's MIDI only accepts complete banks, so \"Send voices to synth\" rewrites all 36 voices. What the OSCar held (when known) and what is sent are both backed up.\n\nLIVE CC: edits are sent at once as CC (half resolution: 0-127); Send stores the exact values. Every parameter can also be automated from the DAW.\n\nMIDI THRU: play the OSCar from another keyboard through this track. Notes and pitch bend only; nothing is passed during a transfer; the OSCar's own notes coming back through the DAW are not sent twice.\n\nMIDI CLOCK: set Sync to MIDI clock (Voice page) so the arpeggiator and the sequencer follow the clock the OSCar receives; Division sets the steps. With 'Send the DAW's MIDI clock' on, that clock comes from the DAW's tempo and transport.")
+    help.setText (tr ("CONNECTIONS\nOSCar MIDI OUT -> interface MIDI IN, interface MIDI OUT -> OSCar MIDI IN. Choose both ports on the left.\n\nON THE OSCAR\nProgram change: hold SPACE and press key -9 (LED -9 lit), so the plugin and the OSCar play the same voice. Patch CC dump: hold TUNE/TRANSPOSE and press the 'Enable patch CC dump' key (see the Tauntek keys page). The OSCar then reports each voice it loads and the plugin shows exactly what it plays. If the OSCar stops following after a power cycle, do these two steps again.\n\nRECEIVE: hold INSERT, press VOICE (or SEQ, a WAVEFORM button, or STORE for all three), then SPACE. Everything received is backed up (Banks page).\n\nSEND: the OSCar's MIDI only accepts complete banks, so \"Send voices to synth\" rewrites all 36 voices. What the OSCar held (when known) and what is sent are both backed up.\n\nLIVE CC: edits are sent at once as CC (half resolution: 0-127); Send stores the exact values. Every parameter can also be automated from the DAW.\n\nMIDI THRU: play the OSCar from another keyboard through this track. Notes, pitch bend, CCs (a DAW modulator on the cutoff...), program changes and aftertouch go on to the OSCar's channel; a program change makes the editor follow the OSCar to that voice. Nothing is passed during a transfer, and what the OSCar sent itself (its notes, CCs, program changes) is not sent back when it comes round through the DAW.\n\nMIDI CLOCK: set Sync to MIDI clock (Voice page) so the arpeggiator and the sequencer follow the clock the OSCar receives; Division sets the steps. With 'Send the DAW's MIDI clock' on, that clock comes from the DAW's tempo and transport.")
                   + "\n\n" + tr ("SUPERMOD and SCALE (bottom right): each opens its strip where the memories are. SUPERMOD: while its strip is open, a knob or a fader of the Voice page sets how far it follows SHAPE instead of its value, up as drawn, down upside down; BIPOLAR moves it either side of its value, UNIPOLAR one side only. SHAPE: S&H, SMOOTH or one of MIFM1's LFO waves; RATE: the speed, on the DAW's tempo (SYNC) or in milliseconds; LOOP: OFF or the loop's length, 2 to 64 steps. The voice itself never changes: the OSCar gets the values as CC (Live CC).\n\nSCALE: Transpose and Osc 2 Interval only take the notes of the scale, counted from ROOT, and so do their modulations; MIDI Thru moves the notes played to the scale."),
                   juce::dontSendNotification);
 

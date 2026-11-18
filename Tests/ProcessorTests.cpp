@@ -354,19 +354,68 @@ static void testMidiThru (OscarProcessor& proc, Capture& out)
 
     proc.setMidiThru (true);
 
-    // notes and bend are forwarded on the OSCar's channel; CCs are not
+    // notes, bend and CCs are forwarded on the OSCar's channel (a DAW modulator on CC 30, the cutoff)
     processMidi (proc, { juce::MidiMessage::noteOn (5, 62, (juce::uint8) 90),
                          juce::MidiMessage::controllerEvent (5, 30, 12),
                          juce::MidiMessage::pitchWheel (5, 10000) });
     auto sent = collect (out, [] (const std::vector<juce::MidiMessage>& ms) { return notesOf (ms).size() >= 2; });
     auto notes = notesOf (sent);
-    CHECK (ccsOf (sent).empty());
+    {
+        const auto ccs = ccsOf (sent);
+        CHECK (ccs.size() == 1 && ccs[0].first == 30 && ccs[0].second == 12);
+        for (const auto& m : sent)
+            if (m.isController())
+                CHECK (m.getChannel() == 3);
+    }
     CHECK (notes.size() == 2 && notes[0].isNoteOn() && notes[0].getChannel() == 3
            && notes[0].getNoteNumber() == 62 && notes[0].getVelocity() == 90);
     CHECK (notes.size() == 2 && notes[1].isPitchWheel() && notes[1].getPitchWheelValue() == 10000);
     processMidi (proc, { juce::MidiMessage::noteOff (5, 62), juce::MidiMessage::pitchWheel (5, 8192) });
     notes = notesOf (collect (out, [] (const std::vector<juce::MidiMessage>& ms) { return notesOf (ms).size() >= 2; }));
     CHECK (notes.size() == 2 && notes[0].isNoteOff() && notes[0].getNoteNumber() == 62);
+
+    // aftertouch, and a programme change: sent on, and the editor follows the OSCar to that voice
+    const int before = proc.getSelectedSlot();
+    const int target = before == 7 ? 8 : 7;
+    processMidi (proc, { juce::MidiMessage::channelPressureChange (5, 40),
+                         juce::MidiMessage::programChange (5, target) });
+    sent = collect (out, [] (const std::vector<juce::MidiMessage>& ms)
+                    { return std::any_of (ms.begin(), ms.end(), [] (const auto& m) { return m.isProgramChange(); }); });
+    {
+        bool pressure = false, programme = false;
+        for (const auto& m : sent)
+        {
+            pressure  = pressure  || (m.isChannelPressure() && m.getChannel() == 3 && m.getChannelPressureValue() == 40);
+            programme = programme || (m.isProgramChange() && m.getChannel() == 3 && m.getProgramChangeNumber() == target);
+        }
+        CHECK (pressure && programme);
+    }
+    pump (100);
+    CHECK (proc.getSelectedSlot() == target);
+    proc.setSelectedSlot (before);
+    pump (600);
+    out.take();
+
+    // the OSCar's own CC and programme change coming back through the DAW: not sent again (the
+    // same programme would reload its voice)
+    proc.getMidi().injectForTest (juce::MidiMessage::controllerEvent (1, 30, 77));
+    proc.getMidi().injectForTest (juce::MidiMessage::programChange (1, target));
+    processMidi (proc, { juce::MidiMessage::controllerEvent (1, 30, 77), juce::MidiMessage::programChange (1, target) });
+    pump (100);
+    for (const auto& m : out.take())
+    {
+        CHECK (! m.isProgramChange());
+        CHECK (! (m.isController() && m.getControllerNumber() == 30 && m.getControllerValue() == 77));
+    }
+    // ...but the same CC with another value is the DAW's own
+    processMidi (proc, { juce::MidiMessage::controllerEvent (1, 30, 78) });
+    {
+        const auto ccs = ccsOf (collect (out, [] (const std::vector<juce::MidiMessage>& ms) { return ! ccsOf (ms).empty(); }));
+        CHECK (ccs.size() == 1 && ccs[0].first == 30 && ccs[0].second == 78);
+    }
+    proc.setSelectedSlot (before);
+    pump (600);
+    out.take();
 
     // echo of the OSCar's own keyboard coming back through the DAW: not sent again
     proc.getMidi().injectForTest (juce::MidiMessage::noteOn (1, 48, (juce::uint8) 100));
@@ -909,26 +958,59 @@ static void testEditor (OscarProcessor& proc, Capture& out)
                 wave1Values.push_back (x.getControllerValue());
         CHECK (wave1Values.size() == 2 && wave1Values[0] == ccValueFor (wave1.coding, 0) && wave1Values[1] == ccValueFor (wave1.coding, 12));
 
-        // Listen on the OSCar: Wave 1 on the waveform shown; the same again: rebuilt (Triangle and back)
+        // Listen on the OSCar: Osc 1 sets Wave 1 on the waveform shown; the same again: rebuilt
+        // (Triangle and back). Osc 2 sets Wave 2, Osc 1 + 2 both; the lit button says which.
         waves->showTable (2);   // -10
-        atelier::LedButton* listen = nullptr;
-        for (auto* c : waves->getChildren())
-            if (auto* lb = dynamic_cast<atelier::LedButton*> (c); lb != nullptr && lb->getButtonText() == "Listen on the OSCar")
-                listen = lb;
-        CHECK (listen != nullptr && listen->isEnabled());
-        if (listen != nullptr)
+        auto button = [&] (const juce::String& text) -> atelier::LedButton*
         {
+            for (auto* c : waves->getChildren())
+                if (auto* lb = dynamic_cast<atelier::LedButton*> (c); lb != nullptr && lb->getButtonText() == text)
+                    return lb;
+            return nullptr;
+        };
+        auto* osc1 = button ("Osc 1");
+        auto* osc2 = button ("Osc 2");
+        auto* both = button ("Osc 1 + 2");
+        const auto& wave2 = *findParam ("wave2");
+        CHECK (osc1 != nullptr && osc2 != nullptr && both != nullptr && osc1->isEnabled());
+        if (osc1 != nullptr && osc2 != nullptr && both != nullptr)
+        {
+            const int slot = proc.getSelectedSlot();
+            proc.editParam (slot, wave2, 1);   // Saw: not this waveform
+            pump (50);
             out.take();
-            listen->triggerClick();
+            osc1->triggerClick();
             pump (100);
-            CHECK (getParam (doc.getVoice (proc.getSelectedSlot()), wave1) == 13);
+            CHECK (getParam (doc.getVoice (slot), wave1) == 13 && getParam (doc.getVoice (slot), wave2) == 1);
+            CHECK (osc1->isLit() && ! osc2->isLit() && ! both->isLit());
             int lastWave1 = -1;
             for (const auto& x : out.take())
                 if (x.isController() && x.getControllerNumber() == wave1.cc)
                     lastWave1 = x.getControllerValue();
             CHECK (lastWave1 == ccValueFor (wave1.coding, 13));
-            listen->triggerClick();
+            osc1->triggerClick();
             CHECK (waitForLog (proc, "went to Triangle and back"));
+            pump (300);
+
+            out.take();
+            osc2->triggerClick();
+            pump (100);
+            CHECK (getParam (doc.getVoice (slot), wave2) == 13);
+            int lastWave2 = -1;
+            for (const auto& x : out.take())
+                if (x.isController() && x.getControllerNumber() == wave2.cc)
+                    lastWave2 = x.getControllerValue();
+            CHECK (lastWave2 == ccValueFor (wave2.coding, 13));
+            CHECK (both->isLit() && ! osc1->isLit() && ! osc2->isLit());   // both play it now
+            CHECK (waitForLog (proc, "Wave 2 of voice"));
+
+            waves->showTable (4);   // -12: neither yet
+            CHECK (! osc1->isLit() && ! osc2->isLit() && ! both->isLit());
+            both->triggerClick();
+            pump (100);
+            CHECK (getParam (doc.getVoice (slot), wave1) == 15 && getParam (doc.getVoice (slot), wave2) == 15);
+            CHECK (both->isLit());
+            CHECK (waitForLog (proc, "Waves 1 and 2 of voice"));
         }
     }
 

@@ -853,6 +853,7 @@ void OscarProcessor::pumpThru (std::uint16_t scaleMask, int scaleRoot)
 
     int s1, n1, s2, n2;
     thruFifo.prepareToRead (thruFifo.getNumReady(), s1, n1, s2, n2);
+    int program = -1;   // a programme change sent: the editor follows, as when the OSCar sends one
 
     auto handle = [&] (const std::array<std::uint8_t, 3>& d)
     {
@@ -912,6 +913,33 @@ void OscarProcessor::pumpThru (std::uint16_t scaleMask, int scaleRoot)
             out.push_back (juce::MidiMessage::pitchWheel (ch, value));
             outFrom.push_back (-1);
         }
+        else if (status == 0xB0 && ! busy)
+        {
+            // the OSCar's own CC (its panel, its patch dump) coming back through the DAW: not again
+            if (now - midi.lastControllerFromOscar (note, vel) < kEchoWindowMs)
+                return;
+            out.push_back (juce::MidiMessage::controllerEvent (ch, note, vel));
+            outFrom.push_back (-1);
+        }
+        else if (status == 0xC0 && ! busy)
+        {
+            // its own programme change coming back would reload the voice, losing panel moves
+            if (now - midi.lastProgramFromOscar (note) < kEchoWindowMs)
+                return;
+            out.push_back (juce::MidiMessage::programChange (ch, note));
+            outFrom.push_back (-1);
+            program = note;
+        }
+        else if (status == 0xD0 && ! busy)
+        {
+            out.push_back (juce::MidiMessage::channelPressureChange (ch, note));
+            outFrom.push_back (-1);
+        }
+        else if (status == 0xA0 && ! busy)
+        {
+            out.push_back (juce::MidiMessage::aftertouchChange (ch, note, vel));
+            outFrom.push_back (-1);
+        }
     };
 
     // events are sent when they are due (they carry their position in the audio block)
@@ -933,8 +961,14 @@ void OscarProcessor::pumpThru (std::uint16_t scaleMask, int scaleRoot)
     }
     thruFifo.finishedRead (consumed);
 
-    if (out.empty() || midi.sendShortMessages (out))
+    if (out.empty())
         return;
+    if (midi.sendShortMessages (out))
+    {
+        if (program >= 0)
+            thruProgram = program;   // picked up on the message thread
+        return;
+    }
 
     // A transfer started meanwhile (or the port is closed): never leave a note hanging.
     for (size_t i = 0; i < out.size(); ++i)
@@ -1158,6 +1192,18 @@ void OscarProcessor::programChangeReceived (int, int program)
     awaitingDumpSince = juce::Time::getMillisecondCounterHiRes();   // a Tauntek with CC dump on answers within ~0.2 s
 }
 
+// A programme change the DAW sent through MIDI thru: the OSCar loads that voice from its memory,
+// as when its own panel does; the editor follows. (Whether it then sends its patch CC dump isn't
+// awaited: the indicator only judges programme changes the OSCar sent itself.)
+void OscarProcessor::programSentThru (int program)
+{
+    if (program < 0 || program >= kNumVoices)
+        return;
+    if (followOscar)
+        setSelectedSlot (program);
+    oscarSelected (program);
+}
+
 void OscarProcessor::controllerReceived (int, int cc, int value)
 {
     if (cc < 14 || cc > 55)
@@ -1177,6 +1223,8 @@ void OscarProcessor::controllerReceived (int, int cc, int value)
 void OscarProcessor::timerCallback()
 {
     publishRandom();   // whatever changed meanwhile (cheap: a copy of the voice and the amounts)
+    if (const int p = thruProgram.exchange (-1); p >= 0)
+        programSentThru (p);
     recallTick (juce::Time::getMillisecondCounterHiRes());
     rewaveTick (juce::Time::getMillisecondCounterHiRes());
 
@@ -1316,16 +1364,17 @@ void OscarProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiB
             events[count++] = { { a, b, c }, blockStart + 1000.0 * juce::jlimit (0, juce::jmax (0, numSamples - 1), sampleOffset) / sr };
     };
 
-    // MIDI thru: notes and pitch bend only (a stray CC must not change the sound behind the editor's back)
+    // MIDI thru: notes, pitch bend, CCs (a DAW modulator on the cutoff...), programme changes and
+    // aftertouch; not SysEx (the plugin's own transfers) nor the host's clock (the plugin has its own)
     if (midiThru)
     {
         for (const auto meta : midiMessages)
         {
-            if (meta.numBytes != 3)
-                continue;
             const auto status = meta.data[0] & 0xF0;
-            if (status == 0x80 || status == 0x90 || status == 0xE0)
-                add (meta.data[0], meta.data[1], meta.data[2], meta.samplePosition);
+            const bool three = status == 0x80 || status == 0x90 || status == 0xA0 || status == 0xB0 || status == 0xE0;
+            const bool two = status == 0xC0 || status == 0xD0;
+            if ((three && meta.numBytes == 3) || (two && meta.numBytes == 2))
+                add (meta.data[0], meta.data[1], three ? meta.data[2] : (std::uint8_t) 0, meta.samplePosition);
         }
     }
     midiMessages.clear();

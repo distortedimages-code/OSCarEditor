@@ -176,6 +176,7 @@ void MidiLink::handleIncomingMidiMessage (juce::MidiInput*, const juce::MidiMess
     }
     else if (m.isProgramChange())
     {
+        programFromOscarMs[(size_t) m.getProgramChangeNumber()] = juce::Time::getMillisecondCounterHiRes();
         {
             const juce::ScopedLock sl (inLock);
             pendingPrograms.emplace_back (m.getChannel(), m.getProgramChangeNumber());
@@ -184,6 +185,8 @@ void MidiLink::handleIncomingMidiMessage (juce::MidiInput*, const juce::MidiMess
     }
     else if (m.isController())
     {
+        ccValueFromOscar[(size_t) m.getControllerNumber()] = m.getControllerValue();
+        ccFromOscarMs[(size_t) m.getControllerNumber()] = juce::Time::getMillisecondCounterHiRes();
         {
             const juce::ScopedLock sl (inLock);
             pendingControllers.push_back ({ m.getChannel(), m.getControllerNumber(), m.getControllerValue() });

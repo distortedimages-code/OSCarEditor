@@ -471,7 +471,7 @@ void OscarEditor::applyTexts()
     redoButton.setButtonText (tr ("Redo"));
     sendButton.setButtonText (tr ("Send voices to synth"));
     liveButton.setTooltip (tr ("Tauntek: every edit is sent to the OSCar as CC straight away, and choosing a voice plays it on the OSCar. Off: edit the bank without touching the OSCar's sound."));
-    thruButton.setTooltip (tr ("Play the OSCar from this DAW track (notes and pitch bend)."));
+    thruButton.setTooltip (tr ("Play the OSCar from this DAW track (notes, pitch bend, CCs and program changes)."));
     sendButton.setTooltip (tr ("Writes the 36 voices into the OSCar's memory (the OSCar only accepts whole banks)."));
 
     randomButton.setTooltip (tr ("SUPERMOD: opens its strip and its layer on the Voice page: turning a knob or a fader then sets how far it follows SHAPE instead of its value, up as drawn, down upside down. SUPERMOD again to turn the knobs as usual. The controls that move light up along their scale, where they play; right-click one to switch its modulation off or remove it. The voice itself never changes: the OSCar gets the values as CC (Live CC)."));

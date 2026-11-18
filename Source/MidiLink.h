@@ -39,13 +39,27 @@ public:
     bool sendSysex (const std::vector<std::uint8_t>& message);  // full F0 .. F7
     bool sendProgramChange (int channel, int program);
     bool sendControllers (int channel, const std::vector<oscar::CcMessage>& messages);
-    bool sendShortMessages (const std::vector<juce::MidiMessage>& messages);   // notes, pitch bend
+    bool sendShortMessages (const std::vector<juce::MidiMessage>& messages);   // notes, bend, CC, programmes...
 
     // When the OSCar last sent a note-on for this note (its own keyboard), in
     // Time::getMillisecondCounterHiRes() units; 0 = never. Any thread.
     double lastNoteOnFromOscar (int note) const
     {
         return (note >= 0 && note < 128) ? noteOnFromOscarMs[(size_t) note].load() : 0.0;
+    }
+
+    // When the OSCar last sent this CC with this value, or this programme change (its panel, its
+    // patch CC dump); 0 = never or another value since. Any thread. MIDI thru drops what comes back
+    // through the DAW within moments: re-selecting the same programme would reload the voice.
+    double lastControllerFromOscar (int cc, int value) const
+    {
+        if (cc < 0 || cc >= 128 || ccValueFromOscar[(size_t) cc].load() != value)
+            return 0.0;
+        return ccFromOscarMs[(size_t) cc].load();
+    }
+    double lastProgramFromOscar (int program) const
+    {
+        return (program >= 0 && program < 128) ? programFromOscarMs[(size_t) program].load() : 0.0;
     }
 
     // The channel of the last note, programme change or CC the OSCar sent (its MIDI channel, which
@@ -80,7 +94,8 @@ private:
     std::vector<std::vector<std::uint8_t>> pendingSysex;
     std::vector<std::pair<int, int>> pendingPrograms;
     std::vector<std::array<int, 3>> pendingControllers;
-    std::array<std::atomic<double>, 128> noteOnFromOscarMs {};
+    std::array<std::atomic<double>, 128> noteOnFromOscarMs {}, ccFromOscarMs {}, programFromOscarMs {};
+    std::array<std::atomic<int>, 128> ccValueFromOscar {};
     std::atomic<int> lastChannel { 0 };
     std::atomic<int> partialBytes { 0 };
     std::atomic<bool> partialActive { false };

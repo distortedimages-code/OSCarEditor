@@ -1,5 +1,9 @@
 ## English
 
+**0.7.7: MIDI Thru passes CCs and program changes; listen on oscillator 1, 2 or both.** MIDI Thru let only notes and pitch bend through: a Logic modulator on CC 30 (the cutoff) moved the OSCar when sent to it directly, but not through the plug-in. It now passes CCs, program changes and aftertouch too, on the OSCar's channel. A program change makes the editor follow the OSCar to that voice. What the OSCar sent itself and comes back through the DAW (its notes, its CCs, its program changes) isn't sent back to it: the same program again would reload the voice and lose what was turned on the panel.
+
+On the Waveforms page, *Listen on the OSCar* is now three buttons under the screen on the right: *Osc 1*, *Osc 2* and *Osc 1 + 2*. Each sets that oscillator of the selected voice (Wave 1, Wave 2, or both) to the waveform shown, sends the waveforms if they were edited, and makes the OSCar play it at once. The lit button tells which oscillator plays the waveform shown.
+
 **0.7.6: the space bar plays Logic, even with the plug-in in front.** The plug-in's window no longer keeps the keyboard: the space bar, Return, the arrows and the other key commands go to the DAW whatever you clicked in OXIde last. Before, a clicked button took Return (and clicked itself again), the lists and menus took the arrows, and the Setup page's texts took every key. Their text can still be selected and copied with a right-click.
 
 **0.7.5: new versions offered at launch.** When OXIde opens (the app, or the plug-in's window) and a new version is out, a tile says so: the version, what it brings in a few words, a link to the full notes, and *Update now*, which replaces the app, the AU and the VST3 on this Mac in one go. The app can then relaunch itself; a DAW loads the new plug-in when you reopen it. *Later* puts it off until the next launch, *Skip this version* for good. A version found once is offered again at each launch until it is installed, even without a connection, and the plug-in looks for new ones at most once an hour.
@@ -60,6 +64,10 @@ Waveforms dumped by the OSCar could be refused as "damaged by a text-mode copy (
 - **A panel with a past**: the printed ink is lightly worn in places; the controls stay clean.
 
 ## Français
+
+**0.7.7 : le MIDI Thru laisse passer les CC et les changements de programme ; écouter sur l'oscillateur 1, le 2 ou les deux.** Le MIDI Thru ne laissait passer que les notes et le pitch bend : un modulateur de Logic sur le CC 30 (le cutoff) faisait bouger l'OSCar en direct, mais pas à travers le plugin. Il laisse maintenant passer aussi les CC, les changements de programme et l'aftertouch, sur le canal de l'OSCar. Un changement de programme fait suivre l'éditeur sur cette voix. Ce que l'OSCar a envoyé lui-même et qui revient par le DAW (ses notes, ses CC, ses changements de programme) ne lui est pas renvoyé : le même programme rechargerait la voix et perdrait les réglages faits sur la façade.
+
+Page Formes d'onde, *Écouter sur l'OSCar* devient trois boutons sous l'écran de droite : *Osc 1*, *Osc 2* et *Osc 1 + 2*. Chacun met cet oscillateur de la voix choisie (Wave 1, Wave 2, ou les deux) sur la forme affichée, envoie les formes si elles ont été modifiées, et la fait jouer tout de suite à l'OSCar. Le bouton allumé dit quel oscillateur joue la forme affichée.
 
 **0.7.6 : la barre espace pilote Logic, même plugin au premier plan.** La fenêtre du plugin ne garde plus le clavier : barre espace, Entrée, flèches et autres raccourcis vont au DAW, quoi que tu aies cliqué en dernier dans OXIde. Avant, un bouton cliqué prenait Entrée (et se recliquait), les listes et les menus prenaient les flèches, et les textes de la page Réglages toutes les touches. Leur texte se sélectionne et se copie toujours avec un clic droit.
 
